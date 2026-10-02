@@ -183,6 +183,12 @@ details summary { cursor: pointer; font-weight: 600; }
       <thead><tr><th>Firma</th><th>Země</th><th>Obor</th><th class="r">6 m</th><th class="r">12 m</th><th>Charakter</th><th>Příčina (z titulků)</th></tr></thead>
       <tbody id="win-rows"></tbody>
     </table></div>
+    <h3>Nově na burze (12 měsíců)</h3>
+    <p class="small muted" id="ipo-note"></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Firma</th><th>Země</th><th>Obor</th><th>Od</th><th class="r">Od kotace</th><th class="r">Maximum</th></tr></thead>
+      <tbody id="ipo-rows"></tbody>
+    </table></div>
     <h3>Sektorové vlny</h3>
     <p class="small muted">Obory, kde je podíl firem s růstem ≥ +50 % za 6 měsíců výrazně vyšší než na celém trhu. Fáze trendu (výzkum / pilot / komercializace) zatím NEOVĚŘENO.</p>
     <div class="tablewrap"><table>
@@ -534,9 +540,14 @@ details summary { cursor: pointer; font-weight: 600; }
       <span class="v">${Object.values(v).map((x) => fmt(x, 0)).join(" / ")}</span><span class="small muted">${esc(Object.keys(v).join(" / "))}</span></div>`).join("");
     $("win-rows").innerHTML = (D.vitezove || []).map((w) => `<tr><td><b>${esc(w.ticker)}</b><div class="small muted">${esc(w.nazev)}</div></td>
       <td class="small">${esc(w.zeme || "")}</td><td class="small">${esc(w.sektor || "")}</td><td class="r num pos">${pp(w.rust_6m, 0)}</td>
-      <td class="r num ${cls(w.rust_12m)}">${pp(w.rust_12m, 0)}</td><td class="small">${esc(w.charakter)}</td>
+      <td class="r num ${cls(w.rust_12m)}">${pp(w.rust_12m, 0)}</td><td class="small">${esc(w.charakter)}<div><span class="chip">${esc({large: "velká", mid: "střední", small: "malá", micro: "mikro"}[w.velikost] || w.velikost || "")}</span>${w.overit_data ? ' <span class="chip warn">ověřit data</span>' : ""}</div></td>
       <td class="small">${w.pricina ? `<b>${esc(w.pricina)}</b>` : '<span class="muted">NEOVĚŘENO</span>'}${(w.titulky || []).slice(0, 1).map((h) => `<div><a href="${url(h.url)}" target="_blank" rel="noopener">${esc(h.titulek)}</a></div>`).join("")}</td></tr>`).join("")
       || `<tr><td colspan="7" class="muted">Zatím bez dat.</td></tr>`;
+    const ipo = D.nova_ipo || {};
+    $("ipo-note").textContent = ipo.pocet !== undefined ? `${ipo.pocet} firem vstoupilo na burzu za posledních 12 měsíců (podle dostupných seznamů). Nejvíc v oborech: ${(ipo.podle_oboru || []).slice(0, 5).map((x) => x[0] + " " + x[1]).join(", ")}. Poučení z Unitree: nový sektor se často objeví nejdřív jako IPO.` : "";
+    $("ipo-rows").innerHTML = (ipo.nejlepsi || []).map((r) => `<tr><td><b>${esc(r.ticker)}</b><div class="small muted">${esc(r.nazev)}</div></td><td class="small">${esc(r.zeme || "")}</td>
+      <td class="small">${esc(r.obor || "")}</td><td class="num small">${esc(r.od)}</td><td class="r num ${cls(r.od_kotace)}">${pp(r.od_kotace, 0)}</td><td class="r num">${pp(r.max_od_kotace, 0)}</td></tr>`).join("")
+      || `<tr><td colspan="6" class="muted">Zatím bez dat.</td></tr>`;
     $("wave-rows").innerHTML = (D.sektorove_vlny || []).slice(0, 15).map((w) => `<tr><td><b>${esc(w.obor)}</b></td><td class="r num">${fmt(w.vitezu, 0)} / ${fmt(w.firem, 0)}</td>
       <td class="r num"><b>${fmt(w.lift, 1)}×</b></td><td class="r num">${pp(w.median_vynos, 0)}</td><td class="r num">${fmt(w.nove_na_burze_12m, 0)}</td>
       <td class="small">${esc((w.zeme || []).join(", "))}</td><td class="small">${esc((w.priklady || []).join(", "))}</td></tr>`).join("")

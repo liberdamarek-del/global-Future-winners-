@@ -165,8 +165,16 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
     top6 = sorted((s for s in trailing if (trailing[s].get("6M") or 0) >= 0.3 and
                    study.liquid_at(data, data.secs[s], len(data.secs[s].prep.bars.days) - 1)[0]),
                   key=lambda s: trailing[s]["6M"], reverse=True)
+    sizes = {}
+    for s in top6:
+        sec = data.secs[s]
+        i = len(sec.prep.bars.days) - 1
+        rate = data.usd_rate(sec.currency, sec.prep.bars.days[i])
+        sizes[s] = size_bucket(sec.meta, study.turnover_usd(sec.prep, i, rate))
+    big_names = [s for s in top6 if sizes[s] in ("large", "mid")][:news_winners // 2]
+    small_names = [s for s in top6 if sizes[s] in ("small", "micro")][:news_winners - len(big_names)]
     top_winners = []
-    for s in top6[:news_winners]:
+    for s in big_names + small_names:
         sec = data.secs[s]
         b = sec.prep.bars
         i = len(b.days) - 1
@@ -182,13 +190,34 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
             "ticker": s, "nazev": sec.meta.get("name"), "zeme": sec.meta.get("country"),
             "sektor": sec.meta.get("industry") or sec.meta.get("sector"),
             "rust_6m": round(trailing[s]["6M"], 3), "rust_12m": _r(trailing[s].get("12M")),
+            "velikost": sizes[s], "overit_data": trailing[s]["6M"] > 5,
             "charakter": "skokový (týdenní rakety)" if w1 else "postupný",
             "pricina": info.get("hlavni_pricina"), "pricina_stav": info.get("stav"),
             "titulky": info.get("titulky", [])[:3],
         })
 
-    # --- 5. sektorové vlny a skupiny společného pohybu (§13–§14) ---
+    # --- 5. nová IPO (§29, poučení Unitree) — firmy s kotací kratší než 12 měsíců ---
+    ipo_rows = []
+    first_cut = study.day_str(data.data_end - 365)
+    data_start = study.day_str(data.data_start + 30)
+    for r in cache_conn.execute(
+            "SELECT s.symbol, s.name, s.country, s.sector, s.industry, r.first_day, r.last_day FROM series r"
+            " JOIN securities s ON s.symbol = r.symbol WHERE r.error IS NULL AND r.first_day >= ? AND r.first_day > ?",
+            (first_cut, data_start)):
+        bars = cache.load_series(cache_conn, r["symbol"])
+        if bars is None or len(bars.closes) < 10 or study.anomalous(bars):
+            continue
+        ipo_rows.append({"ticker": r["symbol"], "nazev": r["name"], "zeme": r["country"],
+                         "obor": r["industry"] or r["sector"], "od": r["first_day"],
+                         "od_kotace": round(bars.closes[-1] / bars.closes[0] - 1, 3),
+                         "max_od_kotace": round(max(bars.closes) / bars.closes[0] - 1, 3)})
+    ipo_by_group = Counter((r["obor"] or "neuvedeno").lower() for r in ipo_rows)
+    ipo_rows.sort(key=lambda r: r["od_kotace"], reverse=True)
+
+    # --- 6. sektorové vlny a skupiny společného pohybu (§13–§14) ---
     waves = study.sector_waves(data, trailing)
+    for w in waves:
+        w["nove_na_burze_12m"] = ipo_by_group.get((w["obor"] or "").lower(), 0)
     clusters = study.comovement_clusters(data, top6[:300])
     cluster_rows = [{"firmy": [{"ticker": s, "nazev": data.secs[s].meta.get("name"),
                                 "obor": data.secs[s].meta.get("industry") or data.secs[s].meta.get("sector"),
@@ -199,7 +228,7 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
                      "zeme": sorted({data.secs[s].meta.get("country") or "?" for s in c})}
                     for c in sorted(clusters, key=len, reverse=True)[:12]]
 
-    # --- 6. kandidáti dnes (§55 E) + čerstvé zprávy (WHY NOW z titulků posledních 30 dní) ---
+    # --- 7. kandidáti dnes (§55 E) + čerstvé zprávy (WHY NOW z titulků posledních 30 dní) ---
     candidates = score_today(data, models, heat, trailing, events)
     today = date.fromordinal(data.data_end)
     for kind, rows in candidates.items():
@@ -229,7 +258,7 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         "firem_s_daty": len(data.secs), "vyrazeno_chyba_dat": len(data.rejected), "zemi": len({s.meta.get("country") for s in data.secs.values()}),
         "oboru": len(data.groups), "dokumentu_titulku": sum(e["titulku_celkem"] for e in explained),
         "obdobi_dat": f"{study.day_str(data.data_start)}..{end_day}",
-        "rakety": {k: len(v) for k, v in events.items()},
+        "rakety": {k: len(v) for k, v in events.items()}, "nova_ipo_12m": len(ipo_rows),
         "vitezu_dnes": winner_counts, "sektorovych_vln": len([w for w in waves if w["z"] >= 3]),
         "skupin_spolecneho_pohybu": len(clusters),
         "omezeni": ["Seznamy firem jsou dnešní — chybí zkrachovalé a delistované firmy (survivorship bias, §60).",
@@ -242,8 +271,19 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         "probehlo": to_iso(now), "data_do": end_day, "statistika": run_stats,
         "vitezove": top_winners, "studie": studies, "pricny": cause_stats, "rakety_vysvetlene": explained[:80],
         "sektorove_vlny": waves[:25], "skupiny": cluster_rows, "kandidati": candidates, "zname_pripady": known,
+        "nova_ipo": {"pocet": len(ipo_rows), "podle_oboru": ipo_by_group.most_common(10), "nejlepsi": ipo_rows[:15],
+                     "nejhorsi": ipo_rows[-5:][::-1]},
         "_models": {k: {"raketa": m[0].to_dict(), "propad": m[3].to_dict()} for k, m in models.items()},
     }
+
+
+SIZE_BUCKETS = [(10e9, "large"), (2e9, "mid"), (300e6, "small"), (0, "micro")]
+
+
+def size_bucket(meta: dict, turnover_usd: float) -> str:
+    """§60: velké a malé firmy se nesměšují. Tržní kapitalizace (USA), jinak odhad z obratu (~0,5 % kapitalizace denně)."""
+    cap = meta.get("market_cap_usd") or turnover_usd * 200
+    return next(name for limit, name in SIZE_BUCKETS if cap >= limit)
 
 
 def _r(v, nd=3):
