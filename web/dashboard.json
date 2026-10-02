@@ -5,7 +5,8 @@
   "dokumenty": {
     "stav/aktualni": "data/web/stav_aktualni.json",
     "stav/predikce": "data/web/stav_predikce.json",
-    "stav/retezec": "data/web/stav_retezec.json"
+    "stav/retezec": "data/web/stav_retezec.json",
+    "stav/objevy": "data/web/stav_objevy.json"
   },
   "pravidla_db": "čtou všichni s přístupem (view), zapisuje jen vlastník/editor (admin)"
 }

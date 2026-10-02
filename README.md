@@ -38,12 +38,35 @@ python -m stockradar restore    # smaže DB a sestaví ji znovu ze state/
 pip install -r requirements-dev.txt && python -m pytest
 ```
 
+## Globální objevování vítězů (Growth Engine)
+
+Specifikace: [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md). Běží týdně (sobota) nebo ručně:
+
+```bash
+python -m stockradar discover --universe --download   # seznamy firem + 5 let cen (~13 000 firem, ~75 min)
+python -m stockradar discover                         # jen analýza nad staženými daty (~10 min vč. zpráv)
+python -m stockradar update                           # data pro web včetně stav/objevy
+```
+
+| Krok | Co dělá | Zdroj (zdarma) |
+|---|---|---|
+| Seznam firem | USA (všechny akcie), Japonsko (celá TSE), Austrálie (celá ASX), indexy Evropy, Kanady, Koreje, Hongkongu, Indie, Singapuru, Izraele, Brazílie | Nasdaq screener, JPX xlsx, ASX CSV, Wikipedie |
+| Vítězové | 3/6/12/24 měsíců podle prahů §2; historické rakety ≥ +30 % za týden, ≥ +50 % za měsíc / 3 měsíce, ≥ +100 % za 6 měsíců | Yahoo chart API |
+| Co předcházelo | 17 znaků v den T0 (dno před raketou) proti 5 kontrolním firmám ze stejného dne (lift) | — |
+| Dalo se to předpokládat? | Model naučený na datech do 2025-04 oskóruje všechny akcie týden po týdnu v pozdějším období; přesnost vs základní četnost **a kontrola směru** (rakety vs propady) | — |
+| Příčiny | Titulky zpráv v okně kolem rakety, automatická klasifikace (převzetí, FDA, výsledky, kontrakt, vláda, sektorová vlna, squeeze, krypto…) | Google News RSS |
+| Sektory | Obory s nadprůměrným podílem vítězů (lift, z-skóre, nová IPO) + skupiny vítězů, kteří se pohybují spolu | — |
+| Kandidáti | EARLY/DEVELOPING firmy s nejvyšším skóre, proč teď / proč ne / co by změnilo názor, čerstvé zprávy; horní 1 % jde do ledgeru jako WATCH | — |
+
+Omezení: seznamy jsou dnešní (survivorship bias), fundamenty bez SEC nejsou k dispozici, příčiny z titulků jsou AUTO.
+
 ## Kde jsou data
 
 | Místo | Co | V gitu |
 |---|---|---|
 | `state/*.jsonl` | **Zdroj pravdy**: firmy, listingy, XTB kontroly, katalyzátory, predikce, vyhodnocení, změny verdiktů, poučení, snapshoty | ano |
 | `data/stockradar.db` | Pracovní SQLite kopie, kdykoli obnovitelná ze `state/` | ne |
+| `data/market_cache.db` | Cache globálního objevování: seznam ~13 000 firem a 5 let cen (zlib), kdykoli stažitelná znovu | ne |
 
 Git historie `state/predictions.jsonl` zároveň dokládá, že se historické predikce nepřepisovaly (§29).
 

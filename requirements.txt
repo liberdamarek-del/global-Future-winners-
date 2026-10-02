@@ -1,2 +1,2 @@
-# Fáze 1 používá pouze standardní knihovnu Pythonu 3.11+ (sqlite3, json, argparse).
-# Závislosti pro datové zdroje se přidají ve Fázi 2–4 po rozhodnutí o poskytovatelích (viz ROADMAP.md).
+# Runtime používá pouze standardní knihovnu Pythonu 3.11+ (sqlite3, json, zlib, array, urllib, html.parser).
+# Data: zdarma z Yahoo Finance chart API, Nasdaq screener, ASX, JPX, Wikipedie a Google News RSS.

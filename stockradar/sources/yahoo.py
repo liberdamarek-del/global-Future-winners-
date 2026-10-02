@@ -92,12 +92,15 @@ def store_bars(conn: sqlite3.Connection, quote: Quote, *, fetched_at: datetime |
     return len(quote.bars)
 
 
+SUBUNITS = {"GBp": "GBP", "GBX": "GBP", "ILA": "ILS", "ZAc": "ZAR"}  # pence, agorot, centy
+
+
 def fx_symbol(currency: str) -> str | None:
-    """Yahoo symbol kurzu 'jednotek měny za 1 USD'. GBp (pence) se přepočítává přes GBP."""
-    cur = {"GBp": "GBP", "GBX": "GBP"}.get(currency, currency)
+    """Yahoo symbol kurzu 'jednotek měny za 1 USD'. Dílčí jednotky (GBp, ILA) se přepočítávají přes hlavní měnu."""
+    cur = SUBUNITS.get(currency, currency)
     return None if cur == "USD" else f"{cur}=X"
 
 
 def usd_factor(currency: str) -> float:
-    """Násobek pro převod z měny kotace na základní jednotku (pence -> libry)."""
-    return 0.01 if currency in ("GBp", "GBX") else 1.0
+    """Násobek pro převod z měny kotace na základní jednotku (pence -> libry, agorot -> šekely)."""
+    return 0.01 if currency in SUBUNITS else 1.0

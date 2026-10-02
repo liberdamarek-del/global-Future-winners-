@@ -18,7 +18,7 @@ from stockradar.state_io import export_state
 from stockradar.timeutil import parse_iso, to_iso, utcnow
 from stockradar.universe import seed_energy_universe
 
-EVAL_DAYS = (7, 14, 30)
+EVAL_DAYS = (7, 14, 30, 90, 180, 365)  # §42: 7/14/30 dní, 3/6/12 měsíců
 PREDICTION_DAYS = 30
 TOP_N = 5
 MIN_SCORE = 60.0
@@ -184,7 +184,7 @@ def make_predictions(conn: sqlite3.Connection, u: m.Universe, scored: dict[str, 
                               technical=int(round((fr["mom_120"] + fr["vol_surge"]) / 2 * 100)),
                               rocket=int(round((fr["volatility_60"] + fr["small_size"]) / 2 * 100))),
                 benchmark_symbol=config.BENCHMARK_SYMBOL, benchmark_price=bench_price,
-                p_rocket_pct=round(it["p_rocket"] * 100, 1), model_run_id=run_id,
+                p_rocket_pct=round(it["p_rocket"] * 100, 1), model_run_id=run_id, source="ENERGY_MODEL",
             ), now=now)
             created.append(pid)
         except LedgerRuleError as exc:

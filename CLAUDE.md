@@ -1,6 +1,7 @@
 # Pokyny pro každou novou session (§56, §63, §71)
 
-Projekt: Global Future Winners / Stock Radar. Specifikace: `docs/MASTER_PROMPT.md`. Uživatel komunikuje česky.
+Projekt: Global Future Winners / Stock Radar. Specifikace: `docs/MASTER_PROMPT.md` (radar katalyzátorů) a
+`docs/MASTER_PROMPT_GROWTH_ENGINE.md` (globální objevování vítězů, vzorů a sektorů). Uživatel komunikuje česky.
 Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, data v jeho db dokumentech `stav/*`).
 
 ## Na začátku každé session — nejdřív stav, pak práce
@@ -25,11 +26,22 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
    `stockradar.universe.add_relationship`, `add_tracked_company`, `stockradar.catalysts.add_catalyst`,
    proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
-3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se třemi `set` z `data/web/stav_*.json`
-   s `if_version` (URL v `web/dashboard.json`).
+3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS), změna vah modelu, důležitá novinka.
    Nikdy neobchoduj a nic neslibuj („určitě +100 %“ je zakázáno, §37).
+
+## Globální objevování (Growth Engine, týdně v sobotu)
+
+- `python -m stockradar discover --universe --download` — seznamy firem (Nasdaq screener, ASX, JPX, Wikipedie),
+  5 let cen (Yahoo, ~13 000 firem, ~75 min), rakety, kontrolní skupina, test předvídatelnosti, příčiny z Google News,
+  sektorové vlny, kandidáti → `discovery_runs` + ledger (WATCH, zdroj DISCOVERY). Potom `python -m stockradar update`
+  (data pro web včetně `stav/objevy`) a zápis 4 dokumentů `stav/*` do artifactu.
+- Příkazy uživatele (§62 Growth Engine): „NAJDI VÍTĚZE“, „NAJDI VZORY“, „NAJDI NOVÝ SEKTOR“, „NAJDI DALŠÍ VÍTĚZE“,
+  „NAJDI SKRYTÉ VÍTĚZE“, „PROVEĎ GLOBAL DISCOVERY“, „NAJDI DALŠÍ NEBIUS“ — vycházej z posledního `discovery_runs`
+  (nebo spusť nový běh) a doplň ruční výzkum se zdroji. Příčiny z titulků jsou AUTO, dokud je neověříš.
+- Poctivost: vždy uváděj počty (firem, zemí, raket, titulků), základní četnost a kontrolu směru (rakety vs propady).
 
 ## Pravidla práce s daty
 

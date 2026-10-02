@@ -120,6 +120,33 @@ def cmd_update(args) -> int:
     return 0 if result["run_id"] else 1
 
 
+def cmd_discover(args) -> int:
+    from stockradar.discovery import cache as dcache
+    from stockradar.discovery import download, engine, listings, store
+
+    conn = _open()
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    if args.universe:
+        counts = listings.build_universe(cconn, log=log)
+        print("Seznam firem: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
+    if args.download:
+        print("Stahování cen:", download.run(log=log))
+    print("GLOBAL DISCOVERY …")
+    result = engine.run_discovery(cconn, news_events=args.news, news_winners=args.news_winners, log=log)
+    run_id = store.save_run(conn, result)
+    created, notes = store.record_candidates(conn, cconn, result, run_id)
+    export_state(conn, state_dir())
+    st = result["statistika"]
+    print(f"Běh #{run_id}: {st['firem_s_daty']} firem, {st['zemi']} zemí, {st['oboru']} oborů, "
+          f"rakety {st['rakety']}, titulků {st['dokumentu_titulku']}")
+    print(f"Do ledgeru zapsáno {len(created)} kandidátů.")
+    for n in notes:
+        print(f"  ! {n}")
+    print("Data pro web se obnoví při příštím `update`.")
+    return 0
+
+
 def cmd_status(args) -> int:
     conn = _open(create=False)
     now = utcnow()
@@ -237,6 +264,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("ledger", help="historický register predikcí (§28)").set_defaults(func=cmd_ledger)
     sub.add_parser("update", help="denní běh: ceny, vyhodnocení, učení, predikce, web (§54)").set_defaults(
         func=cmd_update)
+    p_disc = sub.add_parser("discover", help="globální objevování vítězů, vzorů a sektorů (Growth Engine)")
+    p_disc.add_argument("--universe", action="store_true", help="znovu stáhnout seznamy firem (USA, ASX, JPX, Wikipedie)")
+    p_disc.add_argument("--download", action="store_true", help="stáhnout/obnovit historii cen (dlouhé, ~1 h)")
+    p_disc.add_argument("--news", type=int, default=120, help="kolik raket vysvětlit ze zpráv")
+    p_disc.add_argument("--news-winners", type=int, default=40, help="kolik dnešních vítězů vysvětlit ze zpráv")
+    p_disc.set_defaults(func=cmd_discover)
     sub.add_parser("lessons", help="učební případy a poučení (§30, §31)").set_defaults(func=cmd_lessons)
     p_snap = sub.add_parser("snapshot", help="historický snapshot stavu (§53)")
     p_snap.add_argument("--label", default=None)

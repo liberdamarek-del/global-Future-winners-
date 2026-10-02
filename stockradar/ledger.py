@@ -77,6 +77,8 @@ class PredictionInput:
     benchmark_price: float | None = None
     p_rocket_pct: float | None = None
     model_run_id: int | None = None
+    source: str | None = None
+    discovery_run_id: int | None = None
 
 
 def record_prediction(
@@ -151,9 +153,9 @@ def record_prediction(
                 score_fundament, score_catalyst, score_catalyst_timing, score_upside, score_surprise,
                 score_financial_health, score_valuation, score_technical, score_dilution_risk,
                 score_execution_risk, score_rocket, score_overall_setup, model_version,
-                benchmark_symbol, benchmark_price, p_rocket_pct, model_run_id)
+                benchmark_symbol, benchmark_price, p_rocket_pct, model_run_id, source, discovery_run_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 mode, made_iso, made_iso if mode == "LIVE" else to_iso(now),
                 listing["company_id"], p.listing_id, p.horizon,
@@ -172,7 +174,7 @@ def record_prediction(
                 s["fundament"], s["catalyst"], s["catalyst_timing"], s["upside"], s["surprise"],
                 s["financial_health"], s["valuation"], s["technical"], s["dilution_risk"],
                 s["execution_risk"], s["rocket"], s["overall_setup"], __version__,
-                p.benchmark_symbol, p.benchmark_price, p.p_rocket_pct, p.model_run_id,
+                p.benchmark_symbol, p.benchmark_price, p.p_rocket_pct, p.model_run_id, p.source, p.discovery_run_id,
             ),
         )
     return cur.lastrowid

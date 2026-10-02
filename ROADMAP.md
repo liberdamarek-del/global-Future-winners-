@@ -27,12 +27,26 @@ Pořadí fází je nezávazné. Po každé fázi: testy, aktualizace PROJECT_STA
 | NRC, World Nuclear News, ANS, Utility Dive, tiskové zprávy | ruční ověřování v denní rutině |
 | XTB | není podmínka (rozhodnutí uživatele) |
 
+## Growth Engine (docs/MASTER_PROMPT_GROWTH_ENGINE.md)
+
+| Část | Stav |
+|---|---|
+| §2 vítězové 3/6/12/24 m, §3 globální dosah | **HOTOVO** (v0.3.0) — ~13 000 firem, ~30 zemí |
+| §6 příčiny, §15 text mining | **ČÁSTEČNĚ** — titulky Google News, klasifikace klíčovými slovy (AUTO); výroční zprávy zatím ne |
+| §8 kontrolní skupina, §9 před růstem, §41 backtest bez look-ahead | **HOTOVO** — case-control + test na populaci po datu tréninku |
+| §13–14 nové sektory | **ČÁSTEČNĚ** — vlny podle oborů + skupiny společného pohybu; R&D/patenty/VC/hiring nedostupné zdarma |
+| §5, §18–23 fundamenty (tržby, capex, backlog, marže) | BLOKOVÁNO — bez SEC (e-mail) a bez placených dat |
+| §37 pre-winner skóre, §38 too late, §45–47 why now / why not / změna názoru | **HOTOVO** (cenové a zprávové signály) |
+| §42 ledger 7/14/30/90/180/365 dní | **HOTOVO** |
+
 ## Další kroky
 
-1. Weekly report (§35) z `model_runs` a ledgeru.
-2. Biotech/ostatní sektory do radaru (ClinicalTrials.gov) — stejný model, jiný řetězec.
-3. Survivorship bias: přidat do backtestu i firmy, které z řetězce vypadly (delisting, krach).
-4. Po souhlasu uživatele zapnout SEC EDGAR → tržní kapitalizace a faktor ředění.
+1. Ruční ověřování příčin největších raket (týdenní rutina) → databáze mechanismů (§64).
+2. Weekly report (§35) z `model_runs`, `discovery_runs` a ledgeru.
+3. Survivorship bias: doplnit delistované firmy (zdroj zdarma zatím nenalezen).
+4. Signál z globálního modelu jako faktor energetického modelu (propojení modulů).
+5. Biotech větev (§26) přes ClinicalTrials.gov.
+6. Po souhlasu uživatele zapnout SEC EDGAR → tržní kapitalizace, ředění, tržby (§5, §20, §25).
 
 ## Připravené rozšíření schématu
 

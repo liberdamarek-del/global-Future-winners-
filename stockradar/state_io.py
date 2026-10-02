@@ -21,6 +21,7 @@ TABLES = (
     "catalysts",
     "model_versions",
     "model_runs",
+    "discovery_runs",
     "predictions",
     "prediction_outcomes",
     "status_changes",

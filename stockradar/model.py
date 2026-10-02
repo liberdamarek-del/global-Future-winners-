@@ -105,6 +105,7 @@ def load_universe(conn: sqlite3.Connection) -> Universe:
     members = [dict(r) for r in conn.execute(
         "SELECT l.yahoo_symbol AS symbol, l.company_id, l.currency, c.name FROM listings l"
         " JOIN companies c ON c.id = l.company_id WHERE l.yahoo_symbol IS NOT NULL AND l.valid_to IS NULL"
+        " AND EXISTS (SELECT 1 FROM company_chain cc WHERE cc.company_id = l.company_id)"
         " ORDER BY l.yahoo_symbol")]
     series = {m["symbol"]: load_series(conn, m["symbol"]) for m in members}
     series[config.BENCHMARK_SYMBOL] = load_series(conn, config.BENCHMARK_SYMBOL)

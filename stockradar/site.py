@@ -159,8 +159,11 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
             "katalyzator": p["catalyst_text"], "duvod": p["rationale"], "xtb": label(p["xtb_status"]),
             "data": p["price_freshness"], "aktualne": live,
             "vysledky": {str(n): {"vynos": o["return_pct"], "nad_spy": o["excess_return_pct"], "vysledek": o["result"],
+                                  "max": round((o["max_price"] / p["price"] - 1) * 100, 1) if o["max_price"] else None,
                                   "den": o["observed_at"][:10]} for n, o in outs.items()},
-            "uzavreno": 30 in outs,
+            "zdroj": "objevy" if p["source"] == "DISCOVERY" else "energie",
+            "horizont": p["horizon"],
+            "uzavreno": (365 if p["source"] == "DISCOVERY" else 30) in outs,
         })
     predikce = {"aktualizovano": to_iso(now), "predikce": preds, "presnost": aktualni["presnost"]}
 
@@ -191,10 +194,36 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
     return {"aktualni": aktualni, "predikce": predikce, "retezec": retezec}
 
 
+def build_discovery_doc(conn: sqlite3.Connection) -> dict | None:
+    """Dokument stav/objevy z posledního běhu globálního objevování + výsledky jeho predikcí v ledgeru."""
+    run = conn.execute("SELECT * FROM discovery_runs ORDER BY id DESC LIMIT 1").fetchone()
+    if run is None:
+        return None
+    doc = json.loads(run["result_json"])
+    doc["beh"] = {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"]}
+    doc["historie_behu"] = [{"id": r["id"], "kdy": r["run_at"], "statistika": json.loads(r["stats_json"])}
+                            for r in conn.execute("SELECT id, run_at, stats_json FROM discovery_runs ORDER BY id DESC LIMIT 10")]
+    rows = conn.execute(
+        "SELECT p.horizon, o.horizon_days, o.result, o.excess_return_pct, o.max_price, p.price FROM prediction_outcomes o"
+        " JOIN predictions p ON p.id = o.prediction_id WHERE p.source = 'DISCOVERY' AND p.mode = 'LIVE'").fetchall()
+    acc = []
+    for n in (7, 14, 30, 90, 180, 365):
+        sub = [r for r in rows if r["horizon_days"] == n]
+        rockets = [r for r in sub if r["max_price"] and r["max_price"] / r["price"] - 1 >= (0.30 if r["horizon"] == "D0_14" else 0.50)]
+        acc.append({"dni": n, "vyhodnoceno": len(sub), "porazilo_spy": sum(1 for r in sub if r["result"] == "HIT"),
+                    "raket": len(rockets)})
+    doc["presnost_ledger"] = acc
+    return doc
+
+
 def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
     sizes = {}
-    for name, doc in build_docs(conn, **kwargs).items():
+    docs = build_docs(conn, **kwargs)
+    discovery = build_discovery_doc(conn)
+    if discovery is not None:
+        docs["objevy"] = discovery
+    for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:
             raise ValueError(f"dokument {name} má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
