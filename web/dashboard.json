@@ -1,0 +1,11 @@
+{
+  "nazev": "Global Future Winners",
+  "url": "https://claude.ai/artifact/7REiC8eGK13wy4arKQb9Fn",
+  "stranka": "web/index.html",
+  "dokumenty": {
+    "stav/aktualni": "data/web/stav_aktualni.json",
+    "stav/predikce": "data/web/stav_predikce.json",
+    "stav/retezec": "data/web/stav_retezec.json"
+  },
+  "pravidla_db": "čtou všichni s přístupem (view), zapisuje jen vlastník/editor (admin)"
+}

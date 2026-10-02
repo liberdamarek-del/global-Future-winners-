@@ -9,12 +9,25 @@ nebo nástupem megatrendu. Nehledá firmy, které už vyrostly.
 
 > Nejde o investiční doporučení. Výstupy jsou pravděpodobnostní scénáře s explicitním rizikem (§37).
 
+## Webový přehled a denní běh
+
+Web je artifact na claude.ai (adresa v [web/dashboard.json](web/dashboard.json)). Každý všední den večer
+rutina spustí `python -m stockradar update`, krátký výzkum novinek a nahraje data do databáze stránky.
+
+| Krok | Co dělá |
+|---|---|
+| Ceny | Yahoo Finance chart API (zdarma): 46 firem z USA, Evropy, Japonska, Koreje a Kanady + S&P 500 (SPY) + kurzy |
+| Vyhodnocení | Každá predikce „za 30 dní lépe než S&P 500“ se po 7, 14 a 30 dnech označí HIT/MISS |
+| Učení | 9 faktorů (trend, přepálení, objem, volatilita, velikost, dohoda s Big Tech, katalyzátor…); váhy podle toho, co historicky fungovalo |
+| Predikce | TOP 5 se skóre ≥ 60 a šancí ≥ 50 %; MAIN PICK jen při skóre ≥ 70 a šanci ≥ 55 % |
+
 ## Rychlý start
 
 Python 3.11+, bez externích závislostí.
 
 ```bash
 python -m stockradar init       # pracovní DB v data/ se sestaví ze state/
+python -m stockradar update     # denní běh: ceny (Yahoo), vyhodnocení, učení modelu, predikce, data pro web
 python -m stockradar status     # radar, katalyzátory 0–14 dní, změny verdiktů, MAIN PICK
 python -m stockradar ledger     # historický register predikcí (§28)
 python -m stockradar lessons    # učební případy (§30, §31)
@@ -38,7 +51,7 @@ Git historie `state/predictions.jsonl` zároveň dokládá, že se historické p
 
 | Pravidlo | Kde | Co se stane při porušení |
 |---|---|---|
-| §5 XTB před doporučením (poučení XSPRAY) | DB trigger + `ledger.py` | Spekulativní BUY / MAIN PICK bez XTB kontroly `ANO` (max. 30 dní staré) se nezapíše |
+| §5 XTB (poučení XSPRAY) | `ledger.py`, volitelné | Od 2026-10-02 jen informativně (rozhodnutí uživatele); `REQUIRE_XTB_FOR_BUY = True` bránu zapne |
 | §2 nehonit proběhlé katalyzátory (poučení RARE) | `ledger.py` | BUY na katalyzátoru `IN_PROGRESS` / `OCCURRED` / s uplynulým datem se nezapíše |
 | §10 odhad ≠ fakt | DB CHECK + `catalysts.py` | Přesné datum jen s `VERIFIED` + zdrojem; odhad musí být okno od–do |
 | §29 ledger se nepřepisuje | DB triggery | `UPDATE` / `DELETE` predikce skončí chybou |

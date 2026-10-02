@@ -1,6 +1,7 @@
 # Pokyny pro každou novou session (§56, §63, §71)
 
 Projekt: Global Future Winners / Stock Radar. Specifikace: `docs/MASTER_PROMPT.md`. Uživatel komunikuje česky.
+Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, data v jeho db dokumentech `stav/*`).
 
 ## Na začátku každé session — nejdřív stav, pak práce
 
@@ -8,13 +9,35 @@ Projekt: Global Future Winners / Stock Radar. Specifikace: `docs/MASTER_PROMPT.m
 2. Spusť `python -m stockradar init && python -m stockradar status` a `python -m stockradar ledger`.
 3. Pokud stav nejde načíst, řekni to uživateli otevřeně. Nikdy si nevymýšlej předchozí výsledky.
 
+## Rozhodnutí uživatele (2026-10-02)
+
+- Jen **bezplatné** zdroje dat. Placené API nepoužívat.
+- **XTB není povinná podmínka** doporučení (stav se jen informativně zapisuje; `config.REQUIRE_XTB_FOR_BUY = False`).
+- Fokus: řetězec AI → elektřina → jádro (SMR, palivo) → fúze → síť; dohody Google a dalších Big Tech; raketový potenciál.
+- Web se aktualizuje denně, ukazuje staré predikce a jejich vyhodnocení; model se sám přeučuje podle výsledků.
+
+## Denní úloha (rutina, po–pá večer)
+
+1. `git pull origin ccr-07430f55-or3jhd`, pak `python -m stockradar init` a `python -m stockradar update`
+   (ceny z Yahoo, vyhodnocení predikcí +7/+14/+30 dní, učení modelu, nové predikce, export `state/`, data pro web).
+2. Krátký výzkum (WebSearch): novinky u firem s katalyzátorem do 45 dní; nové energetické dohody Google,
+   Microsoft, Amazon, Meta; nová IPO v řetězci. Zapisuj JEN ověřené se zdrojem (URL) a datem:
+   `stockradar.universe.add_relationship`, `add_tracked_company`, `stockradar.catalysts.add_catalyst`,
+   proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
+   Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
+3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se třemi `set` z `data/web/stav_*.json`
+   s `if_version` (URL v `web/dashboard.json`).
+4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
+5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS), změna vah modelu, důležitá novinka.
+   Nikdy neobchoduj a nic neslibuj („určitě +100 %“ je zakázáno, §37).
+
 ## Pravidla práce s daty
 
 - Do DB zapisuj jen ověřené údaje se zdrojem a časovou značkou. Neověřené = `NEOVERENO`.
 - Datum katalyzátoru: přesné jen `VERIFIED` se zdrojem; jinak `ESTIMATED`/`UNCERTAIN` s oknem.
-- Před každým `SPEC_BUY` / MAIN PICK zapiš XTB kontrolu (`record_xtb_check`) — DB jinak predikci odmítne.
 - Historické predikce se nikdy nemění. Nový názor = nová predikce nebo `change_status` s důvodem.
 - Po změnách přes Python API spusť `python -m stockradar export` a commitni `state/`.
+- SEC EDGAR je vypnutý: vyžaduje kontaktní e-mail v User-Agent. E-mail uživatele bez jeho výslovného souhlasu nepoužívat.
 - Příkazy „AKTUALIZACE“, „NAJDI RAKETU NA 14 DNÍ“, „NAJDI DALŠÍ NVIDIA“, „NAJDI DALŠÍ CAPR“ jsou definovány v §73–§76.
 
 ## Pravidla vývoje
@@ -23,3 +46,4 @@ Projekt: Global Future Winners / Stock Radar. Specifikace: `docs/MASTER_PROMPT.m
 - Schéma se mění jen novou migrací `stockradar/migrations/NNNN_*.sql`; existující migrace nepřepisuj.
 - Po změně: `python -m pytest`, aktualizuj `PROJECT_STATE.md` a `CHANGELOG.md`, zvyš `__version__`.
 - Moduly ve stavu HOTOVO nepřepisuj bez důvodu, testu a záznamu v CHANGELOG (§65).
+- Změna stránky: uprav `web/index.html` a publikuj ho na URL z `web/dashboard.json` (stejná adresa).

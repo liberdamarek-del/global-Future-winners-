@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import pytest
 
+from stockradar import config
 from stockradar.catalysts import add_catalyst, set_catalyst_status
 from stockradar.companies import record_xtb_check
 from stockradar.ledger import (
@@ -21,6 +22,12 @@ def make_input(listing_id, **overrides):
         scores=Scores(overall_setup=88, rocket=80),
     )
     return replace(base, **overrides)
+
+
+@pytest.fixture
+def xtb_required(monkeypatch):
+    """Brána XTB je od 2026-10-02 vypnutá (rozhodnutí uživatele); tyto testy ji zapínají."""
+    monkeypatch.setattr(config, "REQUIRE_XTB_FOR_BUY", True)
 
 
 def xtb_ok(conn, listing_id, days_ago=1):
@@ -58,21 +65,21 @@ def test_live_prediction_cannot_be_backdated(conn, listing):
 
 
 @pytest.mark.parametrize("overrides", [{"verdict": "SPEC_BUY"}, {"is_main_pick": True}])
-def test_buy_without_xtb_check_is_refused(conn, listing, overrides):
+def test_buy_without_xtb_check_is_refused(conn, listing, xtb_required, overrides):
     """§5 + poučení XSPRAY."""
     _, listing_id = listing
     with pytest.raises(LedgerRuleError, match="XTB NEOVĚŘENO"):
         record_prediction(conn, make_input(listing_id, **overrides), now=NOW)
 
 
-def test_buy_not_available_on_xtb_is_refused(conn, listing):
+def test_buy_not_available_on_xtb_is_refused(conn, listing, xtb_required):
     _, listing_id = listing
     record_xtb_check(conn, listing_id, "NE", source="xStation search", checked_at=NOW - timedelta(days=1))
     with pytest.raises(LedgerRuleError, match="NOT AVAILABLE ON XTB"):
         record_prediction(conn, make_input(listing_id, verdict="SPEC_BUY"), now=NOW)
 
 
-def test_buy_with_stale_xtb_check_is_refused(conn, listing):
+def test_buy_with_stale_xtb_check_is_refused(conn, listing, xtb_required):
     _, listing_id = listing
     xtb_ok(conn, listing_id, days_ago=45)
     with pytest.raises(LedgerRuleError, match="ověř znovu"):
@@ -88,16 +95,18 @@ def test_buy_with_fresh_xtb_check_is_recorded(conn, listing):
     assert tuple(row) == ("ANO", "STOCK", check_id)
 
 
-def test_xtb_gate_cannot_be_bypassed_with_raw_sql(conn, listing):
-    company_id, listing_id = listing
-    with pytest.raises(sqlite3.IntegrityError, match="§5"):
-        with conn:
-            conn.execute(
-                "INSERT INTO predictions (mode, made_at, recorded_at, company_id, listing_id, horizon, price,"
-                " currency, price_as_of, price_source, price_freshness, category, verdict, xtb_status,"
-                " rationale, model_version) VALUES ('LIVE', ?, ?, ?, ?, 'D0_14', 1, 'USD', ?, 'x', 'FRESH',"
-                " 'A', 'SPEC_BUY', 'ANO', 'x', 'test')",
-                ("2026-10-02T12:00:00Z",) * 2 + (company_id, listing_id, "2026-10-02T12:00:00Z"))
+def test_buy_without_xtb_allowed_by_default(conn, listing):
+    """Rozhodnutí uživatele 2026-10-02: XTB jen informativně — doporučení se zapíše s XTB = NEOVĚŘENO."""
+    assert config.REQUIRE_XTB_FOR_BUY is False
+    _, listing_id = listing
+    pid = record_prediction(conn, make_input(listing_id, verdict="SPEC_BUY", is_main_pick=True), now=NOW)
+    assert conn.execute("SELECT xtb_status FROM predictions WHERE id = ?", (pid,)).fetchone()[0] == "NEOVERENO"
+
+
+def test_xtb_db_trigger_removed_by_migration_0002(conn):
+    names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'trigger'")}
+    assert "predictions_xtb_gate" not in names
+    assert {"predictions_no_update", "predictions_no_delete"} <= names
 
 
 @pytest.mark.parametrize("status", ["OCCURRED", "IN_PROGRESS", "CANCELLED"])
@@ -142,7 +151,7 @@ def test_backtest_cannot_use_information_from_the_future(conn, listing):
                           mode="BACKTEST", made_at=made_at, now=NOW)
 
 
-def test_backtest_uses_xtb_state_known_at_that_time(conn, listing):
+def test_backtest_uses_xtb_state_known_at_that_time(conn, listing, xtb_required):
     _, listing_id = listing
     xtb_ok(conn, listing_id, days_ago=1)  # ověřeno až 1. 10.
     made_at = NOW - timedelta(days=20)

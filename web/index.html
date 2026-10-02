@@ -1,0 +1,404 @@
+<title>Global Future Winners</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: control-room board — a status strip, then stacked "panels" read top-down:
+   main pick → today's candidates → prediction ledger → value chain → catalysts → model learning → full radar → sources. */
+:root {
+  --bg: #F1F3F2; --panel: #FFFFFF; --ink: #10181C; --muted: #56656C; --line: #D6DEDF; --chip: #E6ECEC;
+  --accent: #0B6E99; --accent-ink: #FFFFFF; --glow: #D9EEF6;
+  --hit: #1D7A46; --hit-bg: #E2F3E8; --miss: #B23A2E; --miss-bg: #F8E4E1; --warn: #8A5D00; --warn-bg: #FBF0D6;
+  --bar: #C9D6D8;
+  --f-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0C1215; --panel: #131C20; --ink: #E3ECEE; --muted: #8FA2A8; --line: #24333A; --chip: #1D2A30;
+  --accent: #4FB6E3; --accent-ink: #0C1215; --glow: #12303D;
+  --hit: #5CC98A; --hit-bg: #173323; --miss: #F07E70; --miss-bg: #3A1F1B; --warn: #E3B04B; --warn-bg: #3A2E14;
+  --bar: #2C3D44; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0C1215; --panel: #131C20; --ink: #E3ECEE; --muted: #8FA2A8; --line: #24333A; --chip: #1D2A30;
+  --accent: #4FB6E3; --accent-ink: #0C1215; --glow: #12303D;
+  --hit: #5CC98A; --hit-bg: #173323; --miss: #F07E70; --miss-bg: #3A1F1B; --warn: #E3B04B; --warn-bg: #3A2E14;
+  --bar: #2C3D44; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 56px; display: grid; gap: 20px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font: 800 2.4rem/1 var(--f-display); letter-spacing: 0.01em; text-transform: uppercase; }
+h2 { font: 700 1.55rem/1.1 var(--f-display); letter-spacing: 0.02em; text-transform: uppercase; }
+h3 { font-size: 1.02rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); }
+.muted { color: var(--muted); } .small { font-size: 0.86rem; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+header.top { display: grid; gap: 10px; }
+.titleline { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; }
+.status { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.88rem; color: var(--muted); }
+nav.jump { display: flex; flex-wrap: wrap; gap: 6px; }
+nav.jump a { text-decoration: none; font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; background: var(--chip); color: var(--ink); }
+nav.jump a:hover, nav.jump a:focus-visible { background: var(--glow); }
+.steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel > header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; background: var(--chip); color: var(--ink); max-width: 100%; }
+.chip.ok, .chip.hit { background: var(--hit-bg); color: var(--hit); }
+.chip.err, .chip.miss { background: var(--miss-bg); color: var(--miss); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.acc { background: var(--accent); color: var(--accent-ink); }
+.notice { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 12px; font-size: 0.92rem; }
+.empty { border: 1px dashed var(--line); border-radius: 8px; padding: 16px; color: var(--muted); }
+.pick { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+.big { font: 800 2.2rem/1 var(--f-display); }
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card .head { display: flex; gap: 8px; justify-content: space-between; align-items: baseline; }
+.card .tick { font: 700 1.35rem/1 var(--f-display); letter-spacing: 0.02em; }
+.meter { position: relative; height: 8px; border-radius: 4px; background: var(--bar); overflow: hidden; }
+.meter i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; }
+.meter::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 0.9rem; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; text-align: right; font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.reasons { display: grid; gap: 3px; font-size: 0.82rem; }
+.reason { display: grid; grid-template-columns: minmax(0, 1fr) 70px 46px; gap: 8px; align-items: center; }
+.reason .b { height: 6px; border-radius: 3px; background: var(--bar); position: relative; }
+.reason .b i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.reason .b i.p { left: 50%; background: var(--hit); } .reason .b i.n { right: 50%; background: var(--miss); }
+ul.facts { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; font-size: 0.84rem; }
+.pos { color: var(--hit); } .neg { color: var(--miss); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+th button.sort { all: unset; cursor: pointer; } th button.sort:focus-visible { outline: 2px solid var(--accent); }
+td.r, th.r { text-align: right; }
+.stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.stat { display: grid; gap: 2px; border-left: 3px solid var(--line); padding-left: 10px; }
+.stat .v { font-family: var(--f-num); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.chain { display: grid; gap: 8px; }
+.layer { display: grid; gap: 8px; grid-template-columns: 120px minmax(0, 1fr); align-items: start; }
+.layer .lname { font: 700 1rem/1.1 var(--f-display); text-transform: uppercase; color: var(--muted); padding-top: 8px; }
+.nodes { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.node { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 6px; background: var(--bg); }
+.node .co { display: flex; flex-wrap: wrap; gap: 4px; }
+.node .co span { font-family: var(--f-num); font-size: 0.76rem; padding: 1px 6px; border-radius: 4px; background: var(--chip); }
+.node .co span.hot { background: var(--accent); color: var(--accent-ink); }
+.arrow { text-align: center; color: var(--muted); font-size: 0.85rem; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+details summary { cursor: pointer; font-weight: 600; }
+@media (max-width: 640px) { .layer { grid-template-columns: 1fr; } h1 { font-size: 1.9rem; } }
+@media (prefers-reduced-motion: no-preference) { nav.jump a { transition: background .15s } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="titleline">
+      <div>
+        <h1>Global Future Winners</h1>
+        <p class="muted">Radar firem v řetězci AI → elektřina → jádro a fúze. Každý den nové ceny, vyhodnocení starých predikcí a přeučení modelu.</p>
+      </div>
+      <div class="status" id="status"><span>Načítám data…</span></div>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div id="warnings"></div>
+    <nav class="jump" aria-label="Sekce">
+      <a href="#tip">Hlavní tip</a><a href="#kandidati">Kandidáti</a><a href="#predikce">Predikce a výsledky</a>
+      <a href="#retezec">Řetězec a dohody</a><a href="#katalyzatory">Katalyzátory</a><a href="#model">Jak se model učí</a>
+      <a href="#radar">Celý radar</a><a href="#zdroje">Zdroje</a>
+    </nav>
+  </header>
+
+  <section class="panel" id="tip" aria-labelledby="h-tip">
+    <header><h2 id="h-tip">Hlavní tip</h2><span class="small muted">Jen když skóre ≥ 70 a šance porazit S&amp;P 500 ≥ 55 %.</span></header>
+    <div id="main-pick"><div class="empty">Data se načítají.</div></div>
+  </section>
+
+  <section class="panel" id="kandidati" aria-labelledby="h-cand">
+    <header><h2 id="h-cand">Kandidáti dnes</h2><span class="small muted">Seřazeno podle skóre modelu. Šance a pohyby jsou na 30 dní vůči S&amp;P 500.</span></header>
+    <div class="cards" id="cards"><div class="empty">Kandidáti se objeví po prvním denním běhu modelu.</div></div>
+  </section>
+
+  <section class="panel" id="predikce" aria-labelledby="h-pred">
+    <header><h2 id="h-pred">Predikce a výsledky</h2><span class="small muted">Každá predikce zní: „za 30 dní lépe než S&amp;P 500“. Původní predikce se nikdy nepřepisuje.</span></header>
+    <div class="stats" id="accuracy"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Datum</th><th>Firma</th><th class="r">Cena</th><th class="r">Skóre</th><th class="r">Šance</th><th class="r">Čekáno</th><th class="r">+7 d</th><th class="r">+14 d</th><th class="r">+30 d</th><th class="r">Teď vs S&amp;P</th></tr></thead>
+      <tbody id="pred-rows"><tr><td colspan="10" class="muted">Data se načítají…</td></tr></tbody>
+    </table></div>
+    <p class="small muted">HIT = akcie za dané období porazila S&amp;P 500, MISS = nepovedlo se. Výsledky se doplňují samy po 7, 14 a 30 dnech.</p>
+  </section>
+
+  <section class="panel" id="retezec" aria-labelledby="h-chain">
+    <header><h2 id="h-chain">Řetězec AI → elektřina</h2><span class="small muted">Kdo na kom závisí. Zvýrazněné tickery mají dnes skóre ≥ 60.</span></header>
+    <div class="chain" id="chain"><div class="empty">Data se načítají.</div></div>
+    <h3>Dohody velkých technologických firem</h3>
+    <div class="controls">
+      <label for="deal-filter" class="small muted">Kupující</label>
+      <select id="deal-filter"><option value="">Všichni</option></select>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Datum</th><th>Kupující</th><th>Firma / projekt</th><th>Typ</th><th class="r">MW</th><th>Závaznost</th><th>Co</th><th>Zdroj</th></tr></thead>
+      <tbody id="deals"></tbody>
+    </table></div>
+    <div id="preipo"></div>
+  </section>
+
+  <section class="panel" id="katalyzatory" aria-labelledby="h-cat">
+    <header><h2 id="h-cat">Katalyzátory</h2><span class="small muted">Přesné datum jen s ověřeným zdrojem. Odhad je vždy označen jako odhad.</span></header>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Kdy</th><th>Jistota</th><th>Firma</th><th>Událost</th><th>Zdroj</th></tr></thead>
+      <tbody id="cats"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel" id="model" aria-labelledby="h-model">
+    <header><h2 id="h-model">Jak se model učí</h2><span class="small muted" id="model-ver"></span></header>
+    <p id="model-note" class="small"></p>
+    <div class="stats" id="oos"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Faktor</th><th class="r">Původní odhad</th><th class="r">Váha teď</th><th class="r">IC z historie</th><th class="r">t-stat</th><th class="r">Podíl dat</th><th>Proč</th></tr></thead>
+      <tbody id="weights"></tbody>
+    </table></div>
+    <details class="small">
+      <summary>Kalibrace: co znamená skóre</summary>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Skóre</th><th class="r">Případů</th><th class="r">Porazila S&amp;P</th><th class="r">Raketa ≥ +20 %</th><th class="r">Průměr vs S&amp;P</th><th class="r">Horší 20 %</th><th class="r">Lepší 20 %</th></tr></thead>
+        <tbody id="calib"></tbody>
+      </table></div>
+      <p class="muted">Kalibrace je spočítaná na stejné historii, na které se model učil, a firmy jsou vybrané dnešním výzkumem. Proto je optimistická. Skutečnou přesnost ukazuje jen sekce Predikce a výsledky.</p>
+    </details>
+    <details class="small">
+      <summary>Historie verzí modelu</summary>
+      <ul class="facts" id="history"></ul>
+    </details>
+  </section>
+
+  <section class="panel" id="radar" aria-labelledby="h-radar">
+    <header><h2 id="h-radar">Celý radar</h2><span class="small muted">Klikni na záhlaví sloupce pro řazení.</span></header>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Hledat ticker nebo firmu" aria-label="Hledat ticker nebo firmu">
+      <select id="seg" aria-label="Článek řetězce"><option value="">Všechny články řetězce</option></select>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr id="radar-head"></tr></thead>
+      <tbody id="radar-rows"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel" id="zdroje" aria-labelledby="h-src">
+    <header><h2 id="h-src">Zdroje dat zdarma</h2></header>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Zdroj</th><th>Co poskytuje</th><th>Stav</th></tr></thead>
+      <tbody id="sources"></tbody>
+    </table></div>
+    <p class="small muted">Nejde o investiční doporučení. Model hledá pravděpodobnostní výhody a často se mýlí — proto se každá predikce veřejně vyhodnocuje. Neinvestuj peníze, jejichž ztrátu neuneseš.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  const url = (u) => /^https:\/\//.test(String(u || "")) ? esc(u) : "#";
+  const fmt = (v, d = 1) => (v === null || v === undefined || isNaN(v)) ? "–" : Number(v).toLocaleString("cs-CZ", {minimumFractionDigits: d, maximumFractionDigits: d});
+  const pct = (v, d = 0) => (v === null || v === undefined) ? "–" : fmt(v * 100, d) + " %";
+  const sgn = (v, d = 1) => (v === null || v === undefined || isNaN(v)) ? "–" : (v > 0 ? "+" : "") + fmt(v, d) + " %";
+  const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  const praha = (iso) => { try { return new Date(iso).toLocaleString("cs-CZ", {timeZone: "Europe/Prague", day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"}); } catch (e) { return iso; } };
+  const den = (iso) => { try { return new Date(iso).toLocaleDateString("cs-CZ", {timeZone: "Europe/Prague"}); } catch (e) { return iso; } };
+  const price = (v, cur) => (cur === "GBp" ? fmt(v, 0) + " p" : fmt(v, v >= 1000 ? 0 : 2) + " " + esc(cur || ""));
+  const stepChip = (name, state) => {
+    const s = String(state || "");
+    const k = s.startsWith("DONE") ? "ok" : s.startsWith("CHYBA") ? "err" : "warn";
+    return `<span class="chip ${k}" title="${esc(s)}">${esc(name)}: ${esc(s.split(" ")[0])}</span>`;
+  };
+  const DEAL_TYPES = {PPA: "smlouva o odběru", INVESTMENT: "investice", ACQUISITION: "akvizice", DEVELOPMENT_FUNDING: "financování vývoje", MERGER: "fúze firem", TARIFF_SUBSCRIPTION: "předplatné výkonu", PARTNERSHIP: "partnerství", SUPPLY: "dodávka", GOVERNMENT_AWARD: "státní zakázka"};
+  const BINDING = {FIRM: ["pevná", "ok"], FRAMEWORK: ["rámcová", "warn"], OPTION: ["opce", "warn"], PENDING: ["čeká na schválení", "warn"], NEOVERENO: ["neověřeno", "warn"]};
+
+  let A = null, P = null, R = null;
+  let sortKey = "poradi", sortDir = 1;
+  try { const s = JSON.parse(localStorage.getItem("gfw_sort") || "null"); if (s) { sortKey = s.k; sortDir = s.d; } } catch (e) {}
+
+  function renderTop() {
+    if (!A) return;
+    $("status").innerHTML = `<span>Aktualizováno <b class="num">${esc(praha(A.aktualizovano))}</b></span><span>Ceny do <span class="num">${esc(den(A.den_dat))}</span></span><span>Model v${esc(A.model && A.model.verze)}</span>`;
+    $("steps").innerHTML = Object.entries(A.kroky || {}).map(([k, v]) => stepChip(k, v)).join("");
+    $("warnings").innerHTML = (A.varovani || []).slice(0, 6).map((w) => `<div class="notice">⚠ ${esc(w)}</div>`).join("");
+    const mp = A.main_pick;
+    $("main-pick").innerHTML = mp ? `<div class="pick">
+        <div><span class="label">Firma</span><div class="big">${esc(mp.ticker)}</div><p>${esc(mp.nazev)}</p><p class="small muted">Tip z ${esc(praha(mp.datum))} za ${price(mp.cena, mp.mena)}</p></div>
+        <dl class="kv"><dt>Šance porazit S&amp;P 500</dt><dd>${fmt(mp.p_beat, 0)} %</dd><dt>Šance na +20 % (raketa)</dt><dd>${fmt(mp.p_rocket, 0)} %</dd>
+          <dt>Čekaný pohyb vs S&amp;P</dt><dd>${sgn(mp.nadvynos)}</dd><dt>Dobrý scénář</dt><dd class="pos">${sgn(mp.bull)}</dd><dt>Špatný scénář</dt><dd class="neg">${sgn(mp.bear)}</dd></dl>
+        <div class="small"><p>${esc(mp.duvod)}</p>${mp.katalyzator ? `<p><b>Katalyzátor:</b> ${esc(mp.katalyzator)} (${esc(mp.katalyzator_datum)})</p>` : ""}<p class="muted"><b>Riziko:</b> ${esc(mp.riziko)}</p></div>
+      </div>`
+      : `<div class="empty"><b>MAIN PICK: ŽÁDNÝ.</b> Dnes žádná firma nesplnila přísnější podmínky hlavního tipu. Je lepší nemít tip než vytvořit slabý tip. Slabší kandidáty najdeš níže.</div>`;
+  }
+
+  function reasonRows(list) {
+    const max = Math.max(1, ...list.map((r) => Math.abs(r.body)));
+    return list.map((r) => {
+      const w = Math.min(50, Math.abs(r.body) / max * 50);
+      return `<div class="reason"><span>${esc(r.faktor)}</span><span class="b"><i class="${r.body >= 0 ? "p" : "n"}" style="width:${w}%"></i></span><span class="num r ${cls(r.body)}">${r.body > 0 ? "+" : ""}${fmt(r.body, 1)}</span></div>`;
+    }).join("");
+  }
+
+  function renderCards() {
+    if (!A) return;
+    const list = A.kandidati || [];
+    if (!list.length) { $("cards").innerHTML = `<div class="empty">Kandidáti se objeví po prvním denním běhu modelu.</div>`; return; }
+    $("cards").innerHTML = list.map((k) => `<article class="card">
+      <div class="head"><div><div class="tick">${esc(k.ticker)}</div><div class="small">${esc(k.nazev)}</div></div>
+        <div style="text-align:right"><div class="num" style="font-size:1.3rem;font-weight:600">${fmt(k.skore, 0)}</div><div class="label">skóre #${esc(k.poradi)}</div></div></div>
+      <div class="meter" role="img" aria-label="Skóre ${fmt(k.skore, 0)} ze 100"><i style="width:${Math.max(0, Math.min(100, k.skore))}%"></i></div>
+      <div class="small">${(k.retezec || []).map((n) => `<span class="chip">${esc(n)}</span>`).join(" ")} ${k.data === "STALE" ? '<span class="chip warn">DATA STALE</span>' : ""}</div>
+      <dl class="kv"><dt>Cena (${esc(den(k.den))})</dt><dd>${price(k.cena, k.mena)}</dd>
+        <dt>20 dní / 120 dní</dt><dd><span class="${cls(k.zmena_20d)}">${sgn(k.zmena_20d)}</span> / <span class="${cls(k.zmena_120d)}">${sgn(k.zmena_120d)}</span></dd>
+        <dt>Šance porazit S&amp;P 500</dt><dd>${pct(k.p_beat)}</dd><dt>Šance na +20 % (raketa)</dt><dd>${pct(k.p_rocket)}</dd>
+        <dt>Rozpětí vs S&amp;P (20–80 %)</dt><dd>${sgn(k.q20 * 100)} až ${sgn(k.q80 * 100)}</dd></dl>
+      <div class="reasons"><span class="label">Proč takové skóre</span>${reasonRows(k.duvody || [])}</div>
+      ${(k.bigtech || []).length ? `<div><span class="label">Dohody</span><ul class="facts">${k.bigtech.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>` : ""}
+      ${(k.katalyzatory || []).length ? `<div><span class="label">Katalyzátory</span><ul class="facts">${k.katalyzatory.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>` : ""}
+      ${k.poznamka ? `<p class="small muted">${esc(k.poznamka)}</p>` : ""}
+    </article>`).join("");
+  }
+
+  function outcomeCell(o) {
+    if (!o) return `<td class="r muted">čeká</td>`;
+    return `<td class="r"><span class="chip ${o.vysledek === "HIT" ? "hit" : "miss"}">${esc(o.vysledek)}</span><div class="num small ${cls(o.nad_spy)}">${sgn(o.nad_spy)}</div></td>`;
+  }
+
+  function renderPreds() {
+    const data = P || {};
+    const acc = (data.presnost || (A && A.presnost) || []);
+    $("accuracy").innerHTML = acc.map((a) => `<div class="stat"><span class="label">Po ${esc(a.dni)} dnech</span>
+      <span class="v">${a.vyhodnoceno ? fmt(a.uspesnost * 100, 0) + " %" : "–"}</span>
+      <span class="small muted">${a.vyhodnoceno ? `${a.uspesnych} z ${a.vyhodnoceno} porazilo S&amp;P, průměr ${sgn(a.prumer_nad_spy)}` : "zatím nic vyhodnoceno"}</span></div>`).join("");
+    const list = data.predikce || [];
+    $("pred-rows").innerHTML = list.length ? list.map((p) => `<tr>
+      <td class="num">${esc(den(p.datum))}</td>
+      <td><b>${esc(p.ticker)}</b>${p.main_pick ? ' <span class="chip acc">hlavní tip</span>' : ""}<div class="small muted">${esc(p.nazev)}</div></td>
+      <td class="r num">${price(p.cena, p.mena)}${p.data === "STALE" ? '<div class="small"><span class="chip warn">cena ze závěrky</span></div>' : ""}</td>
+      <td class="r num">${esc(p.skore)}</td><td class="r num">${fmt(p.p_beat, 0)} %</td><td class="r num">${sgn(p.nadvynos)}</td>
+      ${outcomeCell((p.vysledky || {})["7"])}${outcomeCell((p.vysledky || {})["14"])}${outcomeCell((p.vysledky || {})["30"])}
+      <td class="r num ${cls(p.aktualne && p.aktualne.nad_spy)}">${p.aktualne && !p.uzavreno ? sgn(p.aktualne.nad_spy) : p.uzavreno ? "uzavřeno" : "–"}</td></tr>`).join("")
+      : `<tr><td colspan="10" class="muted">Zatím žádná predikce.</td></tr>`;
+  }
+
+  function renderChain() {
+    if (!R) return;
+    const scores = {};
+    (A && A.vsechny || []).forEach((v) => { scores[v.ticker] = v.skore; });
+    const layers = {};
+    (R.uzly || []).forEach((u) => { (layers[u.vrstva] = layers[u.vrstva] || []).push(u); });
+    const LN = {1: "Poptávka", 2: "Elektřina a síť dnes", 3: "Jádro a palivo", 4: "Fúze"};
+    $("chain").innerHTML = Object.keys(layers).sort().map((l, i) => `${i ? '<div class="arrow" aria-hidden="true">▼ potřebuje</div>' : ""}
+      <div class="layer"><div class="lname">${esc(LN[l] || "Vrstva " + l)}</div><div class="nodes">${layers[l].map((u) => `<div class="node">
+        <h3>${esc(u.nazev)}</h3><p class="small muted">${esc(u.popis)} <span class="chip">${esc(u.horizont)}</span></p>
+        <div class="co">${(u.firmy || []).map((f) => f.ticker ? `<span class="${(scores[f.ticker] || 0) >= 60 ? "hot" : ""}" title="${esc(f.nazev)}${scores[f.ticker] !== undefined ? " · skóre " + fmt(scores[f.ticker], 0) : ""}">${esc(f.ticker)}</span>` : `<span title="${esc(f.nazev)}">${esc(f.nazev)} (před IPO)</span>`).join("") || (l == 1 ? "<span>Google · Microsoft · Amazon · Meta</span>" : "")}</div>
+      </div>`).join("")}</div></div>`).join("");
+    const buyers = [...new Set((R.dohody || []).map((d) => d.kdo))].sort();
+    const sel = $("deal-filter"), cur = sel.value;
+    sel.innerHTML = `<option value="">Všichni</option>` + buyers.map((b) => `<option ${b === cur ? "selected" : ""}>${esc(b)}</option>`).join("");
+    renderDeals();
+    const pre = R.pre_ipo || [];
+    $("preipo").innerHTML = pre.length ? `<h3>Před vstupem na burzu</h3><ul class="facts">${pre.map((p) => `<li><b>${esc(p.nazev)}</b> — ${esc(p.poznamka)}</li>`).join("")}</ul>` : "";
+  }
+
+  function renderDeals() {
+    if (!R) return;
+    const f = $("deal-filter").value;
+    $("deals").innerHTML = (R.dohody || []).filter((d) => !f || d.kdo === f).map((d) => {
+      const b = BINDING[d.zavaznost] || [d.zavaznost, "warn"];
+      return `<tr><td class="num">${esc(den(d.datum))}</td><td><b>${esc(d.kdo)}</b></td>
+        <td>${esc(d.s_kym)}${d.ticker ? ` <span class="chip">${esc(d.ticker)}</span>` : ' <span class="small muted">(neobchodovaná)</span>'}</td>
+        <td>${esc(DEAL_TYPES[d.typ] || d.typ)}</td><td class="r num">${d.mw ? fmt(d.mw, 0) : "–"}</td>
+        <td><span class="chip ${b[1]}">${esc(b[0])}</span></td><td class="small">${esc(d.popis)}</td>
+        <td class="small"><a href="${url(d.url)}" target="_blank" rel="noopener">${esc(d.zdroj)}</a></td></tr>`;
+    }).join("");
+  }
+
+  function renderCats() {
+    if (!A) return;
+    const list = A.katalyzatory || [];
+    $("cats").innerHTML = list.length ? list.map((k) => `<tr><td class="num">${esc(k.datum)}${k.brzy ? ' <span class="chip acc">do 60 dní</span>' : ""}</td>
+      <td><span class="chip ${k.jistota === "VERIFIED" ? "ok" : "warn"}">${esc(k.jistota)}</span></td>
+      <td><b>${esc(k.ticker || "")}</b> <span class="small muted">${esc(k.firma)}</span></td><td>${esc(k.popis)}</td>
+      <td class="small"><a href="${url(k.url)}" target="_blank" rel="noopener">${esc(k.zdroj)}</a></td></tr>`).join("")
+      : `<tr><td colspan="5" class="muted">Žádné otevřené katalyzátory.</td></tr>`;
+  }
+
+  function renderModel() {
+    if (!A || !A.model) return;
+    const md = A.model, o = md.mimo_vzorek || {};
+    $("model-ver").textContent = `Verze ${md.verze} z ${den(md.vytvoreno)} · učení na ${md.trenink} · ${fmt(md.vzorku, 0)} případů`;
+    $("model-note").innerHTML = `<b>Dnes:</b> ${esc(md.dnes)} <span class="muted">Poslední změna vah: ${esc(md.duvod_verze)}</span>`;
+    $("oos").innerHTML = o.ic !== undefined && o.ic !== null ? `
+      <div class="stat"><span class="label">Test mimo vzorek</span><span class="v">${esc(o.obdobi)}</span><span class="small muted">váhy naučené jen na starších datech</span></div>
+      <div class="stat"><span class="label">Korelace skóre s výsledkem</span><span class="v">${fmt(o.ic, 3)}</span><span class="small muted">IC; nad 0,05 je užitečné</span></div>
+      <div class="stat"><span class="label">TOP 5 porazilo S&amp;P</span><span class="v">${pct(o.top5_uspesnost)}</span><span class="small muted">z ${esc(o.vzorku)} případů</span></div>
+      <div class="stat"><span class="label">TOP 5 průměr vs S&amp;P</span><span class="v ${cls(o.top5_prumer_nad_spy)}">${sgn(o.top5_prumer_nad_spy * 100)}</span><span class="small muted">za 30 dní</span></div>`
+      : `<div class="empty">${esc(o.poznamka || "Test mimo vzorek zatím není k dispozici.")}</div>`;
+    $("weights").innerHTML = (md.vahy || []).map((w) => `<tr><td><b>${esc(w.nazev)}</b></td><td class="r num">${fmt(w.prior, 2)}</td>
+      <td class="r num"><b>${fmt(w.vaha, 2)}</b></td><td class="r num ${cls(w.ic)}">${fmt(w.ic, 3)}</td><td class="r num">${fmt(w.t, 1)}</td>
+      <td class="r num">${pct(w.podil_dat)}</td><td class="small muted">${esc(w.proc)}</td></tr>`).join("");
+    $("calib").innerHTML = (md.kalibrace || []).map((b) => `<tr><td class="num">${esc(b.od)}–${esc(Math.min(b.do, 100))}</td><td class="r num">${fmt(b.n, 0)}</td>
+      <td class="r num">${pct(b.p_beat)}</td><td class="r num">${pct(b.p_rocket)}</td><td class="r num ${cls(b.mean_excess)}">${sgn(b.mean_excess * 100)}</td>
+      <td class="r num">${sgn(b.q20 * 100)}</td><td class="r num">${sgn(b.q80 * 100)}</td></tr>`).join("");
+    $("history").innerHTML = (md.historie || []).map((h) => `<li><b>v${esc(h.verze)}</b> ${esc(praha(h.kdy))} — ${esc(h.duvod)}</li>`).join("");
+  }
+
+  const COLS = [["poradi", "#", "r"], ["ticker", "Ticker", ""], ["nazev", "Firma", ""], ["segment", "Článek řetězce", ""], ["skore", "Skóre", "r"],
+    ["p_beat", "Šance vs S&P", "r"], ["p_rocket", "Raketa", "r"], ["zmena_1d", "1 den", "r"], ["zmena_20d", "20 dní", "r"], ["zmena_120d", "120 dní", "r"]];
+  function renderRadar() {
+    if (!A) return;
+    const rows = (A.vsechny || []).map((v) => Object.assign({segment: (v.retezec || [])[0] || ""}, v));
+    const segs = [...new Set(rows.map((r) => r.segment))].sort();
+    const ss = $("seg"), cur = ss.value;
+    ss.innerHTML = `<option value="">Všechny články řetězce</option>` + segs.map((s) => `<option ${s === cur ? "selected" : ""}>${esc(s)}</option>`).join("");
+    $("radar-head").innerHTML = COLS.map(([k, t, c]) => `<th class="${c}" aria-sort="${sortKey === k ? (sortDir > 0 ? "ascending" : "descending") : "none"}"><button class="sort" data-k="${k}">${esc(t)}${sortKey === k ? (sortDir > 0 ? " ▲" : " ▼") : ""}</button></th>`).join("");
+    $("radar-head").querySelectorAll("button.sort").forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.k; sortDir = sortKey === k ? -sortDir : (["skore", "p_beat", "p_rocket", "zmena_1d", "zmena_20d", "zmena_120d"].includes(k) ? -1 : 1); sortKey = k;
+      try { localStorage.setItem("gfw_sort", JSON.stringify({k: sortKey, d: sortDir})); } catch (e) {}
+      renderRadar();
+    }));
+    const q = $("q").value.trim().toLowerCase(), seg = $("seg").value;
+    const list = rows.filter((r) => (!seg || r.segment === seg) && (!q || (r.ticker + " " + r.nazev).toLowerCase().includes(q)))
+      .sort((a, b) => { const x = a[sortKey], y = b[sortKey]; if (x === y) return 0; if (x === null || x === undefined) return 1; if (y === null || y === undefined) return -1; return (x > y ? 1 : -1) * sortDir; });
+    $("radar-rows").innerHTML = list.map((r) => `<tr><td class="r num">${esc(r.poradi)}</td><td><b>${esc(r.ticker)}</b></td><td>${esc(r.nazev)}${r.data === "STALE" ? ' <span class="chip warn">DATA STALE</span>' : ""}</td>
+      <td class="small">${esc(r.segment)}</td><td class="r num"><b>${fmt(r.skore, 0)}</b></td><td class="r num">${pct(r.p_beat)}</td><td class="r num">${pct(r.p_rocket)}</td>
+      <td class="r num ${cls(r.zmena_1d)}">${sgn(r.zmena_1d)}</td><td class="r num ${cls(r.zmena_20d)}">${sgn(r.zmena_20d)}</td><td class="r num ${cls(r.zmena_120d)}">${sgn(r.zmena_120d)}</td></tr>`).join("")
+      || `<tr><td colspan="10" class="muted">Nic neodpovídá filtru.</td></tr>`;
+  }
+
+  function renderSources() {
+    if (!A) return;
+    $("sources").innerHTML = (A.zdroje || []).map((s) => `<tr><td><a href="${url(s.url)}" target="_blank" rel="noopener">${esc(s.nazev)}</a></td><td class="small">${esc(s.co)}</td>
+      <td><span class="chip ${/^POUŽÍVÁ/.test(s.stav) ? "ok" : /^VYPNUTO/.test(s.stav) ? "warn" : ""}">${esc(s.stav)}</span></td></tr>`).join("");
+  }
+
+  $("deal-filter").addEventListener("change", renderDeals);
+  $("q").addEventListener("input", renderRadar);
+  $("seg").addEventListener("change", renderRadar);
+
+  function renderAll() { renderTop(); renderCards(); renderPreds(); renderChain(); renderCats(); renderModel(); renderRadar(); renderSources(); }
+
+  (async function boot() {
+    const cl = window.claude;
+    const db = cl ? await cl.use("db") : null;
+    if (!db) {
+      $("status").innerHTML = "<span>Data se načítají jen v aplikaci Claude nebo na claude.ai po přihlášení.</span>";
+      return;
+    }
+    const fail = () => { $("status").innerHTML = "<span>Data se nepodařilo načíst. Obnov stránku.</span>"; };
+    db.doc("stav/aktualni").onSnapshot((s) => { if (s.exists) { A = s.data(); renderAll(); } else { $("status").innerHTML = "<span>Model zatím nezapsal žádná data.</span>"; } }, fail);
+    db.doc("stav/predikce").onSnapshot((s) => { if (s.exists) { P = s.data(); renderPreds(); } }, fail);
+    db.doc("stav/retezec").onSnapshot((s) => { if (s.exists) { R = s.data(); renderChain(); } }, fail);
+  })();
+})();
+</script>

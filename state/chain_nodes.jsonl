@@ -1,0 +1,11 @@
+{"code": "AI_DEMAND", "description": "Google, Microsoft, Amazon a Meta podepisují dlouhodobé smlouvy na stabilní bezemisní elektřinu.", "horizon": "teď", "layer": 1, "name": "Poptávka AI datacenter"}
+{"code": "FIRM_POWER_NOW", "description": "Existující jaderné elektrárny, restarty a navyšování výkonu — nejrychlejší zdroj stabilní elektřiny.", "horizon": "0–3 roky", "layer": 2, "name": "Elektřina dnes: jaderné flotily a utility"}
+{"code": "ONSITE_POWER", "description": "Plynové turbíny a palivové články jako most, než se postaví nová jádra.", "horizon": "0–3 roky", "layer": 2, "name": "Elektřina u datacenter: turbíny a palivové články"}
+{"code": "GEOTHERMAL", "description": "Vrtná technologie z ropného průmyslu; stabilní výkon 24/7.", "horizon": "1–5 let", "layer": 2, "name": "Geotermální energie nové generace"}
+{"code": "GRID", "description": "Úzké hrdlo: dlouhé dodací lhůty transformátorů a vysokonapěťových kabelů.", "horizon": "0–5 let", "layer": 2, "name": "Síť: transformátory, kabely, rozvaděče, výstavba"}
+{"code": "DC_INFRA", "description": "UPS, rozvody a chlazení uvnitř datacenter.", "horizon": "0–3 roky", "layer": 2, "name": "Napájení a chlazení datacenter"}
+{"code": "STORAGE", "description": "Baterie pro vyrovnání sítě a datacenter.", "horizon": "0–5 let", "layer": 2, "name": "Ukládání energie"}
+{"code": "FUEL_CYCLE", "description": "Každý nový reaktor potřebuje palivo; HALEU pro pokročilé reaktory je v USA nedostatkové.", "horizon": "1–10 let", "layer": 3, "name": "Jaderné palivo: uran, konverze, obohacování, HALEU"}
+{"code": "NUCLEAR_SUPPLY", "description": "Výkovky tlakových nádob, čerpadla, detekce, EPC výstavba.", "horizon": "1–10 let", "layer": 3, "name": "Komponenty a služby pro jádro"}
+{"code": "ADV_NUCLEAR", "description": "Malé modulární a pokročilé reaktory; první komerční bloky kolem 2030.", "horizon": "3–10 let", "layer": 3, "name": "Nová jádra: SMR a pokročilé reaktory"}
+{"code": "FUSION", "description": "Nejvzdálenější a nejrizikovější článek; první elektřina cílena na konec dekády.", "horizon": "5–15 let", "layer": 4, "name": "Fúze"}

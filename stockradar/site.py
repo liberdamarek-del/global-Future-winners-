@@ -1,0 +1,203 @@
+"""Data pro webový přehled (artifact čte dokumenty stav/aktualni, stav/predikce, stav/retezec)."""
+
+import json
+import sqlite3
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from stockradar import __version__, config
+from stockradar import model as m
+from stockradar.catalysts import date_text
+from stockradar.enums import label
+from stockradar.timeutil import to_iso, utcnow
+
+DOC_LIMIT = 240 * 1024  # db dokument má limit 256 KiB
+
+FREE_SOURCES = [
+    {"nazev": "Yahoo Finance chart API", "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY",
+     "co": "Denní ceny, objemy a kurzy měn pro všechny burzy (USA, Evropa, Asie). Bez klíče; neoficiální, může omezit počet dotazů.",
+     "stav": "POUŽÍVÁ SE"},
+    {"nazev": "SEC EDGAR", "url": "https://www.sec.gov/edgar/search/",
+     "co": "Filingy US firem (8-K, 10-Q, S-1/S-3 = ředění, počet akcií). Zdarma, ale vyžaduje kontaktní e-mail v hlavičce dotazu.",
+     "stav": "VYPNUTO — čeká na souhlas s použitím e-mailu"},
+    {"nazev": "ClinicalTrials.gov API v2", "url": "https://clinicaltrials.gov/api/v2/studies",
+     "co": "Klinické studie (biotech katalyzátory). Zdarma, bez klíče.", "stav": "DOSTUPNÉ, zatím nevyužito"},
+    {"nazev": "NRC dashboardy a tiskové zprávy", "url": "https://www.nrc.gov/reactors/new-reactors/advanced.html",
+     "co": "Termíny jaderných povolení (stavební povolení, licence).", "stav": "RUČNĚ při denním výzkumu"},
+    {"nazev": "Tiskové zprávy firem a oborová média", "url": "https://www.world-nuclear-news.org/",
+     "co": "Dohody s Big Tech, kontrakty, milníky (World Nuclear News, ANS, Utility Dive, DCD).",
+     "stav": "RUČNĚ při denním výzkumu"},
+]
+
+
+def _accuracy(conn: sqlite3.Connection) -> list[dict]:
+    out = []
+    for n in (7, 14, 30):
+        rows = conn.execute(
+            "SELECT o.result, o.excess_return_pct FROM prediction_outcomes o JOIN predictions p ON p.id = o.prediction_id"
+            " WHERE o.horizon_days = ? AND p.mode = 'LIVE'", (n,)).fetchall()
+        hits = sum(1 for r in rows if r["result"] == "HIT")
+        ex = [r["excess_return_pct"] for r in rows if r["excess_return_pct"] is not None]
+        out.append({"dni": n, "vyhodnoceno": len(rows), "uspesnych": hits,
+                    "uspesnost": round(hits / len(rows), 4) if rows else None,
+                    "prumer_nad_spy": round(sum(ex) / len(ex), 2) if ex else None})
+    return out
+
+
+def _nodes_by_company(conn) -> dict[int, list[str]]:
+    out: dict[int, list[str]] = {}
+    for r in conn.execute("SELECT cc.company_id, n.name FROM company_chain cc JOIN chain_nodes n ON n.code = cc.node_code"
+                          " ORDER BY n.layer, n.code"):
+        out.setdefault(r["company_id"], []).append(r["name"])
+    return out
+
+
+def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: list[str], model_note: str,
+               now: datetime | None = None) -> dict[str, dict]:
+    now = now or utcnow()
+    run = conn.execute("SELECT * FROM model_runs WHERE id = ?", (run_id,)).fetchone()
+    version = conn.execute("SELECT * FROM model_versions WHERE id = ?", (run["model_version_id"],)).fetchone()
+    scored = json.loads(run["scores_json"])
+    weights = json.loads(version["weights_json"])
+    metrics = json.loads(version["metrics_json"])
+    nodes = _nodes_by_company(conn)
+    symbols = {r["yahoo_symbol"]: r for r in conn.execute(
+        "SELECT l.yahoo_symbol, l.company_id, c.notes FROM listings l JOIN companies c ON c.id = l.company_id"
+        " WHERE l.yahoo_symbol IS NOT NULL")}
+    bigtech = {}
+    for r in conn.execute("SELECT * FROM relationships WHERE company_id IS NOT NULL ORDER BY announced_on DESC"):
+        bigtech.setdefault(r["company_id"], []).append(
+            f"{r['counterparty']}: {r['description']} ({r['announced_on']})")
+    open_cats = {}
+    for k in conn.execute("SELECT * FROM catalysts WHERE status IN ('UPCOMING','DELAYED','IN_PROGRESS') ORDER BY id"):
+        open_cats.setdefault(k["company_id"], []).append(f"{k['description']} — {date_text(k)}")
+
+    def card(sym: str, it: dict) -> dict:
+        cid = symbols[sym]["company_id"]
+        contrib = sorted(it["prispevky"].items(), key=lambda kv: kv[1], reverse=True)
+        return {
+            "ticker": sym, "nazev": it["nazev"], "retezec": nodes.get(cid, []), "poradi": it["poradi"],
+            "skore": it["skore"], "p_beat": it["p_beat"], "p_rocket": it["p_rocket"],
+            "nadvynos": it["ocekavany_nadvynos"], "q20": it["q20"], "q80": it["q80"],
+            "cena": it["cena"], "mena": it["mena"], "den": it["den"], "data": it["data"],
+            "zmena_1d": it["zmena_1d"], "zmena_20d": it["zmena_20d"], "zmena_120d": it["zmena_120d"],
+            "duvody": [{"faktor": m.FACTORS[f]["label"], "body": v} for f, v in contrib if abs(v) >= 0.5][:6],
+            "bigtech": bigtech.get(cid, []), "katalyzatory": open_cats.get(cid, []),
+            "poznamka": symbols[sym]["notes"],
+        }
+
+    ranked = sorted(scored.items(), key=lambda kv: kv[1]["poradi"])
+    main = conn.execute(
+        "SELECT p.*, l.yahoo_symbol, c.name FROM predictions p JOIN listings l ON l.id = p.listing_id"
+        " JOIN companies c ON c.id = p.company_id WHERE p.is_main_pick = 1 AND p.mode = 'LIVE' AND p.made_at >= ?"
+        " ORDER BY p.made_at DESC LIMIT 1", (to_iso(now - timedelta(days=30)),)).fetchone()
+    horizon_end = (now + timedelta(days=60)).date().isoformat()
+    today = now.date().isoformat()
+    catalysts = []
+    for k in conn.execute(
+            "SELECT k.*, c.name, l.yahoo_symbol FROM catalysts k JOIN companies c ON c.id = k.company_id"
+            " LEFT JOIN listings l ON l.company_id = c.id AND l.is_primary = 1"
+            " WHERE k.status IN ('UPCOMING','DELAYED','IN_PROGRESS') ORDER BY COALESCE(k.event_date, k.window_start, '9999')"):
+        start = k["event_date"] or k["window_start"]
+        end = k["event_date"] or k["window_end"]
+        catalysts.append({
+            "ticker": k["yahoo_symbol"], "firma": k["name"], "popis": k["description"], "datum": date_text(k),
+            "jistota": label(k["date_status"]), "zdroj": k["source"], "url": k["source_url"],
+            "brzy": bool(start and start <= horizon_end and (end or start) >= today),
+        })
+
+    aktualni = {
+        "aktualizovano": to_iso(now), "den_dat": run["data_date"], "verze_aplikace": __version__,
+        "kroky": steps, "varovani": warnings[:20],
+        "main_pick": None if main is None else {
+            "ticker": main["yahoo_symbol"], "nazev": main["name"], "datum": main["made_at"], "cena": main["price"],
+            "mena": main["currency"], "p_beat": main["probability_pct"], "p_rocket": main["p_rocket_pct"],
+            "nadvynos": main["base_move_pct"], "bull": main["bull_move_pct"], "bear": main["bear_move_pct"],
+            "katalyzator": main["catalyst_text"], "katalyzator_datum": main["catalyst_date_text"],
+            "duvod": main["rationale"], "riziko": main["key_risk"]},
+        "kandidati": [card(s, it) for s, it in ranked[:12]],
+        "vsechny": [{"ticker": s, "nazev": it["nazev"], "retezec": nodes.get(symbols[s]["company_id"], [])[:1],
+                     "skore": it["skore"], "poradi": it["poradi"], "p_beat": it["p_beat"], "p_rocket": it["p_rocket"],
+                     "cena": it["cena"], "mena": it["mena"], "zmena_1d": it["zmena_1d"], "zmena_20d": it["zmena_20d"],
+                     "zmena_120d": it["zmena_120d"], "data": it["data"]} for s, it in ranked],
+        "katalyzatory": catalysts,
+        "presnost": _accuracy(conn),
+        "model": {
+            "verze": version["id"], "vytvoreno": version["created_at"], "duvod_verze": version["reason"],
+            "dnes": model_note, "trenink": version["training_window"], "vzorku": version["n_samples"],
+            "vahy": [{"faktor": f, "nazev": meta["label"], "proc": meta["why"], "prior": meta["prior"],
+                      "vaha": weights.get(f), "ic": metrics.get(f, {}).get("ic"), "t": metrics.get(f, {}).get("t"),
+                      "podil_dat": metrics.get(f, {}).get("data_weight")} for f, meta in m.FACTORS.items()],
+            "mimo_vzorek": metrics.get("_oos", {}),
+            "kalibrace": json.loads(version["calibration_json"]),
+            "historie": [{"verze": r["id"], "kdy": r["created_at"], "duvod": r["reason"]} for r in conn.execute(
+                "SELECT id, created_at, reason FROM model_versions ORDER BY id DESC LIMIT 15")],
+        },
+        "zdroje": FREE_SOURCES,
+    }
+
+    latest_close = {s: (it["cena"], it["den"]) for s, it in scored.items()}
+    bench_close = conn.execute("SELECT close, date FROM price_bars WHERE symbol = ? ORDER BY date DESC LIMIT 1",
+                               (config.BENCHMARK_SYMBOL,)).fetchone()
+    preds = []
+    for p in conn.execute(
+            "SELECT p.*, l.yahoo_symbol, c.name FROM predictions p JOIN listings l ON l.id = p.listing_id"
+            " JOIN companies c ON c.id = p.company_id WHERE p.mode = 'LIVE' ORDER BY p.made_at DESC LIMIT 300"):
+        outs = {o["horizon_days"]: o for o in conn.execute(
+            "SELECT * FROM prediction_outcomes WHERE prediction_id = ?", (p["id"],))}
+        live = None
+        if p["yahoo_symbol"] in latest_close and bench_close and p["benchmark_price"]:
+            price, day = latest_close[p["yahoo_symbol"]]
+            ret = price / p["price"] - 1
+            live = {"cena": price, "den": day, "vynos": round(ret * 100, 2),
+                    "nad_spy": round((ret - (bench_close["close"] / p["benchmark_price"] - 1)) * 100, 2)}
+        preds.append({
+            "id": p["id"], "ticker": p["yahoo_symbol"], "nazev": p["name"], "datum": p["made_at"], "cena": p["price"],
+            "mena": p["currency"], "skore": p["score_overall_setup"], "kategorie": p["category"],
+            "verdikt": label(p["verdict"]), "main_pick": bool(p["is_main_pick"]),
+            "p_beat": p["probability_pct"], "p_rocket": p["p_rocket_pct"], "nadvynos": p["base_move_pct"],
+            "katalyzator": p["catalyst_text"], "duvod": p["rationale"], "xtb": label(p["xtb_status"]),
+            "data": p["price_freshness"], "aktualne": live,
+            "vysledky": {str(n): {"vynos": o["return_pct"], "nad_spy": o["excess_return_pct"], "vysledek": o["result"],
+                                  "den": o["observed_at"][:10]} for n, o in outs.items()},
+            "uzavreno": 30 in outs,
+        })
+    predikce = {"aktualizovano": to_iso(now), "predikce": preds, "presnost": aktualni["presnost"]}
+
+    node_rows = conn.execute("SELECT * FROM chain_nodes ORDER BY layer, code").fetchall()
+    retezec = {
+        "aktualizovano": to_iso(now),
+        "uzly": [{
+            "kod": n["code"], "vrstva": n["layer"], "nazev": n["name"], "popis": n["description"], "horizont": n["horizon"],
+            "firmy": [{"ticker": r["yahoo_symbol"], "nazev": r["name"], "stav": r["listing_status"],
+                       "skore": scored.get(r["yahoo_symbol"] or "", {}).get("skore")}
+                      for r in conn.execute(
+                          "SELECT c.name, c.listing_status, l.yahoo_symbol FROM company_chain cc"
+                          " JOIN companies c ON c.id = cc.company_id"
+                          " LEFT JOIN listings l ON l.company_id = c.id AND l.is_primary = 1"
+                          " WHERE cc.node_code = ? ORDER BY c.name", (n["code"],))],
+        } for n in node_rows],
+        "dohody": [{
+            "kdo": r["counterparty"], "s_kym": r["party"], "ticker": r["yahoo_symbol"], "typ": r["rel_type"],
+            "zavaznost": r["binding"], "mw": r["capacity_mw"], "usd": r["amount_usd"], "popis": r["description"],
+            "datum": r["announced_on"], "zdroj": r["source"], "url": r["source_url"]}
+            for r in conn.execute(
+                "SELECT r.*, l.yahoo_symbol FROM relationships r"
+                " LEFT JOIN listings l ON l.company_id = r.company_id AND l.is_primary = 1"
+                " ORDER BY r.announced_on DESC")],
+        "pre_ipo": [{"nazev": r["name"], "poznamka": r["notes"]} for r in conn.execute(
+            "SELECT name, notes FROM companies WHERE listing_status IN ('PRE_IPO','PRIVATE')")],
+    }
+    return {"aktualni": aktualni, "predikce": predikce, "retezec": retezec}
+
+
+def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
+    web_dir.mkdir(parents=True, exist_ok=True)
+    sizes = {}
+    for name, doc in build_docs(conn, **kwargs).items():
+        text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
+        if len(text.encode()) > DOC_LIMIT:
+            raise ValueError(f"dokument {name} má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
+        (web_dir / f"stav_{name}.json").write_text(text, encoding="utf-8")
+        sizes[name] = len(text.encode())
+    return sizes

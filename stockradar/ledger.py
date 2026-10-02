@@ -1,7 +1,8 @@
 """PREDICTION LEDGER (§28, §29, §30): append-only záznam predikcí a jejich vyhodnocení.
 
 Vynucená pravidla:
-  §5   spekulativní BUY / MAIN PICK jen s čerstvou XTB kontrolou = ANO (poučení XSPRAY)
+  §5   XTB: od 2026-10-02 jen informativně (rozhodnutí uživatele); s config.REQUIRE_XTB_FOR_BUY=True
+       platí brána z poučení XSPRAY (spekulativní BUY / MAIN PICK jen s čerstvou kontrolou = ANO)
   §2   spekulativní BUY nesmí stavět na katalyzátoru, který už proběhl nebo právě probíhá (poučení RARE)
   §19  pravděpodobnost a velikost pohybu se ukládají odděleně
   §52  cena se označí FRESH/STALE podle stáří vůči okamžiku predikce
@@ -15,7 +16,7 @@ from datetime import datetime, timedelta
 from stockradar import __version__
 from stockradar.catalysts import date_text, get_catalyst
 from stockradar.companies import get_listing, latest_xtb_check, xtb_check_age
-from stockradar.config import XTB_CHECK_MAX_AGE
+from stockradar import config
 from stockradar.data_quality import freshness
 from stockradar.enums import Category, CatalystStatus, DateStatus, Horizon, OutcomeResult, Verdict
 from stockradar.timeutil import parse_date, parse_iso, to_iso, utcnow
@@ -72,6 +73,10 @@ class PredictionInput:
     bear_case: str | None = None
     key_risk: str | None = None
     scores: Scores = field(default_factory=Scores)
+    benchmark_symbol: str | None = None
+    benchmark_price: float | None = None
+    p_rocket_pct: float | None = None
+    model_run_id: int | None = None
 
 
 def record_prediction(
@@ -105,17 +110,17 @@ def record_prediction(
     listing = get_listing(conn, p.listing_id)
     is_buy = p.verdict == Verdict.SPEC_BUY or p.is_main_pick
 
-    # §5 — XTB před doporučením, ne po něm.
+    # §5 — stav XTB se zapisuje vždy; jako brána jen když ji uživatel vyžaduje.
     xtb = latest_xtb_check(conn, p.listing_id, as_of=made_at)
-    if is_buy:
+    if is_buy and config.REQUIRE_XTB_FOR_BUY:
         if xtb is None:
             raise LedgerRuleError(f"§5: {listing['ticker']} — XTB NEOVĚŘENO, nelze vydat doporučení")
         if xtb["status"] != "ANO":
             raise LedgerRuleError(f"§5: {listing['ticker']} — STATUS = NOT AVAILABLE ON XTB "
                                   f"(poslední kontrola: {xtb['status']}), hledej alternativu")
-        if xtb_check_age(xtb, made_at) > XTB_CHECK_MAX_AGE:
+        if xtb_check_age(xtb, made_at) > config.XTB_CHECK_MAX_AGE:
             raise LedgerRuleError(f"§5: kontrola XTB z {xtb['checked_at']} je starší než "
-                                  f"{XTB_CHECK_MAX_AGE.days} dní — ověř znovu")
+                                  f"{config.XTB_CHECK_MAX_AGE.days} dní — ověř znovu")
 
     catalyst = None
     if p.catalyst_id is not None:
@@ -145,9 +150,10 @@ def record_prediction(
                 bull_case, base_case, bear_case, key_risk, rationale,
                 score_fundament, score_catalyst, score_catalyst_timing, score_upside, score_surprise,
                 score_financial_health, score_valuation, score_technical, score_dilution_risk,
-                score_execution_risk, score_rocket, score_overall_setup, model_version)
+                score_execution_risk, score_rocket, score_overall_setup, model_version,
+                benchmark_symbol, benchmark_price, p_rocket_pct, model_run_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 mode, made_iso, made_iso if mode == "LIVE" else to_iso(now),
                 listing["company_id"], p.listing_id, p.horizon,
@@ -166,6 +172,7 @@ def record_prediction(
                 s["fundament"], s["catalyst"], s["catalyst_timing"], s["upside"], s["surprise"],
                 s["financial_health"], s["valuation"], s["technical"], s["dilution_risk"],
                 s["execution_risk"], s["rocket"], s["overall_setup"], __version__,
+                p.benchmark_symbol, p.benchmark_price, p.p_rocket_pct, p.model_run_id,
             ),
         )
     return cur.lastrowid
@@ -185,9 +192,13 @@ def record_outcome(
     deviation: str | None = None,
     reason: str | None = None,
     lesson: str | None = None,
+    benchmark_price: float | None = None,
     now: datetime | None = None,
 ) -> int:
-    """§28/§30: vyhodnocení predikce po N dnech (typicky 7 / 14 / 30). Původní predikce se nemění."""
+    """§28/§30: vyhodnocení predikce po N dnech (typicky 7 / 14 / 30). Původní predikce se nemění.
+
+    benchmark_price = cena benchmarku (S&P 500) ve stejný okamžik -> výnos benchmarku a nadvýnos.
+    """
     OutcomeResult(result)
     pred = conn.execute("SELECT * FROM predictions WHERE id = ?", (prediction_id,)).fetchone()
     if pred is None:
@@ -206,13 +217,20 @@ def record_outcome(
     if min_price is not None and price < min_price:
         raise ValueError("cena je pod minimem období")
     return_pct = round((price / pred["price"] - 1) * 100, 4)
+    bench_pct = excess_pct = None
+    if benchmark_price is not None:
+        if not pred["benchmark_price"]:
+            raise ValueError("predikce nemá cenu benchmarku — nadvýnos nelze spočítat")
+        bench_pct = round((benchmark_price / pred["benchmark_price"] - 1) * 100, 4)
+        excess_pct = round(return_pct - bench_pct, 4)
     with conn:
         cur = conn.execute(
             "INSERT INTO prediction_outcomes (prediction_id, horizon_days, observed_at, price, price_source,"
-            " max_price, min_price, return_pct, result, deviation, reason, lesson, recorded_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " max_price, min_price, return_pct, result, deviation, reason, lesson, recorded_at,"
+            " benchmark_return_pct, excess_return_pct)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (prediction_id, horizon_days, to_iso(observed_at), price, price_source, max_price, min_price,
-             return_pct, result, deviation, reason, lesson, to_iso(now)),
+             return_pct, result, deviation, reason, lesson, to_iso(now), bench_pct, excess_pct),
         )
     return cur.lastrowid
 

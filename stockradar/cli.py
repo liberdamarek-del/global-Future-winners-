@@ -11,7 +11,7 @@ from datetime import timedelta
 from stockradar import __version__
 from stockradar.catalysts import date_text, upcoming_catalysts
 from stockradar.companies import latest_xtb_check
-from stockradar.config import XTB_CHECK_MAX_AGE, db_path, state_dir
+from stockradar.config import XTB_CHECK_MAX_AGE, db_path, state_dir, web_dir
 from stockradar.data_quality import freshness_label
 from stockradar.db import open_db, schema_version
 from stockradar.enums import label
@@ -102,6 +102,22 @@ def cmd_snapshot(args) -> int:
     export_state(conn, state_dir())
     print(f"Snapshot #{snapshot_id} vytvořen a exportován.")
     return 0
+
+
+def cmd_update(args) -> int:
+    from stockradar.update import run_update
+
+    conn = _open()
+    result = run_update(conn, state_dir=state_dir(), web_dir=web_dir())
+    print(f"UPDATE {result.get('data_day', '?')}  (běh #{result['run_id']})")
+    for step, state in result["steps"].items():
+        print(f"  {step:<22} {state}")
+    if result.get("reason"):
+        print(f"Model: {result['reason']}")
+    for w in result["warnings"]:
+        print(f"  ! {w}")
+    print(f"Data pro web: {web_dir()}")
+    return 0 if result["run_id"] else 1
 
 
 def cmd_status(args) -> int:
@@ -219,6 +235,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_status.add_argument("--days", type=int, default=14, help="horizont katalyzátorů (default 14)")
     p_status.set_defaults(func=cmd_status)
     sub.add_parser("ledger", help="historický register predikcí (§28)").set_defaults(func=cmd_ledger)
+    sub.add_parser("update", help="denní běh: ceny, vyhodnocení, učení, predikce, web (§54)").set_defaults(
+        func=cmd_update)
     sub.add_parser("lessons", help="učební případy a poučení (§30, §31)").set_defaults(func=cmd_lessons)
     p_snap = sub.add_parser("snapshot", help="historický snapshot stavu (§53)")
     p_snap.add_argument("--label", default=None)

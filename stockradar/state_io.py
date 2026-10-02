@@ -10,11 +10,17 @@ import sqlite3
 from pathlib import Path
 
 # Pořadí respektuje cizí klíče. catalyst_types se plní migrací, neexportuje se.
+# Cache bezplatných dat (price_bars, sec_*) se neexportuje — dá se kdykoli stáhnout znovu.
 TABLES = (
     "companies",
     "listings",
+    "chain_nodes",
+    "company_chain",
+    "relationships",
     "xtb_checks",
     "catalysts",
+    "model_versions",
+    "model_runs",
     "predictions",
     "prediction_outcomes",
     "status_changes",
@@ -26,7 +32,7 @@ TABLES = (
 def _dump_table(conn: sqlite3.Connection, table: str) -> str:
     lines = [
         json.dumps(dict(row), ensure_ascii=False, sort_keys=True)
-        for row in conn.execute(f"SELECT * FROM {table} ORDER BY id")
+        for row in conn.execute(f"SELECT * FROM {table} ORDER BY rowid")
     ]
     return "".join(line + "\n" for line in lines)
 
