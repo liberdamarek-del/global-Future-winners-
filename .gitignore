@@ -1,0 +1,15 @@
+# Pracovní databáze — zdroj pravdy je state/ (python -m stockradar restore)
+data/
+*.db
+*.db-journal
+*.sqlite
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Tajné klíče k datovým API
+.env

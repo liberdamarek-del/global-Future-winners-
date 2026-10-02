@@ -1,0 +1,2 @@
+# Fáze 1 používá pouze standardní knihovnu Pythonu 3.11+ (sqlite3, json, argparse).
+# Závislosti pro datové zdroje se přidají ve Fázi 2–4 po rozhodnutí o poskytovatelích (viz ROADMAP.md).

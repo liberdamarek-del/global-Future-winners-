@@ -1,0 +1,4 @@
+# Verze aplikace je jen v stockradar/__init__.py (__version__).
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
