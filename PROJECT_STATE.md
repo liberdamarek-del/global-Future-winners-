@@ -45,7 +45,7 @@
 
 | Co | Stav |
 |---|---|
-| Denní rutina | Nastavena po–pá 22:47 (Praha) do této session; první automatický běh 2026-10-02 večer |
+| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH; první běh 2026-10-02 večer |
 
 ## BLOKOVÁNO
 
