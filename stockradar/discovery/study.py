@@ -42,6 +42,7 @@ class Data:
     data_start: int
     data_end: int
     groups: dict[str, list[str]] = field(default_factory=dict)
+    rejected: list[str] = field(default_factory=list)
 
     def usd_rate(self, currency: str | None, day: int) -> float | None:
         if not currency:
@@ -63,11 +64,21 @@ def group_key(meta: dict) -> str:
     return label.lower()
 
 
+MAX_DAILY_RATIO = 50.0   # denní skok nad 50× (nebo pád pod 1/50) = chyba dat → řada se vyřadí
+FWD_CAP = 5.0            # pro průměry se budoucí výnos ořízne na +500 % (rozhoduje hlavně medián)
+
+
+def anomalous(bars: cache.Bars) -> bool:
+    c = bars.closes
+    return any(c[k - 1] > 0 and not (1 / MAX_DAILY_RATIO <= c[k] / c[k - 1] <= MAX_DAILY_RATIO) for k in range(1, len(c)))
+
+
 def load_data(conn, *, min_bars: int = 250, symbols: list[str] | None = None) -> Data:
     metas = {r["symbol"]: dict(r) for r in conn.execute("SELECT * FROM securities")}
     fx = {}
     secs = {}
     starts = []
+    rejected = []
     for bars in cache.iter_series(conn):
         if bars.symbol.endswith("=X"):
             fx[bars.symbol] = bars
@@ -75,6 +86,9 @@ def load_data(conn, *, min_bars: int = 250, symbols: list[str] | None = None) ->
         if symbols is not None and bars.symbol not in symbols:
             continue
         if bars.symbol not in metas or len(bars.days) < min_bars:
+            continue
+        if anomalous(bars):
+            rejected.append(bars.symbol)
             continue
         starts.append(bars.days[0])
         secs[bars.symbol] = bars
@@ -84,6 +98,7 @@ def load_data(conn, *, min_bars: int = 250, symbols: list[str] | None = None) ->
         meta = metas[sym]
         out[sym] = Sec(sym, meta, prepare(bars, data_start), bars.currency, group_key(meta))
     data = Data(out, fx, data_start, max((s.prep.bars.days[-1] for s in out.values()), default=0))
+    data.rejected = rejected
     for sym, s in out.items():
         data.groups.setdefault(s.group, []).append(sym)
     return data
@@ -342,7 +357,7 @@ def population_test(data: Data, model: Logit, kind: str, heat: Heat, *, start_da
     def stats(rows):
         return {"rakety": round(sum(r[1] for r in rows) / len(rows), 5),
                 "propady": round(sum(r[2] for r in rows) / len(rows), 5),
-                "prumer": round(statistics.fmean(r[3] for r in rows), 5),
+                "prumer": round(statistics.fmean(min(r[3], FWD_CAP) for r in rows), 5),
                 "median": round(statistics.median(r[3] for r in rows), 5)}
 
     base = stats(scored)

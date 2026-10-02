@@ -226,7 +226,7 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
 
     run_stats = {
         "firem_v_seznamu": cache_conn.execute("SELECT COUNT(*) FROM securities").fetchone()[0],
-        "firem_s_daty": len(data.secs), "zemi": len({s.meta.get("country") for s in data.secs.values()}),
+        "firem_s_daty": len(data.secs), "vyrazeno_chyba_dat": len(data.rejected), "zemi": len({s.meta.get("country") for s in data.secs.values()}),
         "oboru": len(data.groups), "dokumentu_titulku": sum(e["titulku_celkem"] for e in explained),
         "obdobi_dat": f"{study.day_str(data.data_start)}..{end_day}",
         "rakety": {k: len(v) for k, v in events.items()},
@@ -235,7 +235,8 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         "omezeni": ["Seznamy firem jsou dnešní — chybí zkrachovalé a delistované firmy (survivorship bias, §60).",
                     "Fundamenty (tržby, marže, FCF, ředění) nejsou k dispozici zdarma bez e-mailu pro SEC → NEOVĚŘENO.",
                     "Příčiny raket jsou automaticky odvozené z titulků zpráv (Google News) — označeno AUTO.",
-                    "Obory pocházejí z různých klasifikací (Nasdaq, JPX, ASX GICS, Wikipedie) — nejsou plně sjednocené."],
+                    "Obory pocházejí z různých klasifikací (Nasdaq, JPX, ASX GICS, Wikipedie) — nejsou plně sjednocené.",
+                    "Řady s denním skokem nad 50× jsou vyřazené jako chyba dat; průměry výnosů jsou oříznuté na +500 %."],
     }
     return {
         "probehlo": to_iso(now), "data_do": end_day, "statistika": run_stats,

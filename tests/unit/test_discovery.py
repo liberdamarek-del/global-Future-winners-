@@ -39,6 +39,11 @@ def test_bad_tick_is_ignored():
     assert find_events(bars(closes), "W1_30") == []
 
 
+def test_anomalous_series_detected():
+    assert study.anomalous(bars([10.0] * 10 + [10.0 * 60] * 10))
+    assert not study.anomalous(bars([10.0] * 10 + [30.0] * 10))
+
+
 def test_phase_levels():
     assert phase({"6M": 0.05}, False) == "EARLY"
     assert phase({"6M": 0.3}, False) == "DEVELOPING"
