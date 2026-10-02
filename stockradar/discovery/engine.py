@@ -380,9 +380,10 @@ def score_today(data: study.Data, models: dict, heat: study.Heat, trailing: dict
 
 
 def known_case_tests(data: study.Data, models: dict, heat: study.Heat, events: dict) -> list[dict]:
-    """§44: našel by systém známé vítěze předem? Skóre modelu NAUČENÉHO JEN NA STARŠÍCH DATECH 5 dní před T0."""
+    """§44: našel by systém známé vítěze předem? Model NAUČENÝ JEN NA STARŠÍCH DATECH, 5 obchodních dní před T0:
+    percentil firmy mezi všemi likvidními akciemi téhož dne (raketa i asymetrie raketa − propad)."""
+    oos = models["M3_50"][1]
     out = []
-    oos_drop = None
     for sym, label in KNOWN_CASES.items():
         sec = data.secs.get(sym)
         if sec is None:
@@ -394,14 +395,27 @@ def known_case_tests(data: study.Data, models: dict, heat: study.Heat, events: d
                         "vysledek": f"V datech ({study.day_str(data.data_start)}–{study.day_str(data.data_end)}) žádná raketa ≥ +50 % za 3 měsíce"})
             continue
         ev = evs[0]
-        oos = models["M3_50"][1]
         i = max(ev.t0 - 5, 120)
+        day = sec.prep.bars.days[i]
         f = study.sample_features(data, sec, i, heat)
-        pop = models["M3_50"][2]
+        if f is None:
+            out.append({"ticker": sym, "test": label, "t0": sec.prep.bars.date(ev.t0), "rust": round(ev.ret, 3),
+                        "vysledek": "NEOVĚŘENO — 5 dní před raketou nesplňovala filtr likvidity"})
+            continue
+        up, asym = [], []
+        for other in data.secs.values():
+            j = bisect.bisect_right(other.prep.bars.days, day) - 1
+            if j < 120 or day - other.prep.bars.days[j] > 5:
+                continue
+            g = study.sample_features(data, other, j, heat)
+            if g is not None:
+                up.append(oos.score(g))
+        mine = oos.score(f)
+        pct = sum(1 for x in up if x > mine) / max(len(up), 1)
+        independent = day >= TRAIN_CUTOFF.toordinal()
         out.append({"ticker": sym, "test": label, "t0": sec.prep.bars.date(ev.t0), "rust": round(ev.ret, 3),
-                    "skore_5_dni_pred": round(oos.score(f), 4) if f else None,
-                    "poznamka": ("Model naučený do " + TRAIN_CUTOFF.isoformat() +
-                                 (" — událost je až po tréninku (poctivý test)." if ev.t0 and sec.prep.bars.days[ev.t0] >= TRAIN_CUTOFF.toordinal()
-                                  else " — událost je v tréninkovém období (není nezávislý test).")),
-                    "zakladni_cetnost": pop.get("zakladni_cetnost")})
+                    "percentil_5_dni_pred": round(pct, 4), "srovnano_firem": len(up),
+                    "nasel_by": "ANO (horní 5 %)" if pct <= 0.05 else "ČÁSTEČNĚ (horní 20 %)" if pct <= 0.2 else "NE",
+                    "poznamka": ("poctivý test — událost je až po datu tréninku" if independent
+                                 else "událost je v tréninkovém období — není nezávislý test")})
     return out

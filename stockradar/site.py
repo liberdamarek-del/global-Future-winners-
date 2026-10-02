@@ -200,6 +200,15 @@ def build_discovery_doc(conn: sqlite3.Connection) -> dict | None:
     if run is None:
         return None
     doc = json.loads(run["result_json"])
+    # zkrácení pro web (limit db dokumentu); úplný výsledek zůstává v discovery_runs
+    doc["rakety_vysvetlene"] = [dict(r, titulky=r.get("titulky", [])[:2], signaly_predem=r.get("signaly_predem", [])[:2])
+                                for r in doc.get("rakety_vysvetlene", [])[:40]]
+    for sd in doc.get("studie", {}).values():
+        sd["lift"] = [{k: v for k, v in l.items() if k != "kvintily"} for l in sd.get("lift", [])][:8]
+        sd["lift_propady"] = [{k: v for k, v in l.items() if k != "kvintily"} for l in sd.get("lift_propady", [])][:5]
+    doc["kandidati"] = {k: [dict(c, zpravy=dict(c["zpravy"], titulky=c["zpravy"].get("titulky", [])[:2]) if c.get("zpravy") else None)
+                            for c in rows[:15]] for k, rows in doc.get("kandidati", {}).items()}
+    doc["vitezove"] = [dict(w, titulky=w.get("titulky", [])[:1]) for w in doc.get("vitezove", [])]
     doc["beh"] = {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"]}
     doc["historie_behu"] = [{"id": r["id"], "kdy": r["run_at"], "statistika": json.loads(r["stats_json"])}
                             for r in conn.execute("SELECT id, run_at, stats_json FROM discovery_runs ORDER BY id DESC LIMIT 10")]

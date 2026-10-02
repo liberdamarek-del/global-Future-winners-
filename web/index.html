@@ -557,7 +557,7 @@ details summary { cursor: pointer; font-weight: 600; }
       <ul class="facts">${(c.firmy || []).slice(0, 8).map((f) => `<li><b>${esc(f.ticker)}</b> ${esc(f.nazev || "")} <span class="pos num">${pp(f.rust_6m, 0)}</span></li>`).join("")}</ul></div>`).join("")
       || `<div class="empty">Žádné výrazné skupiny.</div>`;
     $("known").innerHTML = (D.zname_pripady || []).map((k) => `<li><b>${esc(k.test)} (${esc(k.ticker)})</b>: ${k.vysledek ? esc(k.vysledek)
-      : `raketa od ${esc(k.t0)} (+${fmt(k.rust * 100, 0)} %), skóre 5 dní předem ${k.skore_5_dni_pred !== null && k.skore_5_dni_pred !== undefined ? fmt(k.skore_5_dni_pred, 3) : "–"}. ${esc(k.poznamka || "")}`}</li>`).join("");
+      : `raketa od ${esc(k.t0)} (+${fmt(k.rust * 100, 0)} %). Pět dní předem byla v horních <b>${fmt(k.percentil_5_dni_pred * 100, 1)} %</b> z ${fmt(k.srovnano_firem, 0)} firem → našel by ji? <span class="chip ${/^ANO/.test(k.nasel_by) ? "ok" : /^ČÁST/.test(k.nasel_by) ? "warn" : "err"}">${esc(k.nasel_by)}</span> <span class="muted">${esc(k.poznamka || "")}</span>`}</li>`).join("");
   }
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { preKind = t.dataset.kind; renderPre(); }));
