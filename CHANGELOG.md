@@ -4,6 +4,33 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-02 · v0.3.0 — Global Growth Pattern, Winners & Emerging Sector Engine
+
+Důvod: druhé zadání uživatele (docs/MASTER_PROMPT_GROWTH_ENGINE.md) + pokyn „projdi tisíce firem, najdi akcie, které
+udělaly desítky procent za týden až 6 měsíců, zjisti co tomu předcházelo a jestli se to dalo předpokládat“.
+
+| Soubor/modul | Změna | Důvod |
+|---|---|---|
+| `docs/MASTER_PROMPT_GROWTH_ENGINE.md` | Doslovně uložené zadání modulu | §56 |
+| `discovery/listings.py` | Globální seznam: Nasdaq screener (USA), JPX xlsx (celé Japonsko), ASX CSV, 24 indexů z Wikipedie → 13 110 firem | §3, jen zdarma |
+| `discovery/cache.py`, `download.py` | Kompaktní cache (zlib/array), obnovitelné stahování 5 let cen, 3 dotazy/s | §46 |
+| `discovery/winners.py` | Rakety (týden/měsíc/3 m/6 m), zrcadlové propady, vítězové 3/6/12/24 m, fáze TOO LATE | §2, §38 |
+| `discovery/features.py`, `study.py` | 17 znaků k T0 bez look-ahead, kontrolní skupina 1:5, lift, logistická regrese, test na celé populaci s kontrolou směru, asymetrie raketa − propad, sektorové vlny, skupiny společného pohybu, vyřazení chybných dat | §6–§14, §41 |
+| `discovery/news.py` | Příčiny z titulků Google News (EN s filtrem relevance, JP podle kódu akcie), 14 kategorií, cache | §6, §15 |
+| `discovery/engine.py`, `store.py` | Běh, známé případy (percentil 5 dní před raketou), nová IPO, velikostní skupiny; zápis do `discovery_runs`; kandidáti do ledgeru JEN se směrovou výhodou | §42–§47, §55 |
+| `migrations/0003_discovery.sql` | `discovery_runs` (append-only), `predictions.source`, `discovery_run_id` | §53 |
+| `update.py` | Vyhodnocení predikcí po 7/14/30/90/180/365 dnech | §42 |
+| `model.py` | Energetický model jen nad firmami hodnotového řetězce | oddělení modulů |
+| `web/index.html`, `site.py` | Sekce Globální objevy, Před raketou, Co předcházelo raketám, Vítězové a sektory, nová IPO; dokument `stav/objevy` | §55 |
+
+**Výsledek prvního běhu:** 12 158 firem z 61 zemí, 374 oborů, 18 653 týdenních raket (≥ +30 %), 829 titulků.
+Rakety jsou z cen a objemů předvídatelné jen co do velikosti pohybu, ne směru (viz lekce POUCENI-RAKETY-VOLATILITA)
+→ do ledgeru zapsáno 0 kandidátů. Ručně ověřeny 2 mechanismy (ABVX klinická data, SBET krypto treasury).
+
+**Test:** `python -m pytest` — 77 testů (unit 69, integrační 7, end-to-end 1). **Výsledek:** 77/77 prošlo.
+
+---
+
 ## 2026-10-02 · v0.2.0 — AI → elektřina radar, bezplatná data, samoučící model, denní web
 
 Důvod: zadání uživatele 2026-10-02 (jen bezplatné zdroje, XTB není podmínka, fokus na energii pro AI, jádro, fúzi

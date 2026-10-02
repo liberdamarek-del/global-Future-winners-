@@ -1,7 +1,7 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-02 · **Verze:** v0.2.0 · **Schema DB:** v2
-**Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
+**Aktualizováno:** 2026-10-02 · **Verze:** v0.3.0 · **Schema DB:** v3
+**Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
 
@@ -27,6 +27,19 @@
 | Model | verze vah 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
 | XTB | u žádné firmy neověřeno (už není podmínka) |
 
+## Globální objevování (Growth Engine) — první běh 2026-10-02
+
+| Položka | Stav |
+|---|---|
+| Rozsah | 13 110 firem v seznamu, 12 158 s historií ≥ 1 rok, 61 zemí, 374 oborů, data 2021-10-04 → 2026-10-02; 22 řad vyřazeno jako chyba dat |
+| Rakety | 18 653 týdenních (≥ +30 %), 10 434 měsíčních (≥ +50 %), 13 063 tříměsíčních (≥ +50 %), 4 046 šestiměsíčních (≥ +100 %) |
+| Předvídatelnost | Velikost pohybu ANO (AUC 0,87–0,89), směr NE: horní 1 % má i víc propadů a horší medián než trh; asymetrie směrovou výhodu nedala |
+| Příčiny | 58 ze 120 největších týdenních raket vysvětleno z titulků (AUTO); udrželo se málo — výjimkou klinická data (3/4) |
+| Ručně ověřeno | ABVX (fáze 3, +586 %), SBET (ETH treasury) → lekce MECH-KLINICKA-DATA, MECH-KRYPTO-TREASURY |
+| Známé případy po datu tréninku | Nebius horní 2,7 %, CAPR horní 12,5 %, Moderna horní 12 % (5 dní před raketou) |
+| Ledger | 0 kandidátů z objevování (brána směrové výhody); 6 predikcí energetického modelu |
+| Web dokument `stav/objevy` | ~218 kB na serveru (limit 256 kB) — při růstu zkracovat v `site.build_discovery_doc` |
+
 ## HOTOVO (ověřeno testy — 65 testů prošlo 2026-10-02)
 
 | Modul | Co dělá | Testy |
@@ -46,7 +59,8 @@
 
 | Co | Stav |
 |---|---|
-| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH; první běh 2026-10-02 večer |
+| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
+| Týdenní objevování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` + `update` + web |
 
 ## BLOKOVÁNO
 
