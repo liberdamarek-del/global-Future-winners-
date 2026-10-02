@@ -37,7 +37,8 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 - Datum katalyzátoru: přesné jen `VERIFIED` se zdrojem; jinak `ESTIMATED`/`UNCERTAIN` s oknem.
 - Historické predikce se nikdy nemění. Nový názor = nová predikce nebo `change_status` s důvodem.
 - Po změnách přes Python API spusť `python -m stockradar export` a commitni `state/`.
-- SEC EDGAR je vypnutý: vyžaduje kontaktní e-mail v User-Agent. E-mail uživatele bez jeho výslovného souhlasu nepoužívat.
+- E-mail uživatele NIKAM neposílat (rozhodnutí 2026-10-02: „zatím nikam“, možná se později změní) — ani v hlavičkách
+  HTTP dotazů. SEC EDGAR proto zůstává vypnutý (vyžaduje kontaktní e-mail v User-Agent).
 - Příkazy „AKTUALIZACE“, „NAJDI RAKETU NA 14 DNÍ“, „NAJDI DALŠÍ NVIDIA“, „NAJDI DALŠÍ CAPR“ jsou definovány v §73–§76.
 
 ## Pravidla vývoje

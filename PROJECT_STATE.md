@@ -13,6 +13,7 @@
 - **XTB není povinná podmínka** (stav XTB se jen informativně zapisuje).
 - Fokus: AI → elektřina → jádro/fúze → palivo → síť, dohody Google a dalších Big Tech, raketový potenciál.
 - Web aktualizovaný denně: staré predikce + vyhodnocení, nové predikce, model se sám přeučuje.
+- E-mail uživatele zatím nikam neposílat (ani SEC EDGAR); možná se později změní.
 
 ## Stav analýz
 
@@ -51,7 +52,7 @@
 
 | Co | Proč | Co je potřeba |
 |---|---|---|
-| SEC EDGAR (počet akcií → market cap, emise S-3/424B → ředění) | SEC vyžaduje kontaktní e-mail v User-Agent (bez něj HTTP 403) | Souhlas uživatele s použitím e-mailu (proměnná `STOCKRADAR_USER_AGENT`) |
+| SEC EDGAR (počet akcií → market cap, emise S-3/424B → ředění) | SEC vyžaduje kontaktní e-mail v User-Agent (bez něj HTTP 403); uživatel 2026-10-02: e-mail zatím nikam neposílat | Až když uživatel sám rozhodne jinak (proměnná `STOCKRADAR_USER_AGENT`) |
 | Tržní kapitalizace a data výsledků z Yahoo | `quote`/`quoteSummary` vyžadují crumb, odsud HTTP 401/429 | Zatím náhrada: velikost odhadnutá z obratu v USD |
 
 ## NEOVĚŘENO
