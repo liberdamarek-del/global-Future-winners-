@@ -81,3 +81,9 @@ def test_discovery_end_to_end(synthetic_cache, monkeypatch):
             main.execute("DELETE FROM discovery_runs")
     payload = json.loads(main.execute("SELECT result_json FROM discovery_runs").fetchone()[0])
     assert "_models" not in payload and payload["data_do"] == "2026-10-02"
+
+    from stockradar.site import DOC_LIMIT, build_discovery_doc
+    doc = build_discovery_doc(main)
+    assert doc["beh"]["id"] == run_id and doc["historie_behu"][0]["id"] == run_id
+    assert [a["dni"] for a in doc["presnost_ledger"]] == [7, 14, 30, 90, 180, 365]
+    assert len(json.dumps(doc, ensure_ascii=False).encode()) < DOC_LIMIT
