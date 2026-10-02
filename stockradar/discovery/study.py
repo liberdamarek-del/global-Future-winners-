@@ -308,7 +308,7 @@ def auc(scores: list[float], labels: list[int]) -> float | None:
 
 
 def population_test(data: Data, model: Logit, kind: str, heat: Heat, *, start_day: int, sample: int = 2500,
-                    step: int = 5, seed: int = 11) -> dict:
+                    step: int = 5, seed: int = 11, drop_model: Logit | None = None) -> dict:
     """Předvídatelnost v reálném světě: všechny (vzorek) akcie každý týden v testovacím období.
 
     Cíl: začne z daného dne raketa daného typu (max. cena v okně ≥ práh)? Výsledek: přesnost horního 1 % / 5 % / 10 %
@@ -330,8 +330,10 @@ def population_test(data: Data, model: Logit, kind: str, heat: Heat, *, start_da
             f = sample_features(data, s, i, heat)
             if f is not None:
                 seg = c[i + 1:i + window + 1]
-                scored.append((model.score(f), max(seg) / c[i] - 1 >= threshold, min(seg) / c[i] - 1 <= drop,
-                               seg[-1] / c[i] - 1))
+                up = model.score(f)
+                asym = up - drop_model.score(f) if drop_model else up
+                scored.append((up, max(seg) / c[i] - 1 >= threshold, min(seg) / c[i] - 1 <= drop,
+                               seg[-1] / c[i] - 1, asym))
             i += step
     if not scored:
         return {"vzorku": 0}
@@ -360,6 +362,20 @@ def population_test(data: Data, model: Logit, kind: str, heat: Heat, *, start_da
     out["smer"] = ("model pozná hlavně VOLATILITU — rakety i propady jsou v horní skupině podobně časté"
                    if t1["propady"] >= 0.7 * t1["rakety"] else
                    "model má i SMĚROVOU výhodu — rakety jsou v horní skupině výrazně častější než propady")
+    if drop_model is not None:
+        by_asym = sorted(scored, key=lambda t: t[4], reverse=True)
+        asym = {}
+        for pct in (0.01, 0.05, 0.10):
+            top = by_asym[:max(1, int(len(by_asym) * pct))]
+            asym[f"top{int(pct * 100)}"] = stats(top)
+            asym[f"lift_top{int(pct * 100)}"] = round(stats(top)["rakety"] / base["rakety"], 2) if base["rakety"] else None
+        a1 = asym["top1"]
+        asym["smerova_vyhoda"] = bool(a1["rakety"] > a1["propady"] and a1["median"] > base["median"]
+                                      and a1["prumer"] > base["prumer"])
+        asym["smer"] = ("ASYMETRIE funguje — v horní skupině je víc raket než propadů a lepší medián i průměr než u všech"
+                        if asym["smerova_vyhoda"] else
+                        "ani asymetrie (raketa minus propad) nedává směrovou výhodu — kandidáti jen ke sledování")
+        out["asymetrie"] = asym
     return out
 
 

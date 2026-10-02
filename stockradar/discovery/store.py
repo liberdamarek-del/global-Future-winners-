@@ -61,6 +61,10 @@ def record_candidates(conn: sqlite3.Connection, cache_conn, result: dict, run_id
         return created, ["Chybí cena S&P 500 (SPY) — kandidáti nezapsáni; spusť nejdřív `update`."]
     for kind, rows in result["kandidati"].items():
         horizon, days, threshold = HORIZON[kind]
+        if not result["studie"][kind].get("smerova_vyhoda"):
+            notes.append(f"{kind}: model nemá směrovou výhodu v testu mimo vzorek — kandidáti do ledgeru nezapsáni "
+                         "(je lepší nemít tip než slabý tip, §36).")
+            continue
         # jen PER_MODEL nejlepších kandidátů běhu; kdo už má otevřenou predikci, se nepřeskakuje dalším v pořadí
         for row in [r for r in rows if r["percentil"] <= MAX_PERCENTILE][:PER_MODEL]:
             listing_id = _listing_for(conn, cache_conn, row, now)

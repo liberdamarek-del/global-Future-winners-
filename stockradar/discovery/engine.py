@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 
 from stockradar.discovery import cache, news, study
 from stockradar.discovery.features import FEATURES
-from stockradar.discovery.winners import EVENT_TYPES, TRAILING, find_events, outcome_label, phase, trailing_returns
+from stockradar.discovery.winners import DROP_OF, EVENT_TYPES, TRAILING, find_events, outcome_label, phase, trailing_returns
 from stockradar.timeutil import to_iso, utcnow
 
 MODEL_FEATURES = [f for f in FEATURES]
@@ -114,18 +114,27 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         test = [r for r in rows if r["day"] >= cutoff]
         oos = study.fit_logit(train, MODEL_FEATURES)
         test_auc = study.auc([oos.score(r["f"]) for r in test], [r["y"] for r in test]) if test else None
-        pop = study.population_test(data, oos, kind, heat, start_day=cutoff)
+        # zrcadlový model propadů → asymetrie (raketa minus propad)
+        dkind = DROP_OF[kind]
+        drops = study.scan_events(data, dkind)
+        drows = study.build_case_control(data, drops, dkind, heat, seed=13)
+        oos_drop = study.fit_logit([r for r in drows if r["day"] < cutoff], MODEL_FEATURES)
+        pop = study.population_test(data, oos, kind, heat, start_day=cutoff, drop_model=oos_drop)
         final = study.fit_logit(rows, MODEL_FEATURES)
-        models[kind] = (final, oos, pop)
+        final_drop = study.fit_logit(drows, MODEL_FEATURES)
+        models[kind] = (final, oos, pop, final_drop)
+        directional = pop.get("asymetrie", {}).get("smerova_vyhoda", False)
         studies[kind] = {
             "popis": MODELS[kind], "raket": sum(r["y"] for r in rows), "kontrol": sum(1 - r["y"] for r in rows),
+            "propadu": sum(r["y"] for r in drows), "smerova_vyhoda": directional,
             "lift": lifts[:10],
+            "lift_propady": study.lift_table(drows)[:6],
             "vahy": sorted(({"znak": k, "nazev": FEATURES[k], "koef": round(final.coef[i + 1], 3)}
                             for i, k in enumerate(final.features)), key=lambda x: abs(x["koef"]), reverse=True),
             "test": {"trenink_do": TRAIN_CUTOFF.isoformat(), "auc_kontrolni_vzorek": round(test_auc, 4) if test_auc else None,
                      "populace": pop},
         }
-        log(f"{kind}: AUC test {test_auc}, populace {pop}")
+        log(f"{kind}: AUC test {test_auc}, směrová výhoda {directional}, asymetrie {pop.get('asymetrie')}")
 
     # --- 4. příčiny raket ze zpráv ---
     recent_cut = data.data_end - 730
@@ -142,9 +151,12 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         seen.add(ev.symbol)
         sec = data.secs[ev.symbol]
         b = sec.prep.bars
-        info = news.explain_event(sec.meta.get("name") or ev.symbol, date.fromordinal(b.days[ev.t0]),
-                                  date.fromordinal(b.days[ev.end]), symbol=ev.symbol, pause=0 if fetch_news else 1.0,
-                                  **fetch_kwargs)
+        info = cache.cached_news(cache_conn, ev.symbol, b.date(ev.t0), b.date(ev.end)) if not fetch_news else None
+        if info is None:
+            info = news.explain_event(sec.meta.get("name") or ev.symbol, date.fromordinal(b.days[ev.t0]),
+                                      date.fromordinal(b.days[ev.end]), symbol=ev.symbol, pause=0 if fetch_news else 1.0,
+                                      **fetch_kwargs)
+            cache.store_news(cache_conn, ev.symbol, b.date(ev.t0), b.date(ev.end), info, fetched_at=to_iso(utcnow()))
         explained.append(event_row(data, ev, info))
     cause_stats = summarize_causes(explained)
     log(f"Příčiny z titulků: {len(explained)} událostí")
@@ -160,8 +172,11 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         i = len(b.days) - 1
         start = max(i - 126, 0)
         t0 = min(range(start, i + 1), key=lambda k: b.closes[k])
-        info = news.explain_event(sec.meta.get("name") or s, date.fromordinal(b.days[t0]), date.fromordinal(b.days[i]),
-                                  symbol=s, pause=0 if fetch_news else 1.0, **fetch_kwargs)
+        info = cache.cached_news(cache_conn, s, b.date(t0), b.date(i)) if not fetch_news else None
+        if info is None:
+            info = news.explain_event(sec.meta.get("name") or s, date.fromordinal(b.days[t0]), date.fromordinal(b.days[i]),
+                                      symbol=s, pause=0 if fetch_news else 1.0, **fetch_kwargs)
+            cache.store_news(cache_conn, s, b.date(t0), b.date(i), info, fetched_at=to_iso(utcnow()))
         w1 = [e for e in events["W1_30"] if e.symbol == s and e.end >= start]
         top_winners.append({
             "ticker": s, "nazev": sec.meta.get("name"), "zeme": sec.meta.get("country"),
@@ -226,7 +241,7 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         "probehlo": to_iso(now), "data_do": end_day, "statistika": run_stats,
         "vitezove": top_winners, "studie": studies, "pricny": cause_stats, "rakety_vysvetlene": explained[:80],
         "sektorove_vlny": waves[:25], "skupiny": cluster_rows, "kandidati": candidates, "zname_pripady": known,
-        "_models": {k: m[0].to_dict() for k, m in models.items()},
+        "_models": {k: {"raketa": m[0].to_dict(), "propad": m[3].to_dict()} for k, m in models.items()},
     }
 
 
@@ -285,8 +300,11 @@ def score_today(data: study.Data, models: dict, heat: study.Heat, trailing: dict
         f = study.sample_features(data, sec, i, heat)
         if f is not None:
             feats[s] = f
-    for kind, (final, oos, pop) in models.items():
-        scores = {s: final.score(f) for s, f in feats.items()}
+    for kind, (final, oos, pop, final_drop) in models.items():
+        up = {s: final.score(f) for s, f in feats.items()}
+        down = {s: final_drop.score(f) for s, f in feats.items()}
+        scores = {s: up[s] - down[s] for s in feats}  # asymetrie: šance na raketu minus šance na propad
+        asym = pop.get("asymetrie", {})
         ranked = sorted(scores, key=scores.get, reverse=True)
         pct = {s: (k + 1) / len(ranked) for k, s in enumerate(ranked)}
         rows = []
@@ -301,10 +319,13 @@ def score_today(data: study.Data, models: dict, heat: study.Heat, trailing: dict
             rows.append({
                 "ticker": s, "nazev": sec.meta.get("name"), "zeme": sec.meta.get("country"),
                 "obor": sec.meta.get("industry") or sec.meta.get("sector"), "faze": ph,
-                "skore": round(scores[s], 4), "percentil": round(pct[s], 4),
-                "historicky_lift": pop.get(f"lift_{bucket}") if bucket else None,
-                "historicka_presnost": pop.get(f"presnost_{bucket}") if bucket else None,
-                "zakladni_cetnost": pop.get("zakladni_cetnost"),
+                "skore": round(scores[s], 4), "skore_raketa": round(up[s], 4), "skore_propad": round(down[s], 4),
+                "percentil": round(pct[s], 4),
+                "historicky_lift": asym.get(f"lift_{bucket}") if bucket else None,
+                "historicka_presnost": asym.get(bucket, {}).get("rakety") if bucket else None,
+                "historicke_propady": asym.get(bucket, {}).get("propady") if bucket else None,
+                "historicky_median": asym.get(bucket, {}).get("median") if bucket else None,
+                "zakladni_cetnost": pop.get("zakladni_cetnost"), "smerova_vyhoda": asym.get("smerova_vyhoda", False),
                 "cena": round(sec.prep.bars.closes[-1], 4), "mena": sec.currency, "den": sec.prep.bars.date(len(sec.prep.bars.days) - 1),
                 "rust_3m": _r(trailing.get(s, {}).get("3M")), "rust_6m": _r(trailing.get(s, {}).get("6M")),
                 "proc_ted": now, "proc_ne": nope + risk_flags(f, trailing.get(s, {})),
@@ -320,6 +341,7 @@ def score_today(data: study.Data, models: dict, heat: study.Heat, trailing: dict
 def known_case_tests(data: study.Data, models: dict, heat: study.Heat, events: dict) -> list[dict]:
     """§44: našel by systém známé vítěze předem? Skóre modelu NAUČENÉHO JEN NA STARŠÍCH DATECH 5 dní před T0."""
     out = []
+    oos_drop = None
     for sym, label in KNOWN_CASES.items():
         sec = data.secs.get(sym)
         if sec is None:

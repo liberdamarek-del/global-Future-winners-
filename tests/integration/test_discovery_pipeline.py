@@ -66,6 +66,16 @@ def test_discovery_end_to_end(synthetic_cache, monkeypatch):
     main.commit()
     now = datetime(2026, 10, 3, 8, 0, tzinfo=timezone.utc)
     run_id = store.save_run(main, result, now=now)
+    for kind in result["studie"]:
+        assert "asymetrie" in result["studie"][kind]["test"]["populace"]
+    # bez směrové výhody se do ledgeru nic nezapíše
+    gated = json.loads(json.dumps(result))
+    for kind in gated["studie"]:
+        gated["studie"][kind]["smerova_vyhoda"] = False
+    none, gate_notes = store.record_candidates(main, synthetic_cache, gated, run_id, now=now)
+    assert none == [] and all("směrovou výhodu" in n for n in gate_notes)
+    for kind in result["studie"]:
+        result["studie"][kind]["smerova_vyhoda"] = True  # syntetika: vynutit zápis pro test ledgeru
     created, notes = store.record_candidates(main, synthetic_cache, result, run_id, now=now)
     assert created, notes
     rows = main.execute("SELECT source, verdict, discovery_run_id, horizon FROM predictions").fetchall()

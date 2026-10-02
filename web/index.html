@@ -156,7 +156,7 @@ details summary { cursor: pointer; font-weight: 600; }
       <button type="button" class="tab" id="tab-W1_30" data-kind="W1_30" aria-selected="false">Do týdne (≥ +30 %)</button>
     </div>
     <div class="cards" id="pre-cards"><div class="empty">Kandidáti se objeví po prvním globálním hledání.</div></div>
-    <p class="small muted">Šance je historická četnost raket ve stejné skupině skóre v období, které model při učení neviděl. Není to záruka. Fundamenty (hotovost, ředění, tržby) nejsou z bezplatných zdrojů k dispozici — vždy NEOVĚŘENO.</p>
+    <p class="small muted">Řazeno podle asymetrie: šance na raketu minus šance na propad. Čísla „historicky“ jsou četnosti ve stejné skupině skóre v období, které model při učení neviděl. Není to záruka. Fundamenty (hotovost, ředění, tržby) nejsou z bezplatných zdrojů k dispozici — vždy NEOVĚŘENO.</p>
   </section>
 
   <section class="panel" id="pricny" aria-labelledby="h-causes">
@@ -472,7 +472,9 @@ details summary { cursor: pointer; font-weight: 600; }
       return `<div class="verdict"><b>${esc(sd.popis)}</b>
         <span>Ze všech akcií měla raketu <b>${pp(base.rakety, 2)}</b> případů. Horní 1 % podle modelu (naučeného jen na datech do ${esc((sd.test || {}).trenink_do)}) ji mělo v <b>${pp(t1.rakety, 1)}</b> — to je ${fmt(pop.lift_top1, 1)}× častěji.</span>
         <span>Ale stejná skupina měla propad o ${pp(-pop.prah_propadu, 0)} v <b>${pp(t1.propady, 1)}</b> případů (průměr ${pp(base.propady, 2)}). Průměrný výnos skupiny ${pp(t1.prumer, 1)} proti ${pp(base.prumer, 1)} u všech.</span>
-        <span class="small"><span class="chip ${/SMĚROVOU/.test(pop.smer || "") ? "ok" : "warn"}">${esc(pop.smer || "")}</span> · AUC ${fmt(pop.auc, 2)} · ${fmt(pop.vzorku, 0)} pozorování</span></div>`;
+        <span class="small"><span class="chip ${/SMĚROVOU/.test(pop.smer || "") ? "ok" : "warn"}">${esc(pop.smer || "")}</span> · AUC ${fmt(pop.auc, 2)} · ${fmt(pop.vzorku, 0)} pozorování</span>
+        ${pop.asymetrie ? (() => { const a = pop.asymetrie, a1 = a.top1 || {}; return `<span><b>Druhý pokus — asymetrie</b> (šance na raketu minus šance na propad): horní 1 % mělo raketu v <b>${pp(a1.rakety, 1)}</b>, propad v <b>${pp(a1.propady, 1)}</b>, medián výnosu ${pp(a1.median, 1)} (všechny akcie ${pp(base.median, 1)}).</span>
+        <span class="small"><span class="chip ${a.smerova_vyhoda ? "ok" : "err"}">${esc(a.smer)}</span></span>`; })() : ""}</div>`;
     }).join("");
     $("disc-tests").innerHTML = tests;
     $("disc-limits").innerHTML = (st.omezeni || []).map((o) => `<li>${esc(o)}</li>`).join("");
@@ -489,8 +491,10 @@ details summary { cursor: pointer; font-weight: 600; }
       <div class="small muted">${esc(c.zeme || "")} · ${esc(c.obor || "obor neuveden")}</div>
       <dl class="kv"><dt>Cena (${esc(den(c.den))})</dt><dd>${price(c.cena, c.mena)}</dd>
         <dt>3 m / 6 m</dt><dd><span class="${cls(c.rust_3m)}">${pp(c.rust_3m, 0)}</span> / <span class="${cls(c.rust_6m)}">${pp(c.rust_6m, 0)}</span></dd>
-        <dt>Historicky raketa v této skupině</dt><dd>${c.historicka_presnost !== null && c.historicka_presnost !== undefined ? pp(c.historicka_presnost, 1) : "–"}</dd>
-        <dt>Průměr všech akcií</dt><dd>${pp(c.zakladni_cetnost, 2)}</dd></dl>
+        <dt>Historicky raketa / propad</dt><dd>${c.historicka_presnost !== null && c.historicka_presnost !== undefined ? `<span class="pos">${pp(c.historicka_presnost, 1)}</span> / <span class="neg">${pp(c.historicke_propady, 1)}</span>` : "–"}</dd>
+        <dt>Historický medián výnosu skupiny</dt><dd class="${cls(c.historicky_median)}">${pp(c.historicky_median, 1)}</dd>
+        <dt>Raketa u všech akcií</dt><dd>${pp(c.zakladni_cetnost, 2)}</dd></dl>
+      ${c.smerova_vyhoda ? "" : '<div class="notice">Model nemá v testu směrovou výhodu: tahle skupina historicky častěji padala, než letěla. Jen ke sledování.</div>'}
       <div><span class="label">Proč teď</span><ul class="facts">${(c.proc_ted || []).map((x) => `<li>${esc(x)}</li>`).join("") || "<li>bez výrazného důvodu</li>"}</ul></div>
       <div><span class="label">Proč ne</span><ul class="facts">${(c.proc_ne || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
       ${c.zpravy ? `<div><span class="label">Zprávy za 30 dní (${esc(c.zpravy.pocet ?? 0)})</span>

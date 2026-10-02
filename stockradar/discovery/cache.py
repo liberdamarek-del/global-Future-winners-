@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS securities (
     source          TEXT NOT NULL,
     fetched_at      TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS news_events (
+    symbol      TEXT NOT NULL,
+    t0          TEXT NOT NULL,
+    end_day     TEXT NOT NULL,
+    fetched_at  TEXT NOT NULL,
+    info_json   TEXT NOT NULL,
+    PRIMARY KEY (symbol, t0, end_day)
+);
 CREATE TABLE IF NOT EXISTS series (
     symbol      TEXT PRIMARY KEY,
     currency    TEXT,
@@ -110,3 +118,19 @@ def iter_series(conn: sqlite3.Connection):
     for r in conn.execute("SELECT * FROM series WHERE error IS NULL AND n > 0 ORDER BY symbol"):
         yield Bars(r["symbol"], r["currency"], _unpack(r["days"], "i"), _unpack(r["closes"], "d"),
                    _unpack(r["volumes"], "d"))
+
+
+def cached_news(conn: sqlite3.Connection, symbol: str, t0: str, end: str) -> dict | None:
+    import json
+    r = conn.execute("SELECT info_json FROM news_events WHERE symbol = ? AND t0 = ? AND end_day = ?",
+                     (symbol, t0, end)).fetchone()
+    return json.loads(r[0]) if r else None
+
+
+def store_news(conn: sqlite3.Connection, symbol: str, t0: str, end: str, info: dict, *, fetched_at: str) -> None:
+    import json
+    if info.get("stav", "").startswith("DATA NEDOSTUPNÁ"):
+        return  # síťovou chybu necachovat — příště zkusit znovu
+    with conn:
+        conn.execute("INSERT OR REPLACE INTO news_events (symbol, t0, end_day, fetched_at, info_json) VALUES (?, ?, ?, ?, ?)",
+                     (symbol, t0, end, fetched_at, json.dumps(info, ensure_ascii=False)))

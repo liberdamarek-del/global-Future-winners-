@@ -36,18 +36,28 @@ def is_bad_tick(c: list[float], e: int) -> bool:
     """Skok a okamžitý návrat na původní úroveň = pravděpodobně chyba dat."""
     if e < 1 or e + 1 >= len(c):
         return False
-    return c[e] / c[e - 1] > 2.0 and c[e + 1] / c[e - 1] < 1.3
+    jump = c[e] / c[e - 1] > 2.0 and c[e + 1] / c[e - 1] < 1.3
+    crash = c[e] / c[e - 1] < 0.5 and c[e + 1] / c[e - 1] > 0.77
+    return jump or crash
+
+
+# Zrcadlové propady (log-symetrické: +30 % ~ −23 %, +50 % ~ −33 %) — pro model asymetrie raketa vs propad.
+DROP_OF = {"W1_30": "D1_23", "M3_50": "D3_33"}
+EVENT_TYPES["D1_23"] = (5, 1 / 1.30 - 1, "≤ −23 % za týden")
+EVENT_TYPES["D3_33"] = (63, 1 / 1.50 - 1, "≤ −33 % za 3 měsíce")
 
 
 def find_events(bars: Bars, kind: str, *, min_volume_days: int = 3) -> list[Event]:
     window, threshold, _ = EVENT_TYPES[kind]
+    up = threshold > 0
     c, v = bars.closes, bars.volumes
     out, e, n = [], window, len(c)
     while e < n:
         start = e - window
-        if c[start] > 0 and c[e] / c[start] - 1 >= threshold and not is_bad_tick(c, e):
+        move = c[e] / c[start] - 1 if c[start] > 0 else 0.0
+        if (move >= threshold if up else move <= threshold) and not is_bad_tick(c, e):
             seg = range(start, e + 1)
-            t0 = min(seg, key=lambda k: c[k])
+            t0 = min(seg, key=lambda k: c[k]) if up else max(seg, key=lambda k: c[k])
             traded = sum(1 for k in range(t0 + 1, e + 1) if v[k] > 0)
             if t0 < e and traded >= min(min_volume_days, e - t0):
                 after = c[e:min(n, e + 64)]
