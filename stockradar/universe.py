@@ -232,8 +232,17 @@ def add_tracked_company(conn: sqlite3.Connection, name: str, *, yahoo_symbol: st
                         nodes: list[str], country: str | None = None, sector: str | None = None,
                         industry: str | None = None, notes: str | None = None, reason: str = RESEARCH_SOURCE,
                         now: datetime | None = None) -> int:
-    """Přidá veřejnou firmu do radaru: firma + listing s Yahoo symbolem + zařazení v řetězci."""
+    """Přidá veřejnou firmu do radaru: firma + listing s Yahoo symbolem + zařazení v řetězci.
+
+    Idempotentní: když firma se stejným jménem už existuje, vrátí její id a jen doplní chybějící články řetězce."""
     now = now or utcnow()
+    existing = find_company(conn, name)
+    if existing is not None:
+        with conn:
+            for node in nodes:
+                conn.execute("INSERT OR IGNORE INTO company_chain (company_id, node_code) VALUES (?, ?)",
+                             (existing["id"], node))
+        return existing["id"]
     company_id = add_company(conn, name, country=country, sector=sector, industry=industry, notes=notes, now=now)
     listing_id = add_listing(conn, company_id, yahoo_symbol.split(".")[0], exchange, currency=currency,
                              is_primary=True, now=now)

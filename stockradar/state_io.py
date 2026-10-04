@@ -27,6 +27,7 @@ TABLES = (
     "status_changes",
     "lessons",
     "snapshots",
+    "email_usage",
 )
 
 

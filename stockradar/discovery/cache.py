@@ -46,6 +46,62 @@ CREATE TABLE IF NOT EXISTS series (
     fetched_at  TEXT NOT NULL,
     error       TEXT
 );
+-- SEC EDGAR (zdarma, e-mail v hlavičce — viz stockradar/contact.py)
+CREATE TABLE IF NOT EXISTS sec_tickers (
+    ticker      TEXT PRIMARY KEY,
+    cik         INTEGER NOT NULL,
+    title       TEXT,
+    fetched_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sec_facts (
+    cik         INTEGER NOT NULL,
+    concept     TEXT NOT NULL,          -- revenue / net_income / shares / cash
+    period      TEXT NOT NULL,          -- CY2025Q2 (kvartál) nebo CY2025Q2I (okamžik)
+    end_day     TEXT NOT NULL,
+    val         REAL NOT NULL,
+    source      TEXT NOT NULL,          -- XBRL koncept, ze kterého hodnota pochází
+    PRIMARY KEY (cik, concept, period)
+);
+CREATE TABLE IF NOT EXISTS sec_frames_done (
+    tag         TEXT NOT NULL,
+    period      TEXT NOT NULL,
+    n           INTEGER NOT NULL,
+    fetched_at  TEXT NOT NULL,
+    PRIMARY KEY (tag, period)
+);
+CREATE TABLE IF NOT EXISTS sec_filings (
+    path        TEXT PRIMARY KEY,       -- edgar/data/<cik>/<accession>.txt
+    cik         INTEGER NOT NULL,
+    form        TEXT NOT NULL,
+    filed       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_sec_filings_cik ON sec_filings(cik, filed);
+CREATE TABLE IF NOT EXISTS sec_index_done (
+    quarter     TEXT PRIMARY KEY,       -- 2026Q3
+    n           INTEGER NOT NULL,
+    fetched_at  TEXT NOT NULL
+);
+-- ClinicalTrials.gov API v2 (zdarma, bez klíče a bez e-mailu)
+CREATE TABLE IF NOT EXISTS ct_studies (
+    nct         TEXT PRIMARY KEY,
+    sponsor     TEXT NOT NULL,
+    phase       TEXT,
+    pcd         TEXT,                   -- primary completion date (YYYY-MM nebo YYYY-MM-DD)
+    pcd_type    TEXT,                   -- ACTUAL / ESTIMATED
+    status      TEXT,
+    title       TEXT,
+    conditions  TEXT,
+    enrollment  INTEGER,
+    results_posted TEXT,
+    last_update TEXT,
+    fetched_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_ct_sponsor ON ct_studies(sponsor);
+CREATE TABLE IF NOT EXISTS ct_sponsor_map (
+    sponsor     TEXT PRIMARY KEY,
+    symbol      TEXT,                   -- NULL = sponzor nenalezen mezi kotovanými firmami
+    method      TEXT NOT NULL
+);
 """
 
 
@@ -102,9 +158,13 @@ def store_series(conn: sqlite3.Connection, symbol: str, currency: str | None,
 
 
 def store_error(conn: sqlite3.Connection, symbol: str, error: str, *, fetched_at: str) -> None:
+    """Chyba stažení. Už uloženou historii NEPŘEPISUJE (dřív přechodná chyba, např. HTTP 429, smazala celou řadu)
+    — řada zůstane beze změny a symbol se zkusí znovu při příštím běhu."""
     with conn:
-        conn.execute("INSERT OR REPLACE INTO series (symbol, n, fetched_at, error) VALUES (?, 0, ?, ?)",
-                     (symbol, fetched_at, error[:300]))
+        have = conn.execute("SELECT 1 FROM series WHERE symbol = ? AND error IS NULL AND n > 0", (symbol,)).fetchone()
+        if not have:
+            conn.execute("INSERT OR REPLACE INTO series (symbol, n, fetched_at, error) VALUES (?, 0, ?, ?)",
+                         (symbol, fetched_at, error[:300]))
 
 
 def load_series(conn: sqlite3.Connection, symbol: str) -> Bars | None:

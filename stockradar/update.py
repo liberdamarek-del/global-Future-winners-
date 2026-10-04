@@ -41,20 +41,44 @@ def first_bar_after(series: m.Series, due: datetime, now: datetime) -> int | Non
     return None
 
 
+ROCKET_LIMIT_DAYS = {"D0_14": 14, "D15_45": 45, "M6_PLUS": 180}  # do kdy musí raketa přijít
+
+
+def rocket_target(p) -> float | None:
+    """Cíl predikce rakety v % (None = predikce „lépe než S&P 500“ energetického modelu)."""
+    if p["target_move_pct"] is not None:
+        return p["target_move_pct"]
+    if p["source"] == "DISCOVERY":
+        return 30.0 if p["horizon"] == "D0_14" else 50.0
+    return None
+
+
 def evaluate_predictions(conn: sqlite3.Connection, u: m.Universe, now: datetime) -> list[dict]:
-    """Vyhodnotí živé predikce po 7/14/30 dnech proti S&P 500. Vrací nová vyhodnocení."""
+    """Vyhodnotí živé predikce po 7/14/30/90/180/365 dnech. Vrací nová vyhodnocení.
+
+    * energetický model: HIT = výnos lepší než S&P 500,
+    * predikce raket: HIT = cena (denní závěr) dosáhla cíle (např. +50 %) do konce horizontu; dřív, než horizont
+      uplyne a cíl ještě nebyl dosažen, se zapíše NEOVERENO (= zatím nerozhodnuto).
+    """
     done = []
     bench = u.series.get(config.BENCHMARK_SYMBOL)
     rows = conn.execute(
         "SELECT p.*, l.yahoo_symbol FROM predictions p JOIN listings l ON l.id = p.listing_id"
         " WHERE p.mode = 'LIVE' AND l.yahoo_symbol IS NOT NULL AND p.benchmark_price IS NOT NULL").fetchall()
+    loaded: dict[str, m.Series] = {}
     for p in rows:
-        series = u.series.get(p["yahoo_symbol"])
-        if not series or not bench:
+        sym = p["yahoo_symbol"]
+        # predikce objevů jsou mimo energetický vesmír → řadu načíst přímo z cache cen (dřív se nevyhodnotily vůbec)
+        series = u.series.get(sym) or loaded.get(sym)
+        if series is None:
+            series = loaded[sym] = m.load_series(conn, sym)
+        if not series.dates or not bench:
             continue
         made = parse_iso(p["made_at"])
         have = {r[0] for r in conn.execute("SELECT horizon_days FROM prediction_outcomes WHERE prediction_id = ?",
                                            (p["id"],))}
+        target = rocket_target(p)
+        limit = made + timedelta(days=ROCKET_LIMIT_DAYS.get(p["horizon"], 180))
         for n in EVAL_DAYS:
             due = made + timedelta(days=n)
             if n in have or due > now:
@@ -64,18 +88,33 @@ def evaluate_predictions(conn: sqlite3.Connection, u: m.Universe, now: datetime)
                 continue
             window = [c for d, c in zip(series.dates, series.closes) if made.date().isoformat() < d <= series.dates[j]]
             price, bench_price = series.closes[j], bench.closes[jb]
-            excess = (price / p["price"] - 1) - (bench_price / p["benchmark_price"] - 1)
-            expected = p["base_move_pct"]
+            ret = price / p["price"] - 1
+            excess = ret - (bench_price / p["benchmark_price"] - 1)
+            if target is None:
+                expected = p["base_move_pct"]
+                result = "HIT" if excess > 0 else "MISS"
+                deviation = (f"očekávaný nadvýnos {expected:+.1f} %, skutečný {excess * 100:+.1f} % vůči S&P 500"
+                             if expected is not None else f"skutečný nadvýnos {excess * 100:+.1f} % vůči S&P 500")
+            else:
+                in_limit = [c for d, c in zip(series.dates, series.closes)
+                            if made.date().isoformat() < d <= min(series.dates[j], limit.date().isoformat())]
+                reach = (max(in_limit) / p["price"] - 1) if in_limit else 0.0
+                if reach * 100 >= target:
+                    result = "HIT"
+                elif due >= limit:
+                    result = "MISS"
+                else:
+                    result = "NEOVERENO"
+                deviation = (f"cíl +{target:.0f} %: maximum {reach * 100:+.1f} %, teď {ret * 100:+.1f} %, "
+                             f"vůči S&P 500 {excess * 100:+.1f} %"
+                             + ("" if result != "NEOVERENO" else " — zatím nerozhodnuto"))
             record_outcome(
                 conn, p["id"], horizon_days=n, price=price, price_source="Yahoo Finance chart API (denní závěr)",
                 observed_at=max(bar_close_time(series.dates[j]), bar_close_time(bench.dates[jb])),
-                result="HIT" if excess > 0 else "MISS",
-                max_price=max(window + [price]), min_price=min(window + [price]),
-                deviation=(f"očekávaný nadvýnos {expected:+.1f} %, skutečný {excess * 100:+.1f} % vůči S&P 500"
-                           if expected is not None else f"skutečný nadvýnos {excess * 100:+.1f} % vůči S&P 500"),
-                benchmark_price=bench_price, now=now)
-            done.append({"prediction_id": p["id"], "symbol": p["yahoo_symbol"], "days": n,
-                         "excess_pct": round(excess * 100, 2)})
+                result=result, max_price=max(window + [price]), min_price=min(window + [price]),
+                deviation=deviation, benchmark_price=bench_price, now=now)
+            done.append({"prediction_id": p["id"], "symbol": sym, "days": n, "result": result,
+                         "return_pct": round(ret * 100, 2), "excess_pct": round(excess * 100, 2)})
     return done
 
 
@@ -206,7 +245,9 @@ def run_update(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path | Non
     ok = prices["requested"] - len(prices["errors"])
     steps["Ceny (Yahoo)"] = f"DONE {ok}/{prices['requested']}" if ok else "CHYBA"
     warnings += [f"Ceny: {e}" for e in prices["errors"][:10]]
-    steps["SEC EDGAR"] = "VYPNUTO (vyžaduje kontaktní e-mail v User-Agent)"
+    from stockradar.contact import email
+    steps["SEC EDGAR"] = ("TÝDNĚ (v sobotním objevování; každé použití e-mailu se eviduje)" if email()
+                          else "VYPNUTO (e-mail není nastaven)")
 
     u = m.load_universe(conn)
     bench = u.series.get(config.BENCHMARK_SYMBOL)

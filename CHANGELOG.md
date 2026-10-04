@@ -4,6 +4,40 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-03 · v0.4.0 — Audit, vlastní predikce raket na 6 měsíců, SEC + klinické studie, evidence e-mailu
+
+Důvod: pokyn uživatele 2026-10-03 — projít celý kód (stav, chyby se závažností, plán, diagnostika), zjednodušit web,
+samostatně předpovídat firmy s růstem desítek až stovek procent za ~6 měsíců, využít všechny dostupné zdroje,
+smí se použít e-mail (ale s evidencí, kolikrát a kde), kód průběžně zlepšovat.
+
+| Soubor/modul | Změna | Důvod |
+|---|---|---|
+| `docs/AUDIT_2026-10-03.md` | Audit všech modulů: stav, 2× CRITICAL, 5× HIGH, 9× MEDIUM, 6× LOW, plán, diagnostika | pokyn uživatele |
+| `migrations/0004_email_rockets.sql` | `email_usage` (nemazatelná, jen navyšovaná evidence), u predikcí cíl / šance na propad / základní četnost | §53, rozhodnutí uživatele |
+| `contact.py` | E-mail jen pro www.sec.gov a data.sec.gov, každý pokus se před odesláním zapíše; e-mail mimo git | rozhodnutí uživatele 2026-10-03 |
+| `sources/sec.py` | SEC EDGAR: XBRL frames (tržby, zisk, akcie, hotovost), full-index (8-K, 10-Q/K, emise, 13D s datem podání) | fundamenty §5 |
+| `sources/clinicaltrials.py` | ClinicalTrials.gov: 18 540 studií fáze 2/3, párování sponzorů s kotovanými firmami | biotech katalyzátory |
+| `discovery/fundamentals.py` | Znaky k danému dni bez look-ahead (hodnota kvartálu až od podání 10-Q/10-K) | §41 |
+| `discovery/rocket.py` | Model raket na 6 měsíců: panel 352 tis. vzorků, WoE + logistická regrese, test mimo vzorek, 5 řazení, test „bez fundamentů“ | pokyn uživatele |
+| `discovery/store.py` | `record_rockets`: predikce raket do ledgeru (cíl +50 %, šance, propad, základní četnost), čerstvá cena, TOO LATE filtr, automatické katalyzátory z klinických studií | §42 |
+| `update.py` | **C1** predikce mimo energetický vesmír se vyhodnotí; **C2** rakety podle cíle (HIT/MISS/zatím nerozhodnuto) | audit |
+| `discovery/cache.py` | **H2** chyba stahování už nesmaže uloženou historii | audit |
+| `site.py`, `web/index.html` | **H1** limit 170 kB kvůli zvětšení na serveru; web 12 → 6 sekcí, rakety nahoře, vítězové jen TOP 10, evidence e-mailu | audit, pokyn uživatele |
+| `diag.py`, `cli.py` | `diag`, `email`, `sources`; `status --days 45` | audit (diagnostika) |
+| `catalysts.py`, `universe.py`, `model.py`, `yahoo.py`, `config.py`, `news.py`, `engine.py` | M1, M2, L1, L2, L6 | audit |
+| `CLAUDE.md` | Nová pravidla e-mailu, diagnostika v denní úloze, sobotní krok „zlepšování“ | pokyn uživatele |
+
+**Výsledek modelu raket (test 2025-07 až 2026-04, 100 205 pozorování):** +50 % do 6 měsíců u 16,7 % všech akcií;
+horní 1 % podle „raketa minus propad“ 25,1 % (propad 17,6 % vs 16,0 %, medián +0,3 % vs +1,8 %). Mírná výhoda
+v četnosti raket, ne jistá výhoda ve směru → predikce WATCH se šancí na raketu i propad. SEC + studie: AUC 0,7325 vs 0,7307.
+
+**Poznámka k ledgeru:** běh objevování #2 (2026-10-03) spustil kód v0.4.0 ještě před zvýšením čísla verze — jeho
+predikce mají `model_version = 0.3.0`. Ledger je append-only, zůstávají tak.
+
+**Test:** `python -m pytest` — 86 testů (unit 78, integrační 7, end-to-end 1). **Výsledek:** 86/86 prošlo.
+
+---
+
 ## 2026-10-02 · v0.3.0 — Global Growth Pattern, Winners & Emerging Sector Engine
 
 Důvod: druhé zadání uživatele (docs/MASTER_PROMPT_GROWTH_ENGINE.md) + pokyn „projdi tisíce firem, najdi akcie, které

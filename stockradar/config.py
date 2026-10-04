@@ -23,11 +23,7 @@ REQUIRE_XTB_FOR_BUY = False
 # Benchmark pro vyhodnocení predikcí (Yahoo symbol).
 BENCHMARK_SYMBOL = "SPY"
 
-# Bezplatné zdroje dat. SEC vyžaduje User-Agent s identifikací — lze přepsat proměnnou prostředí.
-HTTP_USER_AGENT = os.environ.get(
-    "STOCKRADAR_USER_AGENT",
-    "global-future-winners stock-radar (research; github.com/liberdamarek-del/global-Future-winners-)",
-)
+# E-mail pro SEC EDGAR a evidence jeho použití: viz stockradar/contact.py (e-mail není v gitu).
 
 
 def db_path() -> Path:

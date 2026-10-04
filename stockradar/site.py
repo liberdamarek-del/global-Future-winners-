@@ -8,40 +8,75 @@ from pathlib import Path
 from stockradar import __version__, config
 from stockradar import model as m
 from stockradar.catalysts import date_text
+from stockradar.contact import usage_summary
 from stockradar.enums import label
 from stockradar.timeutil import to_iso, utcnow
 
-DOC_LIMIT = 240 * 1024  # db dokument má limit 256 KiB
+# db dokument má na serveru limit 256 KiB; server ho ukládá ~1,4–1,5× větší než náš kompaktní JSON
+# (změřeno 2026-10-02: 155 720 B → 218 076 B). Proto hlídáme 170 KiB kompaktního textu.
+DOC_LIMIT = 170 * 1024
 
 FREE_SOURCES = [
     {"nazev": "Yahoo Finance chart API", "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY",
-     "co": "Denní ceny, objemy a kurzy měn pro všechny burzy (USA, Evropa, Asie). Bez klíče; neoficiální, může omezit počet dotazů.",
-     "stav": "POUŽÍVÁ SE"},
-    {"nazev": "SEC EDGAR", "url": "https://www.sec.gov/edgar/search/",
-     "co": "Filingy US firem (8-K, 10-Q, S-1/S-3 = ředění, počet akcií). Zdarma, ale vyžaduje kontaktní e-mail v hlavičce dotazu.",
-     "stav": "VYPNUTO — čeká na souhlas s použitím e-mailu"},
+     "co": "Denní ceny, objemy a kurzy měn pro všechny burzy (USA, Evropa, Asie). Bez klíče.", "stav": "POUŽÍVÁ SE"},
+    {"nazev": "SEC EDGAR (XBRL frames, full-index)", "url": "https://www.sec.gov/edgar/search/",
+     "co": "Fundamenty US firem (tržby, zisk, počet akcií, hotovost) a všechny filingy s datem podání (8-K, emise, 13D). "
+           "Vyžaduje e-mail v hlavičce — každé použití je evidované níže.", "stav": "POUŽÍVÁ SE (s e-mailem)"},
     {"nazev": "ClinicalTrials.gov API v2", "url": "https://clinicaltrials.gov/api/v2/studies",
-     "co": "Klinické studie (biotech katalyzátory). Zdarma, bez klíče.", "stav": "DOSTUPNÉ, zatím nevyužito"},
-    {"nazev": "NRC dashboardy a tiskové zprávy", "url": "https://www.nrc.gov/reactors/new-reactors/advanced.html",
-     "co": "Termíny jaderných povolení (stavební povolení, licence).", "stav": "RUČNĚ při denním výzkumu"},
-    {"nazev": "Tiskové zprávy firem a oborová média", "url": "https://www.world-nuclear-news.org/",
-     "co": "Dohody s Big Tech, kontrakty, milníky (World Nuclear News, ANS, Utility Dive, DCD).",
-     "stav": "RUČNĚ při denním výzkumu"},
+     "co": "Studie fáze 2/3 sponzorované firmami → termíny klinických výsledků (katalyzátory biotech). Bez klíče a e-mailu.",
+     "stav": "POUŽÍVÁ SE"},
+    {"nazev": "Google News RSS", "url": "https://news.google.com/",
+     "co": "Titulky zpráv kolem raket a u kandidátů (proč akcie vyrostla). Bez klíče.", "stav": "POUŽÍVÁ SE"},
+    {"nazev": "Seznamy firem: Nasdaq screener, JPX, ASX, Wikipedie", "url": "https://www.nasdaq.com/market-activity/stocks/screener",
+     "co": "Kdo je na burze (USA, Japonsko, Austrálie, Evropa, Asie, Kanada), obor, tržní kapitalizace USA.", "stav": "POUŽÍVÁ SE"},
+    {"nazev": "NRC, tiskové zprávy, oborová média", "url": "https://www.nrc.gov/reactors/new-reactors/advanced.html",
+     "co": "Jaderná povolení, dohody s Big Tech, milníky — denní výzkum Claude (zapisuje se jen se zdrojem).",
+     "stav": "POUŽÍVÁ SE (denní výzkum)"},
 ]
 
 
 def _accuracy(conn: sqlite3.Connection) -> list[dict]:
+    """Energetický model: kolik predikcí porazilo S&P 500 po 7/14/30 dnech."""
     out = []
     for n in (7, 14, 30):
         rows = conn.execute(
             "SELECT o.result, o.excess_return_pct FROM prediction_outcomes o JOIN predictions p ON p.id = o.prediction_id"
-            " WHERE o.horizon_days = ? AND p.mode = 'LIVE'", (n,)).fetchall()
+            " WHERE o.horizon_days = ? AND p.mode = 'LIVE' AND COALESCE(p.source, 'ENERGY_MODEL') = 'ENERGY_MODEL'",
+            (n,)).fetchall()
         hits = sum(1 for r in rows if r["result"] == "HIT")
         ex = [r["excess_return_pct"] for r in rows if r["excess_return_pct"] is not None]
         out.append({"dni": n, "vyhodnoceno": len(rows), "uspesnych": hits,
                     "uspesnost": round(hits / len(rows), 4) if rows else None,
                     "prumer_nad_spy": round(sum(ex) / len(ex), 2) if ex else None})
     return out
+
+
+def _rocket_accuracy(conn: sqlite3.Connection) -> dict:
+    """Predikce raket: rozhodnuté (HIT kdykoli, MISS po uplynutí horizontu) proti predikované šanci."""
+    preds = conn.execute("SELECT id, probability_pct, base_rate_pct FROM predictions"
+                         " WHERE mode = 'LIVE' AND source = 'DISCOVERY'").fetchall()
+    decided = hits = 0
+    expected = []
+    for p in preds:
+        res = {r["result"] for r in conn.execute("SELECT result FROM prediction_outcomes WHERE prediction_id = ?", (p["id"],))}
+        if "HIT" in res or "MISS" in res:
+            decided += 1
+            hits += "HIT" in res
+            if p["probability_pct"] is not None:
+                expected.append(p["probability_pct"] / 100)
+    return {"predikci": len(preds), "rozhodnuto": decided, "zasahu": hits, "bezi": len(preds) - decided,
+            "uspesnost": round(hits / decided, 4) if decided else None,
+            "ocekavano": round(sum(expected) / len(expected), 4) if expected else None}
+
+
+def _latest_close(conn: sqlite3.Connection, symbol: str) -> tuple[float, str] | None:
+    r = conn.execute("SELECT close, date FROM price_bars WHERE symbol = ? ORDER BY date DESC LIMIT 1", (symbol,)).fetchone()
+    return (r["close"], r["date"]) if r else None
+
+
+def _max_since(conn: sqlite3.Connection, symbol: str, day: str) -> float | None:
+    r = conn.execute("SELECT MAX(close) FROM price_bars WHERE symbol = ? AND date > ?", (symbol, day)).fetchone()
+    return r[0] if r else None
 
 
 def _nodes_by_company(conn) -> dict[int, list[str]]:
@@ -134,38 +169,46 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
                 "SELECT id, created_at, reason FROM model_versions ORDER BY id DESC LIMIT 15")],
         },
         "zdroje": FREE_SOURCES,
+        "email": usage_summary(conn, days=14),
     }
 
-    latest_close = {s: (it["cena"], it["den"]) for s, it in scored.items()}
     bench_close = conn.execute("SELECT close, date FROM price_bars WHERE symbol = ? ORDER BY date DESC LIMIT 1",
                                (config.BENCHMARK_SYMBOL,)).fetchone()
     preds = []
     for p in conn.execute(
-            "SELECT p.*, l.yahoo_symbol, c.name FROM predictions p JOIN listings l ON l.id = p.listing_id"
+            "SELECT p.*, l.yahoo_symbol, c.name, c.industry FROM predictions p JOIN listings l ON l.id = p.listing_id"
             " JOIN companies c ON c.id = p.company_id WHERE p.mode = 'LIVE' ORDER BY p.made_at DESC LIMIT 300"):
         outs = {o["horizon_days"]: o for o in conn.execute(
             "SELECT * FROM prediction_outcomes WHERE prediction_id = ?", (p["id"],))}
+        rocket = p["source"] == "DISCOVERY"
         live = None
-        if p["yahoo_symbol"] in latest_close and bench_close and p["benchmark_price"]:
-            price, day = latest_close[p["yahoo_symbol"]]
+        last = _latest_close(conn, p["yahoo_symbol"]) if p["yahoo_symbol"] else None
+        if last and bench_close and p["benchmark_price"]:
+            price, day = last
             ret = price / p["price"] - 1
+            top = _max_since(conn, p["yahoo_symbol"], p["made_at"][:10])
             live = {"cena": price, "den": day, "vynos": round(ret * 100, 2),
-                    "nad_spy": round((ret - (bench_close["close"] / p["benchmark_price"] - 1)) * 100, 2)}
+                    "nad_spy": round((ret - (bench_close["close"] / p["benchmark_price"] - 1)) * 100, 2),
+                    "max_dosud": round((top / p["price"] - 1) * 100, 2) if top else None}
+        results = {o["result"] for o in outs.values()}
+        state = ("HIT" if "HIT" in results else "MISS" if "MISS" in results else "BĚŽÍ") if rocket else \
+            (outs[max(outs)]["result"] if outs else "BĚŽÍ")
         preds.append({
-            "id": p["id"], "ticker": p["yahoo_symbol"], "nazev": p["name"], "datum": p["made_at"], "cena": p["price"],
-            "mena": p["currency"], "skore": p["score_overall_setup"], "kategorie": p["category"],
-            "verdikt": label(p["verdict"]), "main_pick": bool(p["is_main_pick"]),
-            "p_beat": p["probability_pct"], "p_rocket": p["p_rocket_pct"], "nadvynos": p["base_move_pct"],
-            "katalyzator": p["catalyst_text"], "duvod": p["rationale"], "xtb": label(p["xtb_status"]),
-            "data": p["price_freshness"], "aktualne": live,
+            "id": p["id"], "ticker": p["yahoo_symbol"], "nazev": p["name"], "obor": p["industry"], "datum": p["made_at"],
+            "cena": p["price"], "mena": p["currency"], "skore": p["score_overall_setup"], "verdikt": label(p["verdict"]),
+            "main_pick": bool(p["is_main_pick"]), "p_beat": p["probability_pct"], "p_rocket": p["p_rocket_pct"],
+            "p_propad": p["p_drop_pct"], "zakladni": p["base_rate_pct"], "cil": p["target_move_pct"],
+            "nadvynos": p["base_move_pct"], "bull": p["bull_move_pct"], "bear": p["bear_move_pct"],
+            "katalyzator": p["catalyst_text"], "katalyzator_datum": p["catalyst_date_text"],
+            "duvod": p["rationale"], "riziko": p["key_risk"], "data": p["price_freshness"], "aktualne": live,
             "vysledky": {str(n): {"vynos": o["return_pct"], "nad_spy": o["excess_return_pct"], "vysledek": o["result"],
                                   "max": round((o["max_price"] / p["price"] - 1) * 100, 1) if o["max_price"] else None,
                                   "den": o["observed_at"][:10]} for n, o in outs.items()},
-            "zdroj": "objevy" if p["source"] == "DISCOVERY" else "energie",
-            "horizont": p["horizon"],
-            "uzavreno": (365 if p["source"] == "DISCOVERY" else 30) in outs,
+            "typ": "raketa" if rocket else "energie", "horizont": p["horizon"], "stav": state,
+            "konec": (datetime.fromisoformat(p["made_at"][:10]) + timedelta(days=180 if rocket else 30)).date().isoformat(),
         })
-    predikce = {"aktualizovano": to_iso(now), "predikce": preds, "presnost": aktualni["presnost"]}
+    predikce = {"aktualizovano": to_iso(now), "predikce": preds, "presnost": aktualni["presnost"],
+                "presnost_rakety": _rocket_accuracy(conn)}
 
     node_rows = conn.execute("SELECT * FROM chain_nodes ORDER BY layer, code").fetchall()
     retezec = {
@@ -195,33 +238,39 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
 
 
 def build_discovery_doc(conn: sqlite3.Connection) -> dict | None:
-    """Dokument stav/objevy z posledního běhu globálního objevování + výsledky jeho predikcí v ledgeru."""
+    """Dokument stav/objevy — zkrácený výtah z posledního běhu objevování (úplný výsledek je v discovery_runs)."""
     run = conn.execute("SELECT * FROM discovery_runs ORDER BY id DESC LIMIT 1").fetchone()
     if run is None:
         return None
-    doc = json.loads(run["result_json"])
-    # zkrácení pro web (limit db dokumentu); úplný výsledek zůstává v discovery_runs
-    doc["rakety_vysvetlene"] = [dict(r, titulky=r.get("titulky", [])[:2], signaly_predem=r.get("signaly_predem", [])[:2])
-                                for r in doc.get("rakety_vysvetlene", [])[:40]]
-    for sd in doc.get("studie", {}).values():
-        sd["lift"] = [{k: v for k, v in l.items() if k != "kvintily"} for l in sd.get("lift", [])][:8]
-        sd["lift_propady"] = [{k: v for k, v in l.items() if k != "kvintily"} for l in sd.get("lift_propady", [])][:5]
-    doc["kandidati"] = {k: [dict(c, zpravy=dict(c["zpravy"], titulky=c["zpravy"].get("titulky", [])[:2]) if c.get("zpravy") else None)
-                            for c in rows[:15]] for k, rows in doc.get("kandidati", {}).items()}
-    doc["vitezove"] = [dict(w, titulky=w.get("titulky", [])[:1]) for w in doc.get("vitezove", [])]
-    doc["beh"] = {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"]}
-    doc["historie_behu"] = [{"id": r["id"], "kdy": r["run_at"], "statistika": json.loads(r["stats_json"])}
-                            for r in conn.execute("SELECT id, run_at, stats_json FROM discovery_runs ORDER BY id DESC LIMIT 10")]
-    rows = conn.execute(
-        "SELECT p.horizon, o.horizon_days, o.result, o.excess_return_pct, o.max_price, p.price FROM prediction_outcomes o"
-        " JOIN predictions p ON p.id = o.prediction_id WHERE p.source = 'DISCOVERY' AND p.mode = 'LIVE'").fetchall()
-    acc = []
-    for n in (7, 14, 30, 90, 180, 365):
-        sub = [r for r in rows if r["horizon_days"] == n]
-        rockets = [r for r in sub if r["max_price"] and r["max_price"] / r["price"] - 1 >= (0.30 if r["horizon"] == "D0_14" else 0.50)]
-        acc.append({"dni": n, "vyhodnoceno": len(sub), "porazilo_spy": sum(1 for r in sub if r["result"] == "HIT"),
-                    "raket": len(rockets)})
-    doc["presnost_ledger"] = acc
+    full = json.loads(run["result_json"])
+    studie = {}
+    for kind, sd in full.get("studie", {}).items():
+        pop = (sd.get("test") or {}).get("populace") or {}
+        studie[kind] = {"popis": sd.get("popis"), "raket": sd.get("raket"), "smerova_vyhoda": sd.get("smerova_vyhoda"),
+                        "trenink_do": (sd.get("test") or {}).get("trenink_do"),
+                        "zaklad": pop.get("zaklad"), "top1": pop.get("top1"), "lift_top1": pop.get("lift_top1"),
+                        "auc": pop.get("auc"), "asymetrie_top1": (pop.get("asymetrie") or {}).get("top1"),
+                        "lift": [{"nazev": l["nazev"], "lift": l["nejsilnejsi"]["lift"]} for l in sd.get("lift", [])[:5]]}
+    rak = full.get("rakety_6m")
+    if rak:
+        rak = {k: v for k, v in rak.items() if not k.startswith("_")}
+        rak["kandidati"] = rak.get("kandidati", [])[:12]
+        rak["vahy"] = rak.get("vahy", [])[:12]
+    pricny = full.get("pricny", {})
+    doc = {
+        "statistika": full.get("statistika"), "data_do": full.get("data_do"),
+        "rakety_6m": rak, "studie": studie,
+        "pricny": {k: pricny.get(k) for k in ("vysvetleno", "celkem", "planovany_termin", "signal_predem")}
+                  | {"podle_priciny": pricny.get("podle_priciny", [])[:8]},
+        "vitezove": [{k: w.get(k) for k in ("ticker", "nazev", "zeme", "sektor", "rust_6m", "rust_12m", "velikost",
+                                             "overit_data", "pricina")} for w in full.get("vitezove", [])[:10]],
+        "sektorove_vlny": [{k: w.get(k) for k in ("obor", "vitezu", "firem", "lift", "median_vynos", "zeme", "priklady")}
+                           for w in full.get("sektorove_vlny", [])[:8]],
+        "zname_pripady": full.get("zname_pripady", []),
+        "nova_ipo": {"pocet": (full.get("nova_ipo") or {}).get("pocet"),
+                     "podle_oboru": (full.get("nova_ipo") or {}).get("podle_oboru", [])[:5]},
+        "beh": {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"]},
+    }
     return doc
 
 

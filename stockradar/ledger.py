@@ -79,6 +79,9 @@ class PredictionInput:
     model_run_id: int | None = None
     source: str | None = None
     discovery_run_id: int | None = None
+    target_move_pct: float | None = None   # cíl predikce rakety (např. +50 = max. cena aspoň +50 % v horizontu)
+    p_drop_pct: float | None = None        # šance na propad (zrcadlově, např. −33 %)
+    base_rate_pct: float | None = None     # kolik % všech akcií cíl historicky splnilo (srovnání s náhodou)
 
 
 def record_prediction(
@@ -106,8 +109,12 @@ def record_prediction(
 
     if p.price_as_of > made_at:
         raise LedgerRuleError("§59: cena z budoucnosti vůči okamžiku predikce")
-    if p.probability_pct is not None and not 0 <= p.probability_pct <= 100:
-        raise ValueError("probability_pct musí být 0–100")
+    for name in ("probability_pct", "p_rocket_pct", "p_drop_pct", "base_rate_pct"):
+        value = getattr(p, name)
+        if value is not None and not 0 <= value <= 100:
+            raise ValueError(f"{name} musí být 0–100")
+    if p.target_move_pct is not None and p.target_move_pct <= 0:
+        raise ValueError("target_move_pct musí být kladný (cíl růstu v %)")
 
     listing = get_listing(conn, p.listing_id)
     is_buy = p.verdict == Verdict.SPEC_BUY or p.is_main_pick
@@ -153,9 +160,10 @@ def record_prediction(
                 score_fundament, score_catalyst, score_catalyst_timing, score_upside, score_surprise,
                 score_financial_health, score_valuation, score_technical, score_dilution_risk,
                 score_execution_risk, score_rocket, score_overall_setup, model_version,
-                benchmark_symbol, benchmark_price, p_rocket_pct, model_run_id, source, discovery_run_id)
+                benchmark_symbol, benchmark_price, p_rocket_pct, model_run_id, source, discovery_run_id,
+                target_move_pct, p_drop_pct, base_rate_pct)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 mode, made_iso, made_iso if mode == "LIVE" else to_iso(now),
                 listing["company_id"], p.listing_id, p.horizon,
@@ -175,6 +183,7 @@ def record_prediction(
                 s["financial_health"], s["valuation"], s["technical"], s["dilution_risk"],
                 s["execution_risk"], s["rocket"], s["overall_setup"], __version__,
                 p.benchmark_symbol, p.benchmark_price, p.p_rocket_pct, p.model_run_id, p.source, p.discovery_run_id,
+                p.target_move_pct, p.p_drop_pct, p.base_rate_pct,
             ),
         )
     return cur.lastrowid

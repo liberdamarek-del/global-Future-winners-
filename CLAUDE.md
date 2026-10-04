@@ -10,17 +10,26 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 2. Spusť `python -m stockradar init && python -m stockradar status` a `python -m stockradar ledger`.
 3. Pokud stav nejde načíst, řekni to uživateli otevřeně. Nikdy si nevymýšlej předchozí výsledky.
 
-## Rozhodnutí uživatele (2026-10-02)
+## Rozhodnutí uživatele (2026-10-02, doplněno 2026-10-03)
 
 - Jen **bezplatné** zdroje dat. Placené API nepoužívat.
 - **XTB není povinná podmínka** doporučení (stav se jen informativně zapisuje; `config.REQUIRE_XTB_FOR_BUY = False`).
 - Fokus: řetězec AI → elektřina → jádro (SMR, palivo) → fúze → síť; dohody Google a dalších Big Tech; raketový potenciál.
 - Web se aktualizuje denně, ukazuje staré predikce a jejich vyhodnocení; model se sám přeučuje podle výsledků.
+- 2026-10-03: **e-mail smí být použit, pokud pomůže**, ale uživatel musí vědět, kolikrát denně a na jakých stránkách.
+  Posílá se jen přes `stockradar.contact.http_get` (povolené jen www.sec.gov a data.sec.gov), každé použití se zapíše
+  do `email_usage` (state/) a hlásí se v denní zprávě i na webu. E-mail je jen v `data/kontakt.txt` (mimo git); když
+  v novém kontejneru chybí, vytvoř ho z e-mailu účtu uživatele.
+- 2026-10-03: uživatel chce, aby Claude dělal vše sám a **průběžně zlepšoval kód** (i bez pokynu), aby uměl předpovědět
+  firmy s růstem desítek až stovek procent za ~6 měsíců. Využívej všechny dostupné bezplatné zdroje ve všech sektorech.
+  Web má být jednoduchý (rakety, výsledky, energie, model, sektory, zdroje).
 
 ## Denní úloha (rutina, po–pá večer)
 
 1. `git pull origin ccr-07430f55-or3jhd`, pak `python -m stockradar init` a `python -m stockradar update`
-   (ceny z Yahoo, vyhodnocení predikcí +7/+14/+30 dní, učení modelu, nové predikce, export `state/`, data pro web).
+   (ceny z Yahoo, vyhodnocení predikcí +7/+14/+30/+90/+180/+365 dní včetně raket, učení modelu, nové predikce,
+   export `state/`, data pro web). Pak `python -m stockradar diag`: každou CHYBU oprav (kód + test), VAROVÁNÍ vyřeš,
+   pokud jde (např. katalyzátor po termínu → ověř a `set_catalyst_status`).
 2. Krátký výzkum (WebSearch): novinky u firem s katalyzátorem do 45 dní; nové energetické dohody Google,
    Microsoft, Amazon, Meta; nová IPO v řetězci. Zapisuj JEN ověřené se zdrojem (URL) a datem:
    `stockradar.universe.add_relationship`, `add_tracked_company`, `stockradar.catalysts.add_catalyst`,
@@ -29,15 +38,22 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
    `data/web/stav_*.json` (aktualni, predikce, retezec, objevy) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
-5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS), změna vah modelu, důležitá novinka.
+5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
+   důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
    Nikdy neobchoduj a nic neslibuj („určitě +100 %“ je zakázáno, §37).
 
 ## Globální objevování (Growth Engine, týdně v sobotu)
 
 - `python -m stockradar discover --universe --download` — seznamy firem (Nasdaq screener, ASX, JPX, Wikipedie),
-  5 let cen (Yahoo, ~13 000 firem, ~75 min), rakety, kontrolní skupina, test předvídatelnosti, příčiny z Google News,
-  sektorové vlny, kandidáti → `discovery_runs` + ledger (WATCH, zdroj DISCOVERY). Potom `python -m stockradar update`
+  5 let cen (Yahoo, ~13 000 firem, ~75 min), SEC EDGAR (fundamenty, filingy; s e-mailem, evidováno) a
+  ClinicalTrials.gov, rakety, kontrolní skupina, test předvídatelnosti, příčiny z Google News, sektorové vlny,
+  **model raket na 6 měsíců** (`discovery/rocket.py`) → `discovery_runs` + ledger (predikce raket s cílem +50 %,
+  zdroj DISCOVERY, automatické katalyzátory z klinických studií). Potom `python -m stockradar update`
   (data pro web včetně `stav/objevy`) a zápis 4 dokumentů `stav/*` do artifactu.
+- **Zlepšování (každou sobotu po objevování):** podívej se na `diag`, vyhodnocené predikce v ledgeru a test modelu
+  raket; vyber jedno konkrétní zlepšení z plánu v `docs/AUDIT_2026-10-03.md` (kapitola 3) nebo z nových chyb,
+  implementuj ho s testem, `python -m pytest`, zapiš do CHANGELOG a PROJECT_STATE, commit + push. Výsledek modelu
+  nikdy „nevylepšuj“ výběrem podle testovacích dat; nové pravidlo musí být předem dané a ověřené mimo vzorek.
 - Příkazy uživatele (§62 Growth Engine): „NAJDI VÍTĚZE“, „NAJDI VZORY“, „NAJDI NOVÝ SEKTOR“, „NAJDI DALŠÍ VÍTĚZE“,
   „NAJDI SKRYTÉ VÍTĚZE“, „PROVEĎ GLOBAL DISCOVERY“, „NAJDI DALŠÍ NEBIUS“ — vycházej z posledního `discovery_runs`
   (nebo spusť nový běh) a doplň ruční výzkum se zdroji. Příčiny z titulků jsou AUTO, dokud je neověříš.
@@ -49,8 +65,8 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 - Datum katalyzátoru: přesné jen `VERIFIED` se zdrojem; jinak `ESTIMATED`/`UNCERTAIN` s oknem.
 - Historické predikce se nikdy nemění. Nový názor = nová predikce nebo `change_status` s důvodem.
 - Po změnách přes Python API spusť `python -m stockradar export` a commitni `state/`.
-- E-mail uživatele NIKAM neposílat (rozhodnutí 2026-10-02: „zatím nikam“, možná se později změní) — ani v hlavičkách
-  HTTP dotazů. SEC EDGAR proto zůstává vypnutý (vyžaduje kontaktní e-mail v User-Agent).
+- E-mail uživatele jen přes `stockradar.contact` (SEC EDGAR); nikdy v kódu, gitu, commitech ani jiných dotazech.
+  Každé použití se eviduje (`email_usage`) — uživatel chce vědět, kolikrát denně a kde (rozhodnutí 2026-10-03).
 - Příkazy „AKTUALIZACE“, „NAJDI RAKETU NA 14 DNÍ“, „NAJDI DALŠÍ NVIDIA“, „NAJDI DALŠÍ CAPR“ jsou definovány v §73–§76.
 
 ## Pravidla vývoje

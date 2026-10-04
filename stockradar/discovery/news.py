@@ -10,7 +10,7 @@ import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from email.utils import parsedate_to_datetime
 
 RSS = {
@@ -138,6 +138,3 @@ def explain_event(name: str, t0: date, end: date, *, symbol: str | None = None, 
         "titulky_predem": before[-3:],
     }
 
-
-def iso_to_date(s: str) -> date:
-    return datetime.fromisoformat(s).date()

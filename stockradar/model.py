@@ -345,7 +345,8 @@ def out_of_sample(panel: list[PanelDate]) -> dict:
     ics, hits, excess = [], [], []
     for p in test:
         scores = composite({f: ranks(p.raw[f]) for f in FACTORS}, weights)
-        ic = pearson([ranks(scores)[s] for s in scores], [ranks(p.excess)[s] for s in scores])
+        rs, rx = ranks(scores), ranks(p.excess)
+        ic = pearson([rs[s] for s in scores], [rx[s] for s in scores])
         if ic is not None:
             ics.append(ic)
         top = sorted(scores, key=scores.get, reverse=True)[:5]

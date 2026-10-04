@@ -28,7 +28,10 @@ Python 3.11+, bez externích závislostí.
 ```bash
 python -m stockradar init       # pracovní DB v data/ se sestaví ze state/
 python -m stockradar update     # denní běh: ceny (Yahoo), vyhodnocení, učení modelu, predikce, data pro web
-python -m stockradar status     # radar, katalyzátory 0–14 dní, změny verdiktů, MAIN PICK
+python -m stockradar status     # radar, katalyzátory do 45 dní, změny verdiktů, MAIN PICK
+python -m stockradar diag       # diagnostika: čerstvost dat, zpožděná vyhodnocení, web, e-mail (kód 1 = CHYBA)
+python -m stockradar email      # kolikrát, kdy a kde byl použit e-mail uživatele (jen SEC EDGAR)
+python -m stockradar sources    # obnoví SEC EDGAR + ClinicalTrials.gov
 python -m stockradar ledger     # historický register predikcí (§28)
 python -m stockradar lessons    # učební případy (§30, §31)
 python -m stockradar snapshot --label "weekly"
@@ -44,7 +47,8 @@ Specifikace: [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENG
 
 ```bash
 python -m stockradar discover --universe --download   # seznamy firem + 5 let cen (~13 000 firem, ~75 min)
-python -m stockradar discover                         # jen analýza nad staženými daty (~10 min vč. zpráv)
+python -m stockradar discover                         # analýza nad staženými daty + SEC + studie + predikce raket (~15 min)
+python -m stockradar discover --no-sources            # bez obnovy SEC a ClinicalTrials.gov
 python -m stockradar update                           # data pro web včetně stav/objevy
 ```
 
@@ -58,7 +62,7 @@ python -m stockradar update                           # data pro web včetně st
 | Sektory | Obory s nadprůměrným podílem vítězů (lift, z-skóre, nová IPO) + skupiny vítězů, kteří se pohybují spolu | — |
 | Kandidáti | EARLY/DEVELOPING firmy s nejvyšším skóre, proč teď / proč ne / co by změnilo názor, čerstvé zprávy; horní 1 % jde do ledgeru jako WATCH | — |
 
-Omezení: seznamy jsou dnešní (survivorship bias), fundamenty bez SEC nejsou k dispozici, příčiny z titulků jsou AUTO.
+Omezení: seznamy jsou dnešní (survivorship bias), fundamenty jen pro firmy podávající u SEC (USA), příčiny z titulků jsou AUTO.
 
 ## Kde jsou data
 

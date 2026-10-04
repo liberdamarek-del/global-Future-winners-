@@ -81,7 +81,9 @@ def set_catalyst_status(conn: sqlite3.Connection, catalyst_id: int, status: str)
     if status == CatalystStatus.SUPERSEDED:
         raise ValueError("pro SUPERSEDED použij supersede_catalyst()")
     with conn:
-        conn.execute("UPDATE catalysts SET status = ? WHERE id = ?", (status, catalyst_id))
+        cur = conn.execute("UPDATE catalysts SET status = ? WHERE id = ?", (status, catalyst_id))
+    if cur.rowcount == 0:
+        raise LookupError(f"katalyzátor id={catalyst_id} neexistuje")
 
 
 def supersede_catalyst(conn: sqlite3.Connection, old_id: int, new_id: int) -> None:

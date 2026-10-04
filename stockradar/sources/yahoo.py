@@ -71,9 +71,10 @@ def fetch_chart(symbol: str, range_: str = "2y", *, retries: int = 3, timeout: i
             req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return parse_chart(symbol, json.load(resp))
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, json.JSONDecodeError, ValueError) as exc:
             last_error = exc
-            if isinstance(exc, urllib.error.HTTPError) and exc.code == 404:
+            # 404 / „Yahoo nevrátil data“ = neplatný symbol → opakování nepomůže
+            if (isinstance(exc, urllib.error.HTTPError) and exc.code == 404) or "nevrátil data" in str(exc):
                 break
             # 429 = omezení počtu dotazů: počkej déle
             too_many = isinstance(exc, urllib.error.HTTPError) and exc.code == 429

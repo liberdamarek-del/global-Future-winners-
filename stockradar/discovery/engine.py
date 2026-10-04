@@ -9,7 +9,7 @@ import statistics
 from collections import Counter
 from datetime import date, datetime, timedelta
 
-from stockradar.discovery import cache, news, study
+from stockradar.discovery import cache, news, rocket, study
 from stockradar.discovery.features import FEATURES
 from stockradar.discovery.winners import DROP_OF, EVENT_TYPES, TRAILING, find_events, outcome_label, phase, trailing_returns
 from stockradar.timeutil import to_iso, utcnow
@@ -67,7 +67,6 @@ def risk_flags(f: dict, trailing: dict) -> list[str]:
         flags.append("extrémní volatilita")
     if (trailing.get("12M") or 0) < -0.5:
         flags.append("dlouhodobý propad (−50 % a víc za rok)")
-    flags.append("bez fundamentálních dat (SEC vypnutý) — ředění a hotovost NEOVĚŘENO")
     return flags
 
 
@@ -135,6 +134,13 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
                      "populace": pop},
         }
         log(f"{kind}: AUC test {test_auc}, směrová výhoda {directional}, asymetrie {pop.get('asymetrie')}")
+
+    # --- 3b. vlastní predikce raket na 6 měsíců (fundamenty SEC + klinické studie + cena) ---
+    try:
+        rockets = rocket.run(cache_conn, data, heat, events, log=log)
+    except Exception as exc:  # model raket nesmí shodit zbytek objevování
+        log(f"Model raket: CHYBA {exc}")
+        rockets = {"chyba": str(exc)[:300], "kandidati": []}
 
     # --- 4. příčiny raket ze zpráv ---
     recent_cut = data.data_end - 730
@@ -262,7 +268,9 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         "vitezu_dnes": winner_counts, "sektorovych_vln": len([w for w in waves if w["z"] >= 3]),
         "skupin_spolecneho_pohybu": len(clusters),
         "omezeni": ["Seznamy firem jsou dnešní — chybí zkrachovalé a delistované firmy (survivorship bias, §60).",
-                    "Fundamenty (tržby, marže, FCF, ředění) nejsou k dispozici zdarma bez e-mailu pro SEC → NEOVĚŘENO.",
+                    "Fundamenty (tržby, zisk, počet akcií, hotovost) a filingy jen u firem podávajících u SEC (USA); "
+                    "ostatní země je zatím nemají.",
+                    "Klinické studie: v historii se používá dnešní datum dokončení studie — přínos v testu je optimistický.",
                     "Příčiny raket jsou automaticky odvozené z titulků zpráv (Google News) — označeno AUTO.",
                     "Obory pocházejí z různých klasifikací (Nasdaq, JPX, ASX GICS, Wikipedie) — nejsou plně sjednocené.",
                     "Řady s denním skokem nad 50× jsou vyřazené jako chyba dat; průměry výnosů jsou oříznuté na +500 %."],
@@ -271,9 +279,11 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
         "probehlo": to_iso(now), "data_do": end_day, "statistika": run_stats,
         "vitezove": top_winners, "studie": studies, "pricny": cause_stats, "rakety_vysvetlene": explained[:80],
         "sektorove_vlny": waves[:25], "skupiny": cluster_rows, "kandidati": candidates, "zname_pripady": known,
+        "rakety_6m": {k: v for k, v in rockets.items() if not k.startswith("_")},
         "nova_ipo": {"pocet": len(ipo_rows), "podle_oboru": ipo_by_group.most_common(10), "nejlepsi": ipo_rows[:15],
                      "nejhorsi": ipo_rows[-5:][::-1]},
-        "_models": {k: {"raketa": m[0].to_dict(), "propad": m[3].to_dict()} for k, m in models.items()},
+        "_models": {**{k: {"raketa": m[0].to_dict(), "propad": m[3].to_dict()} for k, m in models.items()},
+                    **({"RAKETA_6M": rockets["_model"]} if "_model" in rockets else {})},
     }
 
 
@@ -402,7 +412,7 @@ def known_case_tests(data: study.Data, models: dict, heat: study.Heat, events: d
             out.append({"ticker": sym, "test": label, "t0": sec.prep.bars.date(ev.t0), "rust": round(ev.ret, 3),
                         "vysledek": "NEOVĚŘENO — 5 dní před raketou nesplňovala filtr likvidity"})
             continue
-        up, asym = [], []
+        up = []
         for other in data.secs.values():
             j = bisect.bisect_right(other.prep.bars.days, day) - 1
             if j < 120 or day - other.prep.bars.days[j] > 5:

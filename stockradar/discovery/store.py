@@ -97,3 +97,100 @@ def record_candidates(conn: sqlite3.Connection, cache_conn, result: dict, run_id
             except LedgerRuleError as exc:
                 notes.append(f"{row['ticker']}: {exc}")
     return created, notes
+
+
+ROCKET_HORIZON_DAYS = 180
+TOO_LATE_JUMP = 0.25  # cena od posledního závěru v cache vyskočila o 25 % a víc → raketa už startuje, nezapisovat
+
+
+def _fresh_quote(symbol: str):
+    from stockradar.sources import yahoo
+    try:
+        return yahoo.fetch_chart(symbol, "5d", retries=2)
+    except Exception:  # bez čerstvé ceny se použije poslední závěr z cache
+        return None
+
+
+def _trial_catalysts(conn, company_id: int, row: dict, now: datetime) -> int | None:
+    """Klinické studie s blížícím se dokončením → katalyzátory (odhad = okno PCD … PCD + 90 dní), automaticky."""
+    from stockradar.catalysts import add_catalyst
+    from stockradar.sources.clinicaltrials import STUDY_URL
+    first = None
+    existing = {r["source_url"]: r["id"] for r in conn.execute(
+        "SELECT id, source_url FROM catalysts WHERE company_id = ? AND status IN ('UPCOMING','DELAYED')", (company_id,))}
+    for t in row.get("studie", []):
+        url = STUDY_URL.format(nct=t["nct"])
+        if url in existing:
+            first = first or existing[url]
+            continue
+        pcd = t["dokonceni"] if len(t["dokonceni"]) == 10 else t["dokonceni"] + "-01"
+        end = (datetime.fromisoformat(pcd) + timedelta(days=90)).date().isoformat()
+        cid = add_catalyst(
+            conn, company_id, "CLINICAL_DATA",
+            f"Výsledky studie {t['faze']} ({t['nct']}): {t['nazev']} — dokončení hlavního cíle "
+            f"{t['dokonceni']} ({t['typ'] or 'typ neuveden'}), výsledky obvykle do 3 měsíců",
+            date_status="ESTIMATED", window=(pcd, end), source=f"ClinicalTrials.gov {t['nct']} (automaticky)",
+            source_url=url, now=now)
+        first = first or cid
+    return first
+
+
+def record_rockets(conn: sqlite3.Connection, cache_conn, rockets: dict, run_id: int, *, now: datetime | None = None,
+                   quote=_fresh_quote) -> tuple[list[int], list[str]]:
+    """Zapíše dnešní predikce raket na 6 měsíců do ledgeru (zdroj DISCOVERY, cíl +50 %)."""
+    now = now or utcnow()
+    bench = benchmark_price(conn)
+    if bench is None:
+        return [], ["Chybí cena S&P 500 (SPY) — predikce raket nezapsány; spusť nejdřív `update`."]
+    created, notes = [], []
+    edge = rockets.get("smerova_vyhoda", False)
+    since = to_iso(now - timedelta(days=ROCKET_HORIZON_DAYS))
+    for row in rockets.get("kandidati", []):
+        bars = cache.load_series(cache_conn, row["ticker"])
+        if bars is None:
+            continue
+        price, as_of = bars.closes[-1], min(parse_iso(f"{bars.date(len(bars.days) - 1)}T21:00:00Z"), now)
+        q = quote(row["ticker"])
+        if q is not None and q.price and q.price_time and q.price_time <= now:
+            if q.price / price - 1 >= TOO_LATE_JUMP:
+                notes.append(f"{row['ticker']}: od posledního závěru +{(q.price / price - 1) * 100:.0f} % — raketa už "
+                             "startuje, nezapsáno (TOO LATE, §2)")
+                continue
+            price, as_of = q.price, q.price_time
+        listing_id = _listing_for(conn, cache_conn, row, now)
+        if conn.execute("SELECT 1 FROM predictions WHERE listing_id = ? AND mode = 'LIVE' AND source = 'DISCOVERY'"
+                        " AND made_at >= ?", (listing_id, since)).fetchone():
+            continue
+        company_id = conn.execute("SELECT company_id FROM listings WHERE id = ?", (listing_id,)).fetchone()[0]
+        catalyst_id = _trial_catalysts(conn, company_id, row, now)
+        pct = lambda v: round(v * 100, 1) if v is not None else None
+        hist = (f"V testu mimo vzorek mělo {row['skupina'].replace('top', 'horní ')} % skóre raketu v {pct(row['hist_rakety'])} % "
+                f"případů (všechny akcie {pct(row['zakladni_cetnost'])} %), propad ≤ −33 % v {pct(row['hist_propady'])} %.")
+        try:
+            pid = record_prediction(conn, PredictionInput(
+                listing_id=listing_id, horizon="M6_PLUS", price=price, currency=row.get("mena") or "NEOVĚŘENO",
+                price_as_of=as_of, price_source="Yahoo Finance chart API",
+                category="C", verdict="SPEC_BUY" if edge else "WATCH",
+                rationale=(f"Predikce rakety (běh objevování {run_id}): cena do 6 měsíců aspoň +50 %. "
+                           f"Skóre v horních {row['percentil'] * 100:.1f} % ze všech akcií, fáze {row['faze']}. "
+                           f"Proč: {'; '.join(row['proc']) or '—'}. {hist}"),
+                catalyst_id=catalyst_id,
+                probability_pct=pct(row["hist_rakety"]), p_rocket_pct=pct(row["p_raketa"]),
+                p_drop_pct=pct(row["hist_propady"]), base_rate_pct=pct(row["zakladni_cetnost"]),
+                target_move_pct=50.0,
+                bull_move_pct=pct(row["hist_q80"]), base_move_pct=pct(row["hist_median"]), bear_move_pct=pct(row["hist_q20"]),
+                bull_case="Horní kvintil výnosu za 6 měsíců u podobně hodnocených akcií v testu.",
+                base_case="Medián výnosu za 6 měsíců u podobně hodnocených akcií v testu.",
+                bear_case="Dolní kvintil — volatilní akcie mohou stejně snadno spadnout.",
+                key_risk="; ".join((row.get("proti") or [])[:2] + [f"šance na propad ≤ −33 %: {pct(row['hist_propady'])} %"]),
+                scores=Scores(rocket=int(round((1 - row["percentil"]) * 100))),
+                benchmark_symbol=config.BENCHMARK_SYMBOL, benchmark_price=bench,
+                source="DISCOVERY", discovery_run_id=run_id,
+            ), now=now)
+            created.append(pid)
+        except LedgerRuleError as exc:
+            notes.append(f"{row['ticker']}: {exc}")
+    if not edge:
+        notes.append("Model raket nemá v testu jasnou směrovou výhodu — predikce jsou zapsané jako WATCH (sledovat), "
+                     "aby se jejich přesnost měřila v ledgeru.")
+    return created, notes

@@ -9,12 +9,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def run(tmp_path, *args):
+def run(tmp_path, *args, code=0):
     env = {**os.environ, "STOCKRADAR_DB": str(tmp_path / "db" / "radar.db"),
-           "STOCKRADAR_STATE_DIR": str(tmp_path / "state")}
+           "STOCKRADAR_STATE_DIR": str(tmp_path / "state"), "STOCKRADAR_WEB_DIR": str(tmp_path / "web"),
+           "STOCKRADAR_MARKET_CACHE": str(tmp_path / "cache.db"),
+           "STOCKRADAR_CONTACT_FILE": str(tmp_path / "kontakt.txt")}
+    env.pop("STOCKRADAR_CONTACT_EMAIL", None)
     proc = subprocess.run([sys.executable, "-m", "stockradar", *args], cwd=ROOT, env=env,
                           capture_output=True, text=True, timeout=60)
-    assert proc.returncode == 0, proc.stderr
+    assert proc.returncode == code, proc.stderr
     return proc.stdout
 
 
@@ -41,3 +44,10 @@ def test_full_cli_flow(tmp_path):
     assert "obnovena" in run(tmp_path, "init")
     assert "lessons=9" in run(tmp_path, "status") and "snapshots=1" in run(tmp_path, "status")
     assert "lessons" in run(tmp_path, "restore")
+
+    # e-mail: bez nastavení se nikam neposílá; evidence je prázdná
+    out = run(tmp_path, "email")
+    assert "NENASTAVEN" in out and "Celkem od začátku: 0" in out
+    # diagnostika: čerstvá DB bez denního běhu = CHYBA (návratový kód 1), ale stav je uložený
+    diag = run(tmp_path, "diag", code=1)
+    assert "Denní běh (update)" in diag and "Celkově: CHYBA" in diag and "SEC EDGAR" in diag

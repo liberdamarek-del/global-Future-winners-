@@ -92,8 +92,24 @@ def test_discovery_end_to_end(synthetic_cache, monkeypatch):
     payload = json.loads(main.execute("SELECT result_json FROM discovery_runs").fetchone()[0])
     assert "_models" not in payload and payload["data_do"] == "2026-10-02"
 
+    # vlastní predikce raket na 6 měsíců: test mimo vzorek + kandidáti + zápis do ledgeru s cílem +50 %
+    rk = result["rakety_6m"]
+    assert "chyba" not in rk, rk.get("chyba")
+    assert rk["vzorku"]["trenink"] > 0 and rk["vzorku"]["test"] > 0
+    assert rk["razeni"] in ("raketa", "asymetrie", "pomer", "vydrzi", "vydrzi_asym")
+    assert {"zaklad", "auc_raketa", "kalibrace"} <= set(rk["test"])
+    assert "RAKETA_6M" in result["_models"]
+    rocket_ids, rnotes = store.record_rockets(main, synthetic_cache, rk, run_id, now=now, quote=lambda s: None)
+    assert rocket_ids or not rk["kandidati"], rnotes
+    if rocket_ids:
+        r = main.execute("SELECT * FROM predictions WHERE id = ?", (rocket_ids[0],)).fetchone()
+        assert r["target_move_pct"] == 50.0 and r["horizon"] == "M6_PLUS" and r["source"] == "DISCOVERY"
+        assert 0 <= r["probability_pct"] <= 100 and r["base_rate_pct"] is not None
+        again, _ = store.record_rockets(main, synthetic_cache, rk, run_id, now=now, quote=lambda s: None)
+        assert again == []  # stejná firma znovu až po 6 měsících
+
     from stockradar.site import DOC_LIMIT, build_discovery_doc
     doc = build_discovery_doc(main)
-    assert doc["beh"]["id"] == run_id and doc["historie_behu"][0]["id"] == run_id
-    assert [a["dni"] for a in doc["presnost_ledger"]] == [7, 14, 30, 90, 180, 365]
+    assert doc["beh"]["id"] == run_id and doc["rakety_6m"]["test"]["zaklad"]["n"] > 0
+    assert len(doc["vitezove"]) <= 10 and len(doc["sektorove_vlny"]) <= 8
     assert len(json.dumps(doc, ensure_ascii=False).encode()) < DOC_LIMIT

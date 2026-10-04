@@ -117,12 +117,37 @@ def cmd_update(args) -> int:
     for w in result["warnings"]:
         print(f"  ! {w}")
     print(f"Data pro web: {web_dir()}")
+    _print_email_today(conn)
     return 0 if result["run_id"] else 1
+
+
+def _print_email_today(conn) -> None:
+    from stockradar.contact import usage_summary
+    today = utcnow().date().isoformat()
+    day = next((d for d in usage_summary(conn, days=1)["dny"] if d["den"] == today), None)
+    print("E-mail dnes: " + (f"{day['celkem']}× — " + ", ".join(f"{h} {n}×" for h, n in day["servery"].items())
+                             if day else "nepoužit"))
+
+
+def cmd_sources(args) -> int:
+    """Obnoví SEC (fundamenty, filingy) a ClinicalTrials.gov v cache objevování."""
+    from stockradar.discovery import cache as dcache
+    from stockradar.sources import clinicaltrials, sec
+
+    conn = _open()
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    print("SEC EDGAR:", sec.refresh(cconn, log=log))
+    print("ClinicalTrials.gov:", clinicaltrials.refresh(cconn, log=log))
+    export_state(conn, state_dir())  # evidence použití e-mailu je součást stavu
+    _print_email_today(conn)
+    return 0
 
 
 def cmd_discover(args) -> int:
     from stockradar.discovery import cache as dcache
     from stockradar.discovery import download, engine, listings, store
+    from stockradar.sources import clinicaltrials, sec
 
     conn = _open()
     cconn = dcache.connect()
@@ -132,19 +157,51 @@ def cmd_discover(args) -> int:
         print("Seznam firem: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
     if args.download:
         print("Stahování cen:", download.run(log=log))
+    if not args.no_sources:
+        print("SEC EDGAR:", sec.refresh(cconn, log=log))
+        print("ClinicalTrials.gov:", clinicaltrials.refresh(cconn, log=log))
     print("GLOBAL DISCOVERY …")
     result = engine.run_discovery(cconn, news_events=args.news, news_winners=args.news_winners, log=log)
     run_id = store.save_run(conn, result)
     created, notes = store.record_candidates(conn, cconn, result, run_id)
+    rockets, rnotes = store.record_rockets(conn, cconn, result.get("rakety_6m") or {}, run_id)
     export_state(conn, state_dir())
     st = result["statistika"]
     print(f"Běh #{run_id}: {st['firem_s_daty']} firem, {st['zemi']} zemí, {st['oboru']} oborů, "
           f"rakety {st['rakety']}, titulků {st['dokumentu_titulku']}")
-    print(f"Do ledgeru zapsáno {len(created)} kandidátů.")
-    for n in notes:
+    print(f"Do ledgeru zapsáno {len(created)} kandidátů (týden/3 měsíce) a {len(rockets)} predikcí raket na 6 měsíců.")
+    for n in notes + rnotes:
         print(f"  ! {n}")
+    _print_email_today(conn)
     print("Data pro web se obnoví při příštím `update`.")
     return 0
+
+
+def cmd_email(args) -> int:
+    from stockradar.contact import email, usage_summary
+    conn = _open(create=False)
+    summ = usage_summary(conn, days=args.days)
+    print("E-mail: " + ("nastaven (data/kontakt.txt nebo STOCKRADAR_CONTACT_EMAIL)" if email() else "NENASTAVEN"))
+    print("Posílá se jen na: " + ", ".join(summ["povolene_servery"]))
+    print(f"Celkem od začátku: {summ['celkem_od_zacatku']} dotazů")
+    rows = [[r["day"], r["host"], r["purpose"], r["requests"], r["first_at"][11:16], r["last_at"][11:16]]
+            for r in summ["detail"]]
+    print(_table(["Den", "Server", "Účel", "Dotazů", "Od (UTC)", "Do (UTC)"], rows) if rows else "(za období nepoužit)")
+    return 0
+
+
+def cmd_diag(args) -> int:
+    from stockradar.diag import run_checks, to_json, worst
+    from stockradar.discovery import cache as dcache
+
+    conn = _open(create=False)
+    checks = run_checks(conn, state_dir=state_dir(), web_dir=web_dir(), cache_conn=dcache.connect())
+    if args.json:
+        print(to_json(checks))
+    else:
+        print(_table(["Úroveň", "Kontrola", "Detail"], [[c["uroven"], c["kontrola"], c["detail"]] for c in checks]))
+        print(f"\nCelkově: {worst(checks)}")
+    return 1 if worst(checks) == "CHYBA" else 0
 
 
 def cmd_status(args) -> int:
@@ -259,7 +316,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("export", help="zapíše DB do state/ (pak commit)").set_defaults(func=cmd_export)
     sub.add_parser("seed-lessons", help="založí učební případy z §31").set_defaults(func=cmd_seed_lessons)
     p_status = sub.add_parser("status", help="přehled radaru, katalyzátorů a změn")
-    p_status.add_argument("--days", type=int, default=14, help="horizont katalyzátorů (default 14)")
+    p_status.add_argument("--days", type=int, default=45, help="horizont katalyzátorů (default 45 dní, §1)")
     p_status.set_defaults(func=cmd_status)
     sub.add_parser("ledger", help="historický register predikcí (§28)").set_defaults(func=cmd_ledger)
     sub.add_parser("update", help="denní běh: ceny, vyhodnocení, učení, predikce, web (§54)").set_defaults(
@@ -269,8 +326,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_disc.add_argument("--download", action="store_true", help="stáhnout/obnovit historii cen (dlouhé, ~1 h)")
     p_disc.add_argument("--news", type=int, default=120, help="kolik raket vysvětlit ze zpráv")
     p_disc.add_argument("--news-winners", type=int, default=40, help="kolik dnešních vítězů vysvětlit ze zpráv")
+    p_disc.add_argument("--no-sources", action="store_true", help="neobnovovat SEC a ClinicalTrials.gov")
     p_disc.set_defaults(func=cmd_discover)
     sub.add_parser("lessons", help="učební případy a poučení (§30, §31)").set_defaults(func=cmd_lessons)
+    sub.add_parser("sources", help="obnoví SEC EDGAR a ClinicalTrials.gov (cache objevování)").set_defaults(func=cmd_sources)
+    p_email = sub.add_parser("email", help="kolikrát a kde byl použit e-mail uživatele")
+    p_email.add_argument("--days", type=int, default=14)
+    p_email.set_defaults(func=cmd_email)
+    p_diag = sub.add_parser("diag", help="diagnostika: čerstvost dat, vyhodnocení, uložení, web, e-mail")
+    p_diag.add_argument("--json", action="store_true")
+    p_diag.set_defaults(func=cmd_diag)
     p_snap = sub.add_parser("snapshot", help="historický snapshot stavu (§53)")
     p_snap.add_argument("--label", default=None)
     p_snap.set_defaults(func=cmd_snapshot)
