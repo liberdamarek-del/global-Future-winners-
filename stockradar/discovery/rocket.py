@@ -30,6 +30,13 @@ HORIZON = 126                # obchodních dní ≈ 6 měsíců
 STEP_DAYS = 14
 TRAIN_END = date(2024, 12, 31)
 TEST_START = date(2025, 7, 1)
+# Test stability (walk-forward): stejné pravidlo řazení, model naučený jen na starších datech, test v pozdějším pololetí.
+# Mezi koncem učení a začátkem testu je vždy 6 měsíců, aby se cíle (okno 126 obchodních dní) nepřekrývaly.
+WALK_FORWARD = [
+    (date(2023, 6, 30), date(2024, 1, 1), date(2024, 6, 30)),
+    (date(2024, 6, 30), date(2025, 1, 1), date(2025, 6, 30)),
+]
+MIN_FOLD_TRAIN, MIN_FOLD_TEST = 2000, 500
 SAMPLE_TRAIN = 0.35          # podíl (akcie, den) v tréninku — kvůli rychlosti v čistém Pythonu
 SAMPLE_TEST = 0.6
 BINS = 10
@@ -121,7 +128,8 @@ def build_panel(data: study.Data, heat: study.Heat, fund: Fundamentals, *, log=p
     ptr = [0] * len(secs)
     train_end, test_start = TRAIN_END.toordinal(), TEST_START.toordinal()
     for n, day in enumerate(days):
-        share = train_share if day <= train_end else test_share if day >= test_start else 0.0
+        # pololetí mezi učením a testem se také vzorkuje — slouží testu stability a finálnímu modelu
+        share = test_share if day >= test_start else train_share
         if share <= 0:
             continue
         # 1) pro každou akcii poslední obchodní den ≤ day
@@ -339,6 +347,30 @@ def choose_ranking(ev: dict) -> str:
     return max((r for r in RANKINGS if r in ev), key=key)
 
 
+def walk_forward(panel: Panel, labeled: list[int], features: list[str], ranking: str, *, log=print) -> list[dict]:
+    """Drží výhoda i v jiných obdobích? Pro každé pololetí z WALK_FORWARD: učení jen na starších datech, test
+    předem zvoleného řazení (žádný výběr podle výsledku), horní 1 % a 5 % proti všem akciím."""
+    out = []
+    for train_end, test_start, test_end in WALK_FORWARD:
+        a, b, c = train_end.toordinal(), test_start.toordinal(), test_end.toordinal()
+        tr = [k for k in labeled if panel.day[k] <= a]
+        te = [k for k in labeled if b <= panel.day[k] <= c]
+        if len(tr) < MIN_FOLD_TRAIN or len(te) < MIN_FOLD_TEST:
+            continue
+        up, down = train(panel, tr, "up", features), train(panel, tr, "down", features)
+        hold = train(panel, tr, "hold", features) if ranking.startswith("vydrzi") else None
+        ev = evaluate(panel, te, up, down, hold)
+        row = {"uceni_do": train_end.isoformat(), "test": f"{test_start.isoformat()}..{test_end.isoformat()}",
+               "vzorku": len(te), "zaklad": ev["zaklad"], "top1": ev[ranking]["top1"], "top5": ev[ranking]["top5"],
+               "auc_raketa": ev["auc_raketa"]}
+        row["vyhoda"] = bool(row["top1"]["rakety"] > row["zaklad"]["rakety"]
+                             and row["top1"]["rakety"] > row["top1"]["propady"])
+        out.append(row)
+        log(f"Stabilita {row['test']}: raketa {row['top1']['rakety']} vs {row['zaklad']['rakety']}, "
+            f"propad {row['top1']['propady']}")
+    return out
+
+
 def directional_edge(ev: dict, ranking: str) -> bool:
     t, b = ev[ranking]["top1"], ev["zaklad"]
     return t["rakety"] > t["propady"] and t["rakety"] >= 1.5 * b["rakety"] and t["median"] >= b["median"]
@@ -362,6 +394,7 @@ def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: 
     ev_price = evaluate(panel, te, up_p, down_p)
     ranking = choose_ranking(ev)
     edge = directional_edge(ev, ranking)
+    stability = walk_forward(panel, labeled, feats, ranking, log=log)
     log(f"Test: AUC {ev['auc_raketa']} (jen cena {ev_price['auc_raketa']}), řazení {ranking}, směrová výhoda {edge}")
 
     # finální model: všechny dny se známým výsledkem (víc dat, novější režim trhu)
@@ -375,7 +408,7 @@ def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: 
         "trenink": f"{study.day_str(min(panel.day[k] for k in tr))}..{TRAIN_END.isoformat()}" if tr else None,
         "test_obdobi": f"{TEST_START.isoformat()}..{study.day_str(max(panel.day[k] for k in te))}" if te else None,
         "vzorku": {"panel": len(panel), "trenink": len(tr), "test": len(te)},
-        "test": ev, "test_jen_cena": ev_price, "razeni": ranking, "smerova_vyhoda": edge,
+        "test": ev, "test_jen_cena": ev_price, "razeni": ranking, "smerova_vyhoda": edge, "stabilita": stability,
         "vahy": sorted(({"znak": f, "nazev": ALL_FEATURES[f], "koef": round(w, 3)} for f, w in zip(final_up.features, final_up.w)),
                        key=lambda r: abs(r["koef"]), reverse=True),
         "kandidati": candidates,

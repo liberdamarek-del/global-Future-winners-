@@ -77,10 +77,15 @@ def fetch_frames(cache_conn, *, start: date, end: date, refresh_recent: int = 3,
             url = FRAME_URL.format(tax=tax, tag=tag, unit=unit, period=period)
             try:
                 rows = parse_frame(json.loads(contact.http_get(url, f"fundamenty: {concept} (XBRL frames)")))
-            except Exception as exc:  # 404 = kvartál ještě nemá data
+            except Exception as exc:  # 404 = pro tento tag a kvartál data nejsou
                 if "404" not in str(exc):
                     errors += 1
                     log(f"SEC {tag} {period}: {exc}")
+                elif (y, q) not in recent:
+                    # starý kvartál bez dat už data nedostane → zapsat jako hotové, ať se e-mail neposílá znovu
+                    with cache_conn:
+                        cache_conn.execute("INSERT OR REPLACE INTO sec_frames_done (tag, period, n, fetched_at)"
+                                           " VALUES (?, ?, 0, ?)", (tag, period, to_iso(utcnow())))
                 continue
             with cache_conn:
                 for cik, end_day, val in rows:

@@ -122,3 +122,23 @@ def test_download_error_keeps_existing_history():
     assert len(cache.load_series(c, "AAA").closes) == 2
     cache.store_error(c, "BBB", "HTTP Error 404", fetched_at="2026-01-12T00:00:00Z")
     assert cache.load_series(c, "BBB") is None
+
+
+def test_sec_frames_do_not_refetch_old_empty_quarters(monkeypatch):
+    import urllib.error
+    c = cache.connect(":memory:")
+    calls = []
+
+    def fake_get(url, purpose, **kw):
+        calls.append(url)
+        if "SalesRevenueNet" in url:
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        return b'{"data": []}'
+
+    monkeypatch.setattr(sec.contact, "http_get", fake_get)
+    sec.fetch_frames(c, start=date(2024, 1, 1), end=date(2025, 12, 31), refresh_recent=2)
+    first = len(calls)
+    calls.clear()
+    sec.fetch_frames(c, start=date(2024, 1, 1), end=date(2025, 12, 31), refresh_recent=2)
+    # druhý běh: jen 2 poslední kvartály × 6 tagů, staré prázdné kvartály se už nestahují
+    assert first == 6 * 8 and len(calls) == 6 * 2

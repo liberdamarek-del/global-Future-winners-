@@ -17,7 +17,7 @@ from datetime import date
 
 from stockradar.discovery import cache
 from stockradar.discovery.features import FEATURES, Prepared, features_at, prepare, turnover_usd
-from stockradar.discovery.winners import EVENT_TYPES, Event, find_events
+from stockradar.discovery.winners import EVENT_TYPES, Event, adjust_reverse_splits, find_events
 from stockradar.sources.yahoo import fx_symbol, usd_factor
 
 MIN_TURNOVER_USD = 250_000      # likvidita v T0 (průměr 20 dní)
@@ -43,6 +43,7 @@ class Data:
     data_end: int
     groups: dict[str, list[str]] = field(default_factory=dict)
     rejected: list[str] = field(default_factory=list)
+    split_adjusted: list[str] = field(default_factory=list)
 
     def usd_rate(self, currency: str | None, day: int) -> float | None:
         if not currency:
@@ -78,7 +79,7 @@ def load_data(conn, *, min_bars: int = 250, symbols: list[str] | None = None) ->
     fx = {}
     secs = {}
     starts = []
-    rejected = []
+    rejected, adjusted = [], []
     for bars in cache.iter_series(conn):
         if bars.symbol.endswith("=X"):
             fx[bars.symbol] = bars
@@ -90,6 +91,9 @@ def load_data(conn, *, min_bars: int = 250, symbols: list[str] | None = None) ->
         if anomalous(bars):
             rejected.append(bars.symbol)
             continue
+        bars, n_splits = adjust_reverse_splits(bars)
+        if n_splits:
+            adjusted.append(bars.symbol)
         starts.append(bars.days[0])
         secs[bars.symbol] = bars
     data_start = min(starts) if starts else 0
@@ -99,6 +103,7 @@ def load_data(conn, *, min_bars: int = 250, symbols: list[str] | None = None) ->
         out[sym] = Sec(sym, meta, prepare(bars, data_start), bars.currency, group_key(meta))
     data = Data(out, fx, data_start, max((s.prep.bars.days[-1] for s in out.values()), default=0))
     data.rejected = rejected
+    data.split_adjusted = adjusted
     for sym, s in out.items():
         data.groups.setdefault(s.group, []).append(sym)
     return data

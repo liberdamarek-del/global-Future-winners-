@@ -119,3 +119,18 @@ def test_logit_learns_signal_and_auc():
     scores = [model.score(r["f"]) for r in rows]
     assert study.auc(scores, [r["y"] for r in rows]) > 0.95
     assert model.coef[1] > 0
+
+
+def test_unadjusted_reverse_split_is_not_a_rocket():
+    from array import array
+    from stockradar.discovery.cache import Bars
+    from stockradar.discovery.winners import adjust_reverse_splits, find_events
+    closes = [1.6] * 30 + [16.0] * 10              # 1:10 reverse split bez úpravy historie
+    vols = [1_000_000.0] * 30 + [95_000.0] * 10    # objem spadne na desetinu
+    b = Bars("DHY", "USD", array("i", range(738000, 738040)), array("d", closes), array("d", vols))
+    assert find_events(b, "W1_30")  # bez úpravy by to byla „raketa“
+    fixed, n = adjust_reverse_splits(b)
+    assert n == 1 and not find_events(fixed, "W1_30") and fixed.closes[0] == pytest.approx(16.0)
+    # skutečná raketa s obrovským objemem se neupravuje
+    real = Bars("JAGX", "USD", b.days, array("d", [2.7] * 30 + [27.0] * 10), array("d", [2e5] * 30 + [2.8e7] * 10))
+    assert adjust_reverse_splits(real)[1] == 0

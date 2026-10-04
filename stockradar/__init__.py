@@ -3,4 +3,4 @@
 Specifikace: docs/MASTER_PROMPT.md. Stav projektu: PROJECT_STATE.md.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"

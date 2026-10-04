@@ -4,6 +4,34 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-04 · v0.4.1 — týdenní zlepšení: stabilita modelu raket, reverse splity, čerstvost ceny, méně dotazů s e-mailem
+
+Důvod: sobotní rutina „objevování + zlepšování“ (běh objevování #3, 2026-10-04; data k závěru 2026-10-02).
+
+| Soubor/modul | Změna | Důvod |
+|---|---|---|
+| `discovery/rocket.py` | Test stability (walk-forward): stejné řazení, učení jen na starších datech, test 2024-H1 a 2025-H1; vzorkuje se i pololetí mezi učením a testem | plán P2.2 z auditu |
+| `discovery/winners.py`, `study.py` | Neupravené reverse splity (cena ×5/×10/×20 přes noc s propadem objemu) se před analýzou zpětně upraví — 26 z 12 774 řad (DHY +897 %, WCT +478 % nebyly rakety) | nově nalezená chyba dat |
+| `data_quality.py` | M4: závěrečná cena z dřívějšího dne bez další obchodní seance (pátek → víkend) = FRESH, ne DATA STALE | audit M4 |
+| `sources/sec.py` | Starý kvartál, pro který SEC vrátí 404, se už znovu nestahuje (dřív ~20 zbytečných dotazů s e-mailem týdně) | méně použití e-mailu |
+| `web/index.html` | Tabulka „Drží výhoda i v jiných obdobích?“ | zobrazení stability |
+| `lessons` | CHYBA-DAT-REVERSE-SPLIT, MECH-REVERSE-MERGER (AEMD), OVERENI-RAKETY-2026-10-03 (8338.T, MLX.AX, DSV.TO) | ruční ověření se zdroji |
+
+**Stabilita modelu raket (horní 1 % podle „raketa − propad“, data mimo učení):**
+
+| Test | Všechny akcie: raketa / propad / medián | Horní 1 %: raketa / propad / medián |
+|---|---|---|
+| 2024-01 až 2024-06 | 9,9 % / 12,6 % / +2,3 % | 23,9 % / 21,8 % / −5,2 % |
+| 2025-01 až 2025-06 | 17,6 % / 10,9 % / +8,0 % | 37,0 % / 23,5 % / +20,5 % |
+| 2025-07 až 2026-04 | 16,7 % / 16,0 % / +1,8 % | 25,1 % / 17,6 % / +0,3 % |
+
+Šance na raketu je ve všech třech obdobích 1,5–2,4× vyšší než u průměrné akcie; směr (medián) jen v jednom ze tří.
+Běh #3 nezapsal nové predikce raket (stejná data jako běh #2, stejných 10 firem už predikci má).
+
+**Test:** `python -m pytest` — 89 testů. **Výsledek:** 89/89 prošlo.
+
+---
+
 ## 2026-10-03 · v0.4.0 — Audit, vlastní predikce raket na 6 měsíců, SEC + klinické studie, evidence e-mailu
 
 Důvod: pokyn uživatele 2026-10-03 — projít celý kód (stav, chyby se závažností, plán, diagnostika), zjednodušit web,

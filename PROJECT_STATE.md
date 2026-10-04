@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-03 · **Verze:** v0.4.0 · **Schema DB:** v4 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md)
+**Aktualizováno:** 2026-10-04 · **Verze:** v0.4.1 · **Schema DB:** v4 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -52,9 +52,11 @@
 | Test mimo vzorek | učení 2022-04..2024-12, test 2025-07..2026-04: všechny akcie raketa 16,7 % / propad 16,0 % / medián +1,8 %; horní 1 % (raketa − propad) 25,1 % / 17,6 % / +0,3 % |
 | Přínos SEC + studií | AUC 0,7325 vs 0,7307 jen z ceny — malý |
 | Verdikt | mírná výhoda v četnosti raket, ne ve směru → predikce WATCH se šancí na raketu i propad; vyhodnotí je ledger |
-| Evidence e-mailu | 2026-10-03: 174 dotazů (data.sec.gov 147, www.sec.gov 27) — první stažení SEC; týdně pak ~25 |
+| Stabilita (v0.4.1) | šance na raketu v horním 1 % 1,5–2,4× vyšší než u všech akcií ve 3 obdobích (2024-H1, 2025-H1, 2025-H2–2026); medián lepší jen v 2025-H1 |
+| Kvalita dat (v0.4.1) | 26 řad s neupraveným reverse splitem se před analýzou upraví (DHY, WCT …) |
+| Evidence e-mailu | 2026-10-03: 174 dotazů (první stažení SEC), 2026-10-04: 40 (týdenní obnova); po opravě v0.4.1 týdně ~20 |
 
-## HOTOVO (ověřeno testy — 86 testů prošlo 2026-10-03)
+## HOTOVO (ověřeno testy — 89 testů prošlo 2026-10-04)
 
 | Modul | Co dělá | Testy |
 |---|---|---|

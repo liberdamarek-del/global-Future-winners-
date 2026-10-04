@@ -98,3 +98,46 @@ def phase(trailing: dict, recent_event: bool) -> str:
     if r6 >= 0.15:
         return "DEVELOPING"
     return "EARLY"
+
+
+# Neupravený zpětný split (reverse split): cena přes noc ×10 / ×20 … a objem spadne na zlomek → falešná „raketa“.
+# (Nalezeno 2026-10-04: DHY 1,61 → 16,05 USD s objemem 0,1×; WCT reverse split 1:5 k 8. 9. 2026 podle GlobeNewswire;
+# celkem 26 z 12 774 řad.) Pokles o celý násobek se jako split
+# NEBERE — u biotechu jsou propady −50 % s obrovským objemem skutečné (selhání studie).
+SPLIT_FACTORS = (3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 60, 75, 80, 100, 150, 200, 250, 300)
+
+
+def reverse_split_points(bars: Bars) -> list[tuple[int, float]]:
+    """Indexy dnů s pravděpodobným neupraveným zpětným splitem a jeho poměr."""
+    c, v = bars.closes, bars.volumes
+    out = []
+    for k in range(11, len(c)):
+        if c[k - 1] <= 0:
+            continue
+        r = c[k] / c[k - 1]
+        if r < 2.9:
+            continue
+        near = min(SPLIT_FACTORS, key=lambda x: abs(r / x - 1))
+        if abs(r / near - 1) > 0.04:
+            continue
+        base = sorted(v[k - 10:k])[5]
+        if base <= 0 or v[k] / base > 0.5:
+            continue
+        if k + 1 < len(c) and not (0.7 <= c[k + 1] / c[k] <= 1.4):
+            continue
+        out.append((k, r))
+    return out
+
+
+def adjust_reverse_splits(bars: Bars) -> tuple[Bars, int]:
+    """Zpětně upraví historii před každým nalezeným splitem (ceny × poměr, objemy ÷ poměr)."""
+    points = reverse_split_points(bars)
+    if not points:
+        return bars, 0
+    import array
+    closes, vols = array.array("d", bars.closes), array.array("d", bars.volumes)
+    for k, r in points:
+        for i in range(k):
+            closes[i] *= r
+            vols[i] /= r
+    return Bars(bars.symbol, bars.currency, bars.days, closes, vols), len(points)

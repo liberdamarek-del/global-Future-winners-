@@ -261,7 +261,8 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
 
     run_stats = {
         "firem_v_seznamu": cache_conn.execute("SELECT COUNT(*) FROM securities").fetchone()[0],
-        "firem_s_daty": len(data.secs), "vyrazeno_chyba_dat": len(data.rejected), "zemi": len({s.meta.get("country") for s in data.secs.values()}),
+        "firem_s_daty": len(data.secs), "vyrazeno_chyba_dat": len(data.rejected),
+        "upraveno_split": len(data.split_adjusted), "zemi": len({s.meta.get("country") for s in data.secs.values()}),
         "oboru": len(data.groups), "dokumentu_titulku": sum(e["titulku_celkem"] for e in explained),
         "obdobi_dat": f"{study.day_str(data.data_start)}..{end_day}",
         "rakety": {k: len(v) for k, v in events.items()}, "nova_ipo_12m": len(ipo_rows),

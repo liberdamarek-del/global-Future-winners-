@@ -407,6 +407,11 @@ details.fold[open] > summary { margin-bottom: 10px; }
         <div class="tablewrap"><h3>Co model sleduje nejvíc</h3><table><thead><tr><th>Znak</th><th class="r">Váha</th></tr></thead><tbody>
         ${(rk.vahy || []).slice(0, 10).map((w) => `<tr><td>${esc(w.nazev)}</td><td class="r num ${cls(w.koef)}">${fmt(w.koef, 2)}</td></tr>`).join("")}</tbody></table>
         <p class="small muted">Váha u znaků převedených na „váhu důkazu“: kladná = posiluje to, co znak sám o sobě ukazuje, záporná = model ho po zohlednění ostatních znaků oslabuje.</p></div></div>
+        ${(rk.stabilita || []).length ? `<div class="tablewrap"><h3>Drží výhoda i v jiných obdobích?</h3><table>
+          <thead><tr><th>Test (učení jen na starších datech)</th><th class="r">Všechny akcie: raketa</th><th class="r">Horní 1 %: raketa</th><th class="r">Horní 1 %: propad</th><th>Výsledek</th></tr></thead>
+          <tbody>${rk.stabilita.map((f) => `<tr><td class="num small">${esc(f.test)}</td><td class="r num">${pct(f.zaklad.rakety, 1)}</td>
+            <td class="r num pos">${pct(f.top1.rakety, 1)}</td><td class="r num neg">${pct(f.top1.propady, 1)}</td>
+            <td><span class="chip ${f.vyhoda ? "ok" : "err"}">${f.vyhoda ? "víc raket než trh i než propadů" : "bez výhody"}</span></td></tr>`).join("")}</tbody></table></div>` : ""}
         <h3>Našel by model známé vítěze předem?</h3>
         <ul class="facts small">${(D.zname_pripady || []).map((k) => `<li><b>${esc(k.test)} (${esc(k.ticker)})</b>: ${k.vysledek ? esc(k.vysledek) : `5 dní před raketou v horních <b>${fmt(k.percentil_5_dni_pred * 100, 1)} %</b> → <span class="chip ${/^ANO/.test(k.nasel_by) ? "ok" : /^ČÁST/.test(k.nasel_by) ? "warn" : "err"}">${esc(k.nasel_by)}</span> <span class="muted">${esc(k.poznamka || "")}</span>`}</li>`).join("")}</ul>`;
     }

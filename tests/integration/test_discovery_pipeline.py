@@ -49,6 +49,9 @@ def fake_news(q, start, end, lang="en"):
 
 def test_discovery_end_to_end(synthetic_cache, monkeypatch):
     monkeypatch.setattr(store, "MAX_PERCENTILE", 1.0)  # syntetická data: zapsat i mimo horní 1 %
+    from stockradar.discovery import rocket
+    monkeypatch.setattr(rocket, "MIN_FOLD_TRAIN", 50)  # málo syntetických firem → nižší minimum pro test stability
+    monkeypatch.setattr(rocket, "MIN_FOLD_TEST", 20)
     result = engine.run_discovery(synthetic_cache, news_events=5, news_winners=3, fetch_news=fake_news, log=lambda m: None)
     st = result["statistika"]
     assert st["firem_s_daty"] == 60 and st["rakety"]["W1_30"] > 0
@@ -98,6 +101,7 @@ def test_discovery_end_to_end(synthetic_cache, monkeypatch):
     assert rk["vzorku"]["trenink"] > 0 and rk["vzorku"]["test"] > 0
     assert rk["razeni"] in ("raketa", "asymetrie", "pomer", "vydrzi", "vydrzi_asym")
     assert {"zaklad", "auc_raketa", "kalibrace"} <= set(rk["test"])
+    assert rk["stabilita"] and all({"test", "zaklad", "top1", "vyhoda"} <= set(f) for f in rk["stabilita"])
     assert "RAKETA_6M" in result["_models"]
     rocket_ids, rnotes = store.record_rockets(main, synthetic_cache, rk, run_id, now=now, quote=lambda s: None)
     assert rocket_ids or not rk["kandidati"], rnotes
