@@ -416,7 +416,9 @@ details.fold[open] > summary { margin-bottom: 10px; }
         <li class="muted">${esc(r.obor || "")} · ${esc(r.zeme || "")} · fáze ${esc(r.faze || "")} · zdroje: ceny Yahoo, fundamenty SEC, ClinicalTrials.gov</li></ul>`;
   }
 
-  const shortName = (n) => String(n || "").replace(/\s+(class [a-c]\s+)?(common stock|common shares|ordinary shares|american depositary shares.*|depositary shares.*)$/i, "").trim();
+  const shortName = (n) => String(n || "").trim().replace(/\s*\([^)]*\)$/, "")
+    .replace(/\s+(class [a-c]\s+)?(common stock|common shares|ordinary shares|american depositary shares.*|depositary shares.*)$/i, "")
+    .replace(/\s*\(the\)$/i, "").trim();
   function renderRanking() {
     document.querySelectorAll(".htab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.h === H)));
     if (!Z) return;
