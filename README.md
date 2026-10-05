@@ -30,7 +30,7 @@ Od v0.8.0 jsou v žebříčku **jen akcie, které nabízí XTB** (rozhodnutí u�
 |---|---|
 | Zdroj | veřejné vyhledávání nástrojů na xtb.com/cz (bez přihlášení, bez e-mailu) — `stockradar/sources/xtb.py` |
 | Domácí burza | přesná shoda symbolu: VST → `VST.US`, RR.L → `RR.UK`, NKT.CO → `NKT.DK`; jen skutečná akcie, ne CFD |
-| Jiná burza | firmy z burz mimo nabídku XTB (Japonsko, Austrálie, Kanada, Korea…) jen při stejném jménu firmy, např. Lasertec → `6K8.DE` (EUR) |
+| Jiná burza | když XTB firmu pod domácím symbolem nemá (nebo burzu nenabízí: Japonsko, Austrálie, Kanada, Korea…), hledá se podle jména firmy a bere se jen přesná shoda jména: CRH → `CRH.UK`, Frontline → `FRO.NO`, Lasertec → `6K8.DE` (EUR) |
 | Pořadí | model seřadí všechny akcie; do TOP 20 jdou první firmy z nabídky XTB; celkové pořadí zůstává u firmy i v `poradi_vse` |
 | Cache | `xtb_offer` v `data/market_cache.db`, platnost 30 dní; po 5 chybách sítě se dál nezkouší a firmy zůstanou neověřené (do žebříčku nejdou) |
 | Ledger | beze změny: predikce raket (TOP 10) se zapisují podle modelu bez ohledu na brokera, aby šlo poctivě měřit model |
