@@ -7,7 +7,8 @@
     "stav/predikce": "data/web/stav_predikce.json",
     "stav/retezec": "data/web/stav_retezec.json",
     "stav/objevy": "data/web/stav_objevy.json",
-    "stav/smartmoney": "data/web/stav_smartmoney.json"
+    "stav/smartmoney": "data/web/stav_smartmoney.json",
+    "stav/signaly": "data/web/stav_signaly.json"
   },
   "pravidla_db": "čtou všichni s přístupem (view), zapisuje jen vlastník/editor (admin)"
 }

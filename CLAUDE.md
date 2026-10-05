@@ -36,7 +36,7 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
    proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
-   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney) s `if_version` (URL v `web/dashboard.json`).
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
@@ -54,6 +54,13 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   sady), Sněmovna, Senát, 13D/13G, buybacky → test, SMART MONEY SCORE, 10 signálů ověřených ve Form 4 do ledgeru
   (strategie SMART_MONEY, WATCH 6 m) + dokument `stav/smartmoney` pro web (pak `update` a zápis 5 dokumentů `stav/*`).
   Verdikt VYSOKÁ jen při typu nákupu s výhodou potvrzenou v učení i testu (t ≥ 2). Zpráva: `docs/SMART_MONEY_*.md`.
+- **Signály na 14 dní (každou sobotu po smart money):** `python -m stockradar signals` — karta pravděpodobností
+  (P(+5 %), P(−5 %), P(lépe než obor), P(prudký pohyb), očekávaný pohyb, důvěra, RŮST / POKLES / NEVÍM), tržní režim
+  na úrovni celého trhu, analogie, novost a kvalita zpráv, mechanismy „událost → dodavatelé“. Protokol TRAIN /
+  VALIDATION / LOCKED TEST / POST / LIVE je pevný (`signals/model.py`); zamčený test se pro konfiguraci vyhodnotí
+  jen jednou (`model_evaluations`) — NIKDY ho nepouštěj znovu změnou dat ani prahů; nová konfigurace = nový pokus,
+  počet pokusů je vidět na webu. Karty jdou do `signal_forecasts` (append-only), vyhodnotí se po 10 obchodních dnech.
+  Znaky celého trhu (VIX, sazby, S&P 500) nepatří do modelu akcií — jen do `regime.market_view` (nezávislé dvoutýdny).
 - **Zlepšování (každou sobotu po objevování):** podívej se na `diag`, vyhodnocené predikce v ledgeru a test modelu
   raket; vyber jedno konkrétní zlepšení z plánu v `docs/AUDIT_2026-10-03.md` (kapitola 3) nebo z nových chyb,
   implementuj ho s testem, `python -m pytest`, zapiš do CHANGELOG a PROJECT_STATE, commit + push. Výsledek modelu

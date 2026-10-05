@@ -348,6 +348,53 @@ def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
     }
 
 
+def build_signals_doc(conn: sqlite3.Connection) -> dict | None:
+    """Dokument stav/signaly — výtah z posledního běhu signálního enginu (14 dní)."""
+    run = conn.execute("SELECT * FROM signal_runs ORDER BY id DESC LIMIT 1").fetchone()
+    if run is None:
+        return None
+    full = json.loads(run["result_json"])
+
+    def trim(m):
+        if not isinstance(m, dict):
+            return m
+        keep = ("vzorku", "nezavislych", "tydnu", "up5", "down5", "beat_sec", "big", "horni_desetina", "dolni_desetina",
+                "rozhodnuti", "podle_rezimu", "_stav", "poznamka")
+        return {k: m[k] for k in keep if k in m}
+    cards = []
+    for c in full.get("karty", []):
+        c = dict(c)
+        info = c.get("informace") or {}
+        c["informace"] = {k: info.get(k) for k in ("stav", "titulku", "pribehu", "prepisu", "pribehu_7d", "novych_7d",
+                                                   "novost", "kvalita", "typ")} | {"nove": (info.get("nove") or [])[:2]}
+        cards.append(c)
+    return {
+        "beh": {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"],
+                "konfigurace": run["config_hash"]},
+        "protokol": full.get("protokol"), "vzorky": full.get("vzorky"), "zaklad": full.get("zaklad"),
+        "validace": trim(full.get("validace")), "zamceny_test": trim(full.get("zamceny_test")), "post": trim(full.get("post")),
+        "meta_model": full.get("meta_model"), "pasma": full.get("pasma"),
+        "kalibrace": {t: full.get("kalibrace", {}).get(t) for t in ("up5", "down5")},
+        "trh": full.get("trh"), "rezim": full.get("rezim"), "dnes": full.get("dnes"),
+        "mechanismy": {k: {kk: vv for kk, vv in v.items() if kk != "nejsilnejsi_vazby"} | {
+            "nejsilnejsi_vazby": v.get("nejsilnejsi_vazby", [])[:4]} for k, v in (full.get("mechanismy") or {}).get("obdobi", {}).items()},
+        "mispricing_dukaz": full.get("mispricing_dukaz"), "vahy": full.get("vahy"), "karty": cards,
+        "vysledky_karet": full.get("vysledky_karet"), "insideri_sec_do": full.get("insideri_sec_do"),
+    }
+
+
+def write_signals_doc(conn: sqlite3.Connection, web_dir: Path) -> int:
+    doc = build_signals_doc(conn)
+    if doc is None:
+        return 0
+    web_dir.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
+    if len(text.encode()) > DOC_LIMIT:
+        raise ValueError(f"dokument signaly má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
+    (web_dir / "stav_signaly.json").write_text(text, encoding="utf-8")
+    return len(text.encode())
+
+
 def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
     sizes = {}
@@ -358,6 +405,9 @@ def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[s
     smart = build_smart_money_doc(conn)
     if smart is not None:
         docs["smartmoney"] = smart
+    signals = build_signals_doc(conn)
+    if signals is not None:
+        docs["signaly"] = signals
     for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:

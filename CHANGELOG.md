@@ -4,6 +4,44 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-05 · v0.6.0 — Signály na 14 dní: pravděpodobnosti místo ceny, režim trhu, NEVÍM, zamčený test
+
+Důvod: návrh uživatele 2026-10-05 (14 bodů: nepředpovídat cenu, mechanismus událost → akcie, překvapení, co je v ceně,
+novost a kvalita informací, režim trhu, „nevím“, relativní síla, kapitálový tok, analogie, TRAIN/VALIDATION/LOCKED
+TEST/LIVE, nezávislé případy, nové skórování). Zpráva: [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md).
+
+| Soubor/modul | Změna | Bod |
+|---|---|---|
+| `signals/regime.py` | 5 režimů trhu (S&P 500, VIX, 10letý výnos — Yahoo zdarma), sezóna výsledků; `market_view` po nezávislých dvoutýdnech | 7, 13 |
+| `signals/extra.py` | Překvapení ve výsledcích (SEC XBRL, stejný kvartál loni), reakce trhu na výsledky, mispricing, drift, reakce na 8-K; insideři, buyback, 13G, akumulace objemu | 3, 4, 10 |
+| `signals/panel.py` | Týdenní panel US akcií (obrat ≥ 1 mil. USD, cena ≥ 2 USD): cíle +5 % / −5 % / ±10 % / lépe než obor, výnosy 1–120 dní | 1, 9, 11 |
+| `signals/model.py` | Protokol TRAIN / VALIDATION / LOCKED TEST / POST / LIVE, globální + režimové modely, meta-model, monotónní kalibrace, pásma, nezávislé případy, t přes týdny | 7, 12, 13 |
+| `signals/card.py` | Důvěra 0–100 s penalizacemi, RŮST / POKLES / NEVÍM (relativně i k dnešnímu trhu), analogie (k-NN), skóre složek | 8, 11, 14 |
+| `signals/news.py` | Kvalita zdroje 0–100, shlukování přepisů do příběhů, novost za 7 dní | 5, 6 |
+| `signals/mechanism.py` | Graf 3 řetězců (AI → elektřina, ropa, stavba), znak „obory proti proudu“, test proti 300 náhodným dvojicím | 2 |
+| `signals/store.py`, `migrations/0006_signals.sql` | `model_evaluations` (zamčený test jednou na konfiguraci — hlídá i DB), `signal_runs`, `signal_forecasts`, `signal_outcomes` (append-only) | 12 |
+| `smartmoney/current.py` | Oprava: openinsider po 10. stránce vrací stejnou stránku → duplicity se vyřazují, delší období po 14denních oknech | chyba dat |
+| `cli.py`, `site.py`, `web/index.html` | `signals`, dokument `stav/signaly`, sekce „Signály na 14 dní“ | 14 |
+
+**Chyby nalezené během práce:**
+- *Znaky celého trhu* (VIX, sazby, S&P 500) v modelu akcií dávaly „tisíce vzorků“ z několika epizod. Dnes kvůli
+  rostoucím sazbám (vzorec hlavně z roku 2022) označily 45 % akcií za POKLES. Proto jsou z modelu akcií vyřazené
+  a trh se hodnotí zvlášť (bod 13).
+- *Rozhodnutí* se měří i proti dnešní průměrné akcii, aby plošný posun nevytvořil stovky stejných signálů.
+- *openinsider* opakoval stránky (stejné nákupy až 31×). Běh byl zastaven před jakýmkoli zápisem a opraven.
+
+**Výsledky (zamčený test 2025-07-18 … 2026-03-27, 38 579 vzorků, 4 818 nezávislých, pokus č. 1):**
+- AUC: +5 % 0,60, −5 % 0,69, ±10 % 0,83, lépe než obor 0,53.
+- RŮST 396× → +0,6 % nad týdnem (šum 65 %).
+- POKLES 5 468× → −0,9 % (šum 10 %; ve validaci −2,2 %, po testu −3,6 %).
+- Dnes: 0× RŮST, 193× POKLES, 3 480× NEVÍM.
+- Trh: NEVÍM (108 dvoutýdnů, žádný režim statisticky odlišný).
+- Mechanismy a mispricing: nepotvrzeny.
+
+**Test:** `python -m pytest` — 106 testů (9 nových pro signály). **Výsledek:** 106/106 prošlo.
+
+---
+
 ## 2026-10-05 · v0.5.0 — Smart money: insideři, politici (Pelosi), velké podíly, buybacky
 
 Důvod: pokyn uživatele 2026-10-05 „PROVEĎ HISTORICKOU A AKTUÁLNÍ ANALÝZU SMART MONEY A VELKÝCH NÁKUPŮ AKCIÍ“.

@@ -3,8 +3,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: control-room board — a status strip, then seven stacked panels read top-down:
-   6-month rocket calls → smart-money signals → their scorecard → AI→power chain → how the models learn → winners & sector waves → sources & e-mail log.
+/* Layout: control-room board — a status strip, then eight stacked panels read top-down:
+   14-day signal cards → 6-month rocket calls → smart-money signals → their scorecard → AI→power chain → how the models learn → winners & sector waves → sources & e-mail log.
    Detail lives in folded <details>, so the first screen shows only the calls and their odds. */
 :root {
   --bg: #F1F3F2; --panel: #FFFFFF; --ink: #10181C; --muted: #56656C; --line: #D6DEDF; --chip: #E6ECEC;
@@ -127,10 +127,18 @@ details.fold[open] > summary { margin-bottom: 10px; }
     </div>
     <div id="warnings"></div>
     <nav class="jump" aria-label="Sekce">
-      <a href="#rakety">Rakety</a><a href="#smart">Smart money</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
+      <a href="#signaly">Signály 14 dní</a><a href="#rakety">Rakety</a><a href="#smart">Smart money</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
       <a href="#model">Jak se model učí</a><a href="#sektory">Vítězové a sektory</a><a href="#zdroje">Zdroje a e-mail</a>
     </nav>
   </header>
+
+  <section class="panel" id="signaly" aria-labelledby="h-sig">
+    <header><h2 id="h-sig">Signály na 14 dní</h2><span class="small muted" id="sig-run">Pravděpodobnosti místo ceny · model umí říct NEVÍM</span></header>
+    <div id="sig-verdict"><div class="empty">Signály se objeví po týdenním běhu (python -m stockradar signals).</div></div>
+    <div class="cards" id="sig-cards"></div>
+    <details class="fold"><summary>Jak se model testuje</summary><div id="sig-test" style="display:grid;gap:14px"></div></details>
+    <details class="fold"><summary>Trh, mechanismy a co je už v ceně</summary><div id="sig-market" style="display:grid;gap:14px"></div></details>
+  </section>
 
   <section class="panel" id="rakety" aria-labelledby="h-rk">
     <header><h2 id="h-rk">Rakety na 6 měsíců</h2><span class="small muted">Cíl: cena aspoň +50 % do 6 měsíců. Výsledek se zapíše sám.</span></header>
@@ -259,7 +267,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
   const BINDING = {FIRM: ["pevná", "ok"], FRAMEWORK: ["rámcová", "warn"], OPTION: ["opce", "warn"], PENDING: ["čeká na schválení", "warn"], NEOVERENO: ["neověřeno", "warn"]};
   const RANK = {raketa: "jen šance na raketu", asymetrie: "raketa minus propad", pomer: "poměr raketa / propad", vydrzi: "raketa, která vydrží", vydrzi_asym: "vydrží minus propad"};
 
-  let A = null, P = null, R = null, D = null, S = null, filt = "";
+  let A = null, P = null, R = null, D = null, S = null, G = null, filt = "";
   try { filt = localStorage.getItem("gfw_filter") || ""; } catch (e) {}
 
   function renderTop() {
@@ -305,6 +313,77 @@ details.fold[open] > summary { margin-bottom: 10px; }
         ${(c.studie || []).length ? `<div><span class="label">Klinické studie do 6 měsíců</span><ul class="facts">${c.studie.map((s) => `<li><a href="https://clinicaltrials.gov/study/${esc(s.nct)}" target="_blank" rel="noopener">${esc(s.nct)}</a> ${esc(s.faze)} · dokončení ${esc(s.dokonceni)} (${esc(s.typ || "")})</li>`).join("")}</ul></div>` : ""}
       </article>`;
     }).join("");
+  }
+
+  // ---------------------------------------------------------------- signály 14 dní
+  const DEC = {"RŮST": "ok", "POKLES": "err", "NEVÍM": ""};
+  const bar = (v, cls) => `<div class="meter" role="img" aria-label="${fmt(v, 0)} ze 100"><i style="width:${Math.max(0, Math.min(100, v || 0))}%;${cls ? "background:var(--" + cls + ")" : ""}"></i></div>`;
+  function metricsRow(name, m) {
+    if (!m || !m.up5) return "";
+    const top = m.horni_desetina || {};
+    return `<tr><td>${esc(name)}</td><td class="r num">${fmt(m.vzorku, 0)}<div class="small muted">${fmt(m.nezavislych, 0)} nezáv.</div></td>
+      <td class="r num">${fmt(m.up5.auc, 2)}</td><td class="r num">${fmt(m.down5.auc, 2)}</td><td class="r num">${fmt((m.big || {}).auc, 2)}</td><td class="r num">${fmt((m.beat_sec || {}).auc, 2)}</td>
+      <td class="r num ${cls(top.nad_tydnem)}">${pct(top.nad_tydnem, 1)}</td><td class="r num">${nil(top.t) ? "–" : fmt(top.t, 1)}</td><td class="r num">${pct(top.sum, 0)}</td></tr>`;
+  }
+  function renderSignals() {
+    if (!G) return;
+    const b = G.beh || {}, t = G.zamceny_test || {}, d = G.dnes || {}, rz = G.rezim || {}, tr = G.trh || {};
+    $("sig-run").textContent = `Běh #${b.id} z ${praha(b.probehlo)} · ceny do ${den(b.data_do)} · konfigurace ${b.konfigurace}`;
+    const dec = t.rozhodnuti || {}, up = dec["RŮST"] || {}, dn = dec["POKLES"] || {}, nv = dec["NEVÍM"] || {};
+    const pokusu = ((G.protokol || {}).pokusu_na_testu || []).length;
+    $("sig-verdict").innerHTML = `<div class="verdict">
+      <span><b>Zamčený test</b> (${esc(((G.protokol || {}).zamceny_test || []).join(" až "))}, ${fmt(t.vzorku, 0)} případů, z toho ${fmt(t.nezavislych, 0)} nezávislých týden × obor): rozlišení P(+5 %) AUC <b>${fmt((t.up5 || {}).auc, 2)}</b>, P(−5 %) <b>${fmt((t.down5 || {}).auc, 2)}</b>, prudký pohyb <b>${fmt((t.big || {}).auc, 2)}</b> (0,5 = náhoda).
+      Karty RŮST v testu: ${fmt(up.n, 0)}× → +5 % dosáhlo ${pct(up.up5)}, −5 % ${pct(up.down5)}, nad průměrem týdne ${pct(up.nad_tydnem, 1)} (šance na šum ${pct(up.sum)}). POKLES: ${fmt(dn.n, 0)}× → −5 % ${pct(dn.down5)}. NEVÍM: ${fmt(nv.n, 0)}×.</span>
+      <span class="small">Test se pro jednu konfiguraci vyhodnotí jen jednou (${esc(t._stav || "")}); pokusů na zamčeném testu celkem: <b>${fmt(pokusu, 0)}</b>.</span>
+      <span class="small"><b>Trh dnes:</b> ${esc(rz.rezim || "–")}${(rz.stitky || []).length ? " · " + esc(rz.stitky.join(", ")) : ""}. ${esc(tr.zaver || "")}</span>
+      <span class="small muted">Dnes ${fmt(d.akcii, 0)} amerických akcií: RŮST ${fmt((d.rozhodnuti || {})["RŮST"], 0)}, POKLES ${fmt((d.rozhodnuti || {})["POKLES"], 0)}, NEVÍM ${fmt((d.rozhodnuti || {})["NEVÍM"], 0)}. ${esc(d.plosny_posun_modelu || "")}</span></div>`;
+    $("sig-cards").innerHTML = (G.karty || []).map((c) => {
+      const sk = c.skore || {}, an = (c.analogie || {}).horizonty || {}, a10 = an["10"] || {}, a60 = an["60"] || {}, inf = c.informace || {};
+      const cat = (c.katalyzatory || [])[0];
+      const comp = [["Fundament", sk.fundament], ["Technika", sk.technika], ["Kapitálový tok", sk.kapitalovy_tok], ["Katalyzátor", sk.katalyzator], ["Mispricing", c.mispricing]];
+      return `<article class="card">
+        <div class="head"><div><div class="tick">${esc(c.ticker)}</div><div class="small">${esc(c.firma || "")}</div><div class="small muted">${esc(c.obor || "")}</div></div>
+          <span class="chip ${DEC[c.final] || ""}">${esc(c.final === "NEVÍM" ? "NEVÍM / NO-TRADE" : c.final)}</span></div>
+        <div class="odds"><div><span class="label">P(+5 % / 14 d)</span><b class="pos">${pct(c.p_up)}</b></div><div><span class="label">P(−5 % / 14 d)</span><b class="neg">${pct(c.p_down)}</b></div><div><span class="label">Beze změny</span><b>${pct(c.p_flat)}</b></div></div>
+        <dl class="kv"><dt>Očekávaný pohyb 14 d</dt><dd class="${cls(c.ocekavany_pohyb)}">${pct(c.ocekavany_pohyb, 1)} <span class="muted">(${pct(c.pohyb_q20, 0)} až ${pct(c.pohyb_q80, 0)})</span></dd>
+          <dt>Lépe než obor</dt><dd>${pct(c.p_obor)}</dd><dt>Prudký pohyb ±10 %</dt><dd>${pct(c.p_prudky)}</dd>
+          <dt>Šance, že jde o šum</dt><dd>${pct(c.sance_sum)}</dd><dt>Cena ${esc(den(c.den_ceny))}</dt><dd>${fmt(c.cena, 2)} USD</dd></dl>
+        <div><span class="label">Důvěra ${fmt(c.duvera, 0)} / 100</span>${bar(c.duvera, c.duvera >= 55 ? "hit" : "miss")}</div>
+        <div class="reasons">${comp.map(([n, v]) => `<div class="reason"><span>${esc(n)}</span><span class="num small">${nil(v) ? "–" : fmt(v, 0) + " / 100"}</span><span></span></div>`).join("")}
+          <div class="reason"><span>Smart money</span><span class="num small">${c.smart_money ? fmt(c.smart_money.skore, 0) + " / 100" : "–"}</span><span></span></div></div>
+        <ul class="facts">
+          <li><b>Katalyzátor:</b> ${cat ? `${esc(cat.typ)} · ${esc(cat.okno)} (${esc(cat.jistota)})` : "NEOVĚŘENO"}</li>
+          <li><b>Podobné situace v historii</b> (${fmt((c.analogie || {}).nezavislych, 0)} nezávislých): za 14 d medián ${pct(a10.median, 1)}, +5 % v ${pct(a10.nad5)}, −5 % v ${pct(a10.pod5)}; za 3 m medián ${pct(a60.median, 1)}</li>
+          <li><b>Informace:</b> ${inf.titulku ? `${fmt(inf.titulku, 0)} titulků = ${fmt(inf.pribehu, 0)} příběhů (${fmt(inf.prepisu, 0)} přepisů); nových za 7 d ${fmt(inf.novych_7d, 0)}, novost ${fmt(inf.novost, 0)}/100, kvalita ${nil(inf.kvalita) ? "–" : fmt(inf.kvalita, 0) + "/100"}` : esc(inf.stav || "–")}</li>
+          ${(c.penalizace || []).length ? `<li class="muted"><b>Proč nižší důvěra:</b> ${c.penalizace.map((p) => esc(p.duvod) + " (−" + p.body + ")").join("; ")}</li>` : ""}
+          <li class="muted">${esc(c.proc || "")}</li></ul>
+      </article>`;
+    }).join("") || `<div class="empty">Dnes žádná karta.</div>`;
+    const pr = G.protokol || {}, vz = G.vzorky || {};
+    const prow = (k, lbl, per) => vz[k] ? `<tr><td>${esc(lbl)}</td><td class="num small">${esc(per)}</td><td class="r num">${fmt(vz[k].n, 0)}</td><td class="r num">${fmt(vz[k].nezavislych, 0)}</td><td class="r num">${fmt(vz[k].tydnu, 0)}</td></tr>` : "";
+    const cal = ((G.kalibrace || {}).up5 || {});
+    const bands = ((G.pasma || {}).pasma || []);
+    const decRows = Object.entries(dec).map(([k, v]) => `<tr><td><span class="chip ${DEC[k] || ""}">${esc(k)}</span></td><td class="r num">${fmt(v.n, 0)}</td><td class="r num">${pct(v.up5)}</td><td class="r num">${pct(v.down5)}</td><td class="r num">${pct(v.beat_sec)}</td><td class="r num ${cls(v.vynos_median)}">${pct(v.vynos_median, 1)}</td><td class="r num ${cls(v.nad_tydnem)}">${pct(v.nad_tydnem, 1)}</td><td class="r num">${pct(v.sum)}</td></tr>`).join("");
+    $("sig-test").innerHTML = `<div class="tablewrap"><h3>Protokol (pevná data, test se nikdy neposouvá)</h3><table><thead><tr><th>Část</th><th>Období</th><th class="r">Vzorků</th><th class="r">Nezávislých</th><th class="r">Týdnů</th></tr></thead><tbody>
+        ${prow("TRAIN", "Učení", "do " + (pr.train_do || ""))}${prow("VALIDATION", "Validace (výběr modelu, kalibrace)", (pr.validace || []).join(" až "))}${prow("LOCKED_TEST", "Zamčený test (jednou)", (pr.zamceny_test || []).join(" až "))}${prow("POST", "Po testu (kalibrace finálního modelu)", (pr.post || []).join(" až "))}</tbody></table>
+        <p class="small muted">Nezávislý případ = jedna kombinace týden × obor. Akcie stejného oboru ve stejném týdnu se hýbou spolu, takže nejsou samostatné důkazy.</p></div>
+      <div class="tablewrap"><h3>Přesnost (AUC: 0,5 náhoda, 1 dokonalé) a horní desetina</h3><table><thead><tr><th>Období</th><th class="r">Vzorků</th><th class="r">+5 %</th><th class="r">−5 %</th><th class="r">±10 %</th><th class="r">Obor</th><th class="r">Horní 10 % vs týden</th><th class="r">t</th><th class="r">Šum</th></tr></thead>
+        <tbody>${metricsRow("Validace", G.validace)}${metricsRow("Zamčený test", G.zamceny_test)}${metricsRow("Po testu", G.post)}</tbody></table></div>
+      <div class="tablewrap"><h3>Rozhodnutí v zamčeném testu</h3><table><thead><tr><th>Karta</th><th class="r">Počet</th><th class="r">+5 %</th><th class="r">−5 %</th><th class="r">Lépe než obor</th><th class="r">Medián 14 d</th><th class="r">Nad týdnem</th><th class="r">Šum</th></tr></thead><tbody>${decRows}</tbody></table>
+        <p class="small muted">Běžná akcie: +5 % za 14 dní v ${pct((G.zaklad || {}).up5)}, −5 % v ${pct((G.zaklad || {}).down5)} případů.</p></div>
+      <div class="two-col"><div class="tablewrap"><h3>Kalibrace P(+5 %)</h3><table><thead><tr><th class="r">Model říká</th><th class="r">Skutečnost</th><th class="r">Vzorků</th></tr></thead><tbody>
+        ${(cal.pred || []).map((p, i) => `<tr><td class="r num">${pct(p)}</td><td class="r num">${pct((cal.actual || [])[i])}</td><td class="r num">${fmt((cal.n || [])[i], 0)}</td></tr>`).join("")}</tbody></table></div>
+      <div class="tablewrap"><h3>Pásma směru → výnos za 14 dní</h3><table><thead><tr><th>Pásmo</th><th class="r">Medián</th><th class="r">Nad oborem</th><th class="r">Šum</th></tr></thead><tbody>
+        ${bands.map((x) => `<tr><td>${fmt(x.pasmo, 0)}</td><td class="r num ${cls(x.vynos_median)}">${pct(x.vynos_median, 1)}</td><td class="r num ${cls(x.nad_oborem)}">${pct(x.nad_oborem, 1)}</td><td class="r num">${pct(x.sum)}</td></tr>`).join("")}</tbody></table></div></div>`;
+    const mech = G.mechanismy || {};
+    const mrows = Object.entries(mech).map(([per, v]) => Object.entries(v.mechanismy || {}).map(([id, m]) => `<tr><td>${esc(id)}</td><td>${esc(per === "uceni" ? "učení" : "validace + test")}</td><td class="r num">${fmt(m.vazeb, 0)}</td><td class="r num ${cls(m.prumer_t)}">${fmt(m.prumer_t, 2)}</td><td class="r num">${pct(m.percentil_vs_nahodne)}</td></tr>`).join("")).join("");
+    const gv = (G.mispricing_dukaz || {}).test || {};
+    $("sig-market").innerHTML = `<div class="tablewrap"><h3>Režim trhu a co po něm historicky následovalo (S&amp;P 500, 10 dní)</h3><table><thead><tr><th>Režim</th><th class="r">Období</th><th class="r">Průměr</th><th class="r">Kladných</th><th class="r">t</th></tr></thead><tbody>
+        ${((tr.podle_rezimu) || []).map((x) => `<tr><td>${esc(x.skupina)}</td><td class="r num">${fmt(x.obdobi, 0)}</td><td class="r num ${cls(x.sp500_10d_prumer)}">${pct(x.sp500_10d_prumer, 1)}</td><td class="r num">${pct(x.kladnych)}</td><td class="r num">${nil(x.t_vs_vse) ? "–" : fmt(x.t_vs_vse, 1)}</td></tr>`).join("")}</tbody></table>
+        <p class="small muted">Celý trh má jen jedno nezávislé pozorování za 14 dní, proto znaky trhu nejsou v modelu jednotlivých akcií.</p></div>
+      <div class="tablewrap"><h3>Mechanismus „událost → dodavatelé“: předbíhají obory své dodavatele?</h3><table><thead><tr><th>Řetězec</th><th>Období</th><th class="r">Vazeb</th><th class="r">Průměrné t</th><th class="r">Lepší než náhodné dvojice</th></tr></thead><tbody>${mrows}</tbody></table>
+        <p class="small muted">Vazba má smysl, jen když je lepší než náhodné dvojice oborů (50 % = stejně jako náhoda) a drží i po období učení.</p></div>
+      <p class="small"><b>Co už je v ceně:</b> akcie, jejichž výsledky se proti loňsku zlepšily víc, než na ně trh zareagoval (horní pětina „mispricingu“), měly v testu za 14 dní ${pct(gv.horni_petina_nad_oborem, 2)} proti oboru (dolní pětina ${pct(gv.dolni_petina_nad_oborem, 2)}; šance na šum ${pct(gv.sum)}).</p>`;
   }
 
   // ---------------------------------------------------------------- smart money
@@ -542,6 +621,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     db.doc("stav/retezec").onSnapshot((s) => { if (s.exists) { R = s.data(); renderChain(); } }, fail);
     db.doc("stav/objevy").onSnapshot((s) => { if (s.exists) { D = s.data(); renderDiscovery(); } }, fail);
     db.doc("stav/smartmoney").onSnapshot((s) => { if (s.exists) { S = s.data(); renderSmart(); } }, fail);
+    db.doc("stav/signaly").onSnapshot((s) => { if (s.exists) { G = s.data(); renderSignals(); } }, fail);
   })();
 })();
 </script>

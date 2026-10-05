@@ -83,6 +83,23 @@ python -m stockradar smart-money --no-download   # jen přepočet nad staženým
 
 Každý případ zvlášť: `data/smart_money_udalosti.csv` a `data/smart_money_politici.csv` (mimo git).
 
+## Signály na 14 dní (pravděpodobnosti místo ceny)
+
+Výsledky a metodika: [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md). Běží týdně nebo ručně:
+
+```bash
+python -m stockradar signals               # panel, učení, validace, zamčený test (jen jednou), karty, vyhodnocení
+python -m stockradar signals --no-news     # bez titulků Google News
+```
+
+| Krok | Co dělá |
+|---|---|
+| Cíle | P(+5 % za 10 obchodních dní), P(−5 %), P(lépe než obor), P(prudký pohyb ±10 %), očekávaný výnos z pásma |
+| Znaky | technika a relativní síla vůči oboru, fundamenty SEC, překvapení ve výsledcích a reakce trhu (co už je v ceně), kapitálový tok (insideři, buyback, 13G, akumulace objemu), mechanismus „dodavatelský řetězec“ |
+| Režim trhu | býčí klidný / volatilní / medvědí / šok / bez trendu; modely „klid“ a „stres“ + meta-model; vyhodnocení trhu zvlášť po nezávislých dvoutýdnech |
+| Protokol | TRAIN → VALIDATION → LOCKED TEST (jednou na konfiguraci, registr `model_evaluations`) → POST → LIVE (`signal_forecasts`) |
+| Důvěra | 0–100: málo nezávislých analogií, vzácný režim, nepřesná kalibrace, neshoda modelů, chybějící data, šance na šum → NEVÍM / NO-TRADE |
+
 ## Kde jsou data
 
 | Místo | Co | V gitu |

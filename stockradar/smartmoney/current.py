@@ -25,16 +25,19 @@ def _num(s: str) -> float | None:
         return None
 
 
-def fetch_recent_purchases(days: int = 60, min_value_k: int = 25, pages: int = 5) -> list[dict]:
-    out = []
+def fetch_recent_purchases(days: int = 60, min_value_k: int = 25, pages: int = 5, template: str = SCREENER) -> list[dict]:
+    """Pozor: openinsider po ~10. stránce vrací pořád stejnou stránku → duplicity se vyřazují a při stránce
+    bez nových řádků se končí (pro delší období použij fetch_purchases_between po oknech)."""
+    out, seen = [], set()
     for page in range(1, pages + 1):
-        req = urllib.request.Request(SCREENER.format(days=days, min_k=min_value_k, cnt=500, page=page),
+        req = urllib.request.Request(template.format(days=days, min_k=min_value_k, cnt=500, page=page),
                                      headers={"User-Agent": "Mozilla/5.0"})
         text = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
         t = text[text.find('class="tinytable"'):]
         rows = re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S)[1:]
         if not rows:
             break
+        new_rows = 0
         for r in rows:
             cells = [re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", c))).strip()
                      for c in re.findall(r"<td[^>]*>(.*?)</td>", r, re.S)]
@@ -43,13 +46,35 @@ def fetch_recent_purchases(days: int = 60, min_value_k: int = 25, pages: int = 5
                 continue
             ticker = re.sub(r"[^A-Z0-9.\-]", "", cells[3].split(">")[-1].upper()).rstrip(".")
             own = cells[11].replace("%", "").replace("+", "").strip()
+            key = (cells[1], cells[3], cells[5], cells[9], cells[8])
+            if key in seen:
+                continue
+            seen.add(key)
+            new_rows += 1
             out.append({"filed": cells[1][:10], "trade": cells[2], "ticker": ticker.replace(".", "-"), "company": cells[4],
                         "insider": cells[5], "title": cells[6], "price": _num(cells[8]), "qty": _num(cells[9]),
                         "owned": _num(cells[10]), "delta_own": None if own in ("New", "") else _num(own) / 100 if _num(own) is not None else None,
                         "new_position": own == "New", "value": _num(cells[12]), "form4_url": links[0] if links else None,
                         "zdroj": "openinsider.com (přehled z Form 4)"})
-        if len(rows) < 500:
+        if len(rows) < 500 or new_rows == 0:
             break
+    return out
+
+
+def fetch_purchases_between(start, end, *, min_value_k: int = 0, chunk_days: int = 14, log=None) -> list[dict]:
+    """Nákupy podle data podání v rozsahu [start, end] — po oknech, protože openinsider vrací nejvýš 40 stránek."""
+    from datetime import timedelta
+    from urllib.parse import quote
+    out, d = [], start
+    while d <= end:
+        e = min(end, d + timedelta(days=chunk_days - 1))
+        fdr = quote(f"{d:%m/%d/%Y} - {e:%m/%d/%Y}", safe="").replace("%20", "+")
+        tmpl = SCREENER.replace("fd={days}&fdr=", "fd=-1&fdr=" + fdr.replace("{", "{{").replace("}", "}}"))
+        part = fetch_recent_purchases(days=0, min_value_k=min_value_k, pages=40, template=tmpl)
+        if log:
+            log(f"openinsider {d} … {e}: {len(part)}")
+        out += part
+        d = e + timedelta(days=1)
     return out
 
 

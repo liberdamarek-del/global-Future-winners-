@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-05 · **Verze:** v0.5.0 · **Schema DB:** v5 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md)
+**Aktualizováno:** 2026-10-05 · **Verze:** v0.6.0 · **Schema DB:** v6 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -68,7 +68,18 @@
 | Web | sekce Smart money, dokument `stav/smartmoney` (~37 kB) |
 | NEOVĚŘENO | Trump (OGE 278-T jsou skeny), 13F, short interest, oznámení buybacků z 8-K, EPS, zisk opcí |
 
-## HOTOVO (ověřeno testy — 97 testů prošlo 2026-10-05)
+## Signály na 14 dní (v0.6.0, běhy #1–#2, 2026-10-05)
+
+| Položka | Stav |
+|---|---|
+| Výstup | karta: P(+5 %), P(−5 %), P(flat), P(lépe než obor), P(±10 %), očekávaný pohyb + rozpětí, důvěra 0–100, RŮST / POKLES / NEVÍM, analogie, katalyzátor, novost a kvalita zpráv, skóre složek |
+| Protokol | TRAIN ≤ 2024-06-28 · VALIDATION 2024-07-19…2025-06-27 · LOCKED TEST 2025-07-18…2026-03-27 (jednou, konfigurace `a1b0f2e61e6c56cc`, pokus č. 1) · POST od 2026-04-17 · LIVE `signal_forecasts` |
+| Data | 168 586 vzorků = 24 942 nezávislých (týden × obor), 198 týdnů; trh 108 dvoutýdnů |
+| Zamčený test | AUC +5 % 0,60 · −5 % 0,69 · ±10 % 0,83 · obor 0,53; RŮST bez výhody (+0,6 %, šum 65 %); POKLES −0,9 % (šum 10 %) |
+| Dnes | 3 673 akcií: RŮST 0, POKLES 193, NEVÍM 3 480; trh NEVÍM |
+| NEVÍM / NEOVĚŘENO | konsenzus analytiků, short interest, opční toky, zprávy jako prediktor, mechanismy (nestabilní), mispricing (nepotvrzen), akcie mimo USA |
+
+## HOTOVO (ověřeno testy — 106 testů prošlo 2026-10-05)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -87,6 +98,7 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
+| `signals/*`, `migrations/0006` | Signály na 14 dní: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (9) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 
 ## ROZPRACOVÁNO
@@ -94,7 +106,7 @@
 | Co | Stav |
 |---|---|
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
-| Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `update` + `diag` + jedno zlepšení kódu s testem + web |
+| Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` + `update` + `diag` + jedno zlepšení kódu s testem + web |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |
 

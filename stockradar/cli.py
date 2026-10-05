@@ -208,6 +208,47 @@ def cmd_smart_money(args) -> int:
     return 0
 
 
+def cmd_signals(args) -> int:
+    """Signální engine na 14 dní: karta pravděpodobností, důvěra, NEVÍM; zamčený test jen jednou na konfiguraci."""
+    from stockradar.discovery import cache as dcache
+    from stockradar.signals import model as sm_model
+    from stockradar.signals import run as srun
+    from stockradar.signals import store as sstore
+    from stockradar.site import write_signals_doc
+    from stockradar.smartmoney import current
+
+    conn = _open()
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    recent = None
+    if not args.no_download:
+        try:   # čtvrtletní sady SEC končí s odstupem → čerstvé nákupy insiderů z openinsider (sekundární přehled Form 4)
+            from datetime import date as _date
+            last = cconn.execute("SELECT MAX(filing_date) FROM insider_tx").fetchone()[0]
+            start = _date.fromisoformat(last) if last else _date.today().replace(day=1)
+            recent = current.fetch_purchases_between(start, _date.today(), log=log)
+            print(f"openinsider: {len(recent)} nákupů od {start}")
+        except Exception as exc:
+            print(f"openinsider nedostupný: {exc}")
+    res = srun.run(cconn, conn, log=log, with_news=not args.no_news, recent_insiders=recent, workers=args.workers)
+    data = res.pop("_data")
+    evaluated = sstore.evaluate_forecasts(conn, data)
+    res["vysledky_karet"] = sstore.scorecard(conn)
+    res["nove_vyhodnoceno"] = len(evaluated)
+    res = srun.clean(res)
+    run_id = sstore.save_run(conn, res, sm_model.MODEL_NAME, res["konfigurace"])
+    ids = sstore.save_forecasts(conn, run_id, res["karty"])
+    export_state(conn, state_dir())
+    size = write_signals_doc(conn, web_dir())
+    d = res["dnes"]["rozhodnuti"]
+    print(f"Běh signálů #{run_id}: {len(ids)} karet (dnes RŮST {d['RŮST']}, POKLES {d['POKLES']}, NEVÍM {d['NEVÍM']}),"
+          f" vyhodnoceno dřívějších karet {len(evaluated)}, web stav/signaly {size // 1024} kB")
+    t = res["zamceny_test"]
+    print(f"Zamčený test ({t.get('_stav')}): AUC P(+5 %) {t.get('up5', {}).get('auc')}, P(−5 %) {t.get('down5', {}).get('auc')}")
+    _print_email_today(conn)
+    return 0
+
+
 def cmd_email(args) -> int:
     from stockradar.contact import email, usage_summary
     conn = _open(create=False)
@@ -364,6 +405,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_sm = sub.add_parser("smart-money", help="nákupy insiderů, politiků, velké podíly a buybacky: test + signály")
     p_sm.add_argument("--no-download", action="store_true", help="nestahovat nová data (jen analýza)")
     p_sm.set_defaults(func=cmd_smart_money)
+    p_sig = sub.add_parser("signals", help="signály na 14 dní: P(+5 %), P(−5 %), důvěra, NEVÍM; přísný test")
+    p_sig.add_argument("--no-download", action="store_true", help="bez stažení čerstvých nákupů insiderů")
+    p_sig.add_argument("--no-news", action="store_true", help="bez titulků (novost a kvalita informací)")
+    p_sig.add_argument("--workers", type=int, default=4, help="počet procesů pro učení")
+    p_sig.set_defaults(func=cmd_signals)
     p_email = sub.add_parser("email", help="kolikrát a kde byl použit e-mail uživatele")
     p_email.add_argument("--days", type=int, default=14)
     p_email.set_defaults(func=cmd_email)
