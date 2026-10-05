@@ -64,6 +64,18 @@ def test_checker_caches_and_stops_after_network_errors():
     assert bad.summary()["nedostupne"]
 
 
+def test_name_fallback_finds_listing_under_other_symbol_or_exchange():
+    offer = {"frontline": [{"symbol": "FRO.NO", "typeSlug": "cashstocks", "name": "Frontline Ltd", "currencyCode": "NOK"}],
+             "tsakos energy navigation": [{"symbol": "TEN1.US", "typeSlug": "cashstocks",
+                                           "name": "Tsakos Energy Navigation Ltd", "currencyCode": "USD"}]}
+    ch = xtb.Checker(_conn(), search=lambda q: offer.get(q, []), pause=0)
+    fro = ch.check("FRO", "Frontline Plc Ordinary Shares")                        # FRO.US XTB nemá, FRO.NO ano
+    assert fro["status"] == "AKCIE" and fro["xtb_symbol"] == "FRO.NO" and fro["other_exchange"] == 1
+    ten = ch.check("TEN", "Tsakos Energy Navigation Ltd Common Shares")            # stejná burza, jiný symbol
+    assert ten["xtb_symbol"] == "TEN1.US" and ten["other_exchange"] == 0
+    assert ch.check("EOLS", "Evolus Inc. Common Stock")["status"] == "NE" and ch.requests == 6
+
+
 def test_ranking_takes_first_twenty_offered_by_xtb():
     ordered = [{"sym": s} for s in ("A", "B", "C", "D", "E")]
     offer = {"A": "NE", "B": "AKCIE", "C": "CFD", "E": "AKCIE"}                   # D nejde ověřit

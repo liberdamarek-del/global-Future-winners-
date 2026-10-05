@@ -6,7 +6,8 @@ bez přihlášení a bez e-mailu. Neoficiální rozhraní → každý výsledek 
 
 Stavy:
 - AKCIE — skutečná akcie (XTB typ „cashstocks“) na domácí burze firmy (např. VST.US, RR.UK, NKT.DK),
-  nebo na jiné burze se stejným jménem firmy (např. japonský Lasertec jako 6K8.DE v EUR) → `jina_burza`.
+  nebo pod jiným symbolem / na jiné burze se stejným jménem firmy (japonský Lasertec jako 6K8.DE v EUR, Frontline
+  z NYSE jako FRO.NO, CRH jako CRH.UK) → `jina_burza`, když je to jiná burza než domácí.
 - CFD — XTB nabízí jen CFD (páka), ne akcii → do žebříčku nepatří.
 - NE — XTB firmu nenabízí (typicky burzy v Japonsku, Austrálii, Kanadě, Koreji).
 - None — nepodařilo se ověřit (chyba sítě) → firma se do žebříčku nedá, výsledek se neukládá.
@@ -24,7 +25,7 @@ from datetime import datetime
 from stockradar.config import XTB_CHECK_MAX_AGE
 from stockradar.timeutil import parse_iso, to_iso, utcnow
 
-SOURCE = "xtb.com/cz — vyhledávání nástrojů"
+SOURCE = "xtb.com/cz — vyhledávání nástrojů (symbol, pak jméno firmy)"   # změna metody = nová kontrola (cache)
 SEARCH_URL = "https://www.xtb.com/web-api/v3/languages/cs/branches/cz/instruments?{query}"
 PAGE_URL = "https://www.xtb.com/cz/akcie"
 BROWSER_UA = "Mozilla/5.0"
@@ -109,7 +110,7 @@ class Checker:
 
     def _cached(self, symbol: str) -> dict | None:
         r = self.conn.execute("SELECT * FROM xtb_offer WHERE symbol = ?", (symbol,)).fetchone()
-        if r is None or self.now - parse_iso(r["checked_at"]) > self.max_age:
+        if r is None or r["source"] != SOURCE or self.now - parse_iso(r["checked_at"]) > self.max_age:
             return None
         return dict(r)
 
@@ -120,30 +121,43 @@ class Checker:
             return hit
         if self.down:
             return None
-        xsym = xtb_symbol(symbol)
-        query = xsym or norm_name(name)          # „Lasertec Corporation“ XTB nenajde, „lasertec“ ano
-        if not query:
-            res = {"status": "NE", "xtb_symbol": None, "xtb_name": None, "currency": None, "other_exchange": 0}
-        else:
-            try:
-                items = self.search(query)
-                self._fails = 0
-            except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-                self.errors += 1
-                self._fails += 1
-                self.down = self._fails >= 5
+        xsym, nname = xtb_symbol(symbol), norm_name(name)
+        res = {"status": "NE", "xtb_symbol": None, "xtb_name": None, "currency": None, "other_exchange": 0}
+        queries = []
+        # 1) symbol na domácí burze, 2) jméno firmy („Lasertec Corporation“ XTB nenajde, „lasertec“ ano)
+        for query, sym in ((xsym, xsym), (nname, None)):
+            if not query or res["status"] == "AKCIE" or (sym is None and res["status"] == "CFD"):
+                continue
+            items = self._search(query)
+            if items is None:
                 return None
-            finally:
-                self.requests += 1
-                if self.pause:
-                    time.sleep(self.pause)
-            res = classify(items, xsym, name)
-        row = {"symbol": symbol, **res, "query": query or "-", "source": SOURCE, "checked_at": to_iso(self.now)}
+            queries.append(query)
+            found = classify(items, sym, name)
+            if found["status"] == "AKCIE" and sym is None and xsym:
+                found["other_exchange"] = int(found["xtb_symbol"].rpartition(".")[2] != xsym.rpartition(".")[2])
+            if found["status"] != "NE":
+                res = found
+        row = {"symbol": symbol, **res, "query": " | ".join(queries) or "-", "source": SOURCE, "checked_at": to_iso(self.now)}
         with self.conn:
             self.conn.execute("INSERT OR REPLACE INTO xtb_offer (symbol, status, xtb_symbol, xtb_name, currency,"
                               " other_exchange, query, source, checked_at) VALUES (:symbol, :status, :xtb_symbol,"
                               " :xtb_name, :currency, :other_exchange, :query, :source, :checked_at)", row)
         return row
+
+    def _search(self, query: str) -> list[dict] | None:
+        try:
+            items = self.search(query)
+            self._fails = 0
+            return items
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+            self.errors += 1
+            self._fails += 1
+            self.down = self._fails >= 5
+            return None
+        finally:
+            self.requests += 1
+            if self.pause:
+                time.sleep(self.pause)
 
     def tradable(self, symbol: str, name: str | None = None) -> bool:
         r = self.check(symbol, name)
