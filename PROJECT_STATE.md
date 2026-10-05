@@ -27,7 +27,7 @@
 | Firmy na radaru | 46 veřejných firem v 11 článcích řetězce AI → elektřina + Holtec (před IPO) + 9 případů z §31 |
 | Dohody Big Tech | 22 se zdrojem (11× Google, 4× Meta, 2× Amazon, 2× Microsoft, 3 ostatní) |
 | Katalyzátory | 8 (žádný s ověřeným přesným datem; odhady jako okno) |
-| Predikce v ledgeru | 29 živých: 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
+| Predikce v ledgeru | 34 živých: 5 nových raket na 6 měsíců z běhu objevování #4 (2026-10-05: PNR.AX, 4DX.AX, MGNX, ELS.AX, KOS; ostatní z TOP 10 už v ledgeru byly), 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
 | MAIN PICK | ŽÁDNÝ (nikdo nesplnil skóre ≥ 70 a šanci ≥ 55 %) |
 | Model | verze vah 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
 | XTB | u žádné firmy neověřeno (už není podmínka) |
@@ -81,7 +81,7 @@
 | Dnes | 3 673 akcií: RŮST 0, POKLES 193, NEVÍM 3 480; trh NEVÍM |
 | NEVÍM / NEOVĚŘENO | konsenzus analytiků, short interest, opční toky, zprávy jako prediktor, mechanismy (nestabilní), mispricing (nepotvrzen), akcie mimo USA |
 
-## HOTOVO (ověřeno testy — 108 testů prošlo 2026-10-05)
+## HOTOVO (ověřeno testy — 109 testů prošlo 2026-10-05)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -100,7 +100,7 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
-| `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (11) |
+| `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (12) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 
 ## ROZPRACOVÁNO

@@ -19,7 +19,7 @@ rozkliknutí firmy, nic se nemaže. Zpráva: [docs/SIGNALS_2026-10-05.md](docs/S
 | `site.py` | Nový dokument `stav/zebricek` (h14, h1m, h6m: TOP 20 + test modelu + historie); `stav/signaly` obsahuje oba modely |
 | `web/index.html` | Hlavní stránka: záložky 14 dní / 1 měsíc / 6 měsíců (volba se pamatuje), TOP 20 s šancí na růst a potenciálem, detail po rozkliknutí; ostatní sekce sbalené v „Další analýzy“ |
 | `cli.py` | `signals` počítá oba modely; nové nákupy insiderů z openinsider po 14denních oknech od posledního data SEC |
-| `tests/unit/test_signals.py` | + zmrazená konfigurace 14D, pohled 1M a oddělená období (11 testů) |
+| `tests/unit/test_signals.py` | + zmrazená konfigurace 14D, pohled 1M a oddělená období, pravidlo řazení (12 testů) |
 
 **Zamčený test SIGNAL_1M** (pokus č. 1, 36 456 vzorků, 4 556 nezávislých):
 - AUC: +10 % 0,64, −10 % 0,74, ±20 % 0,84, obor 0,53.
@@ -33,7 +33,10 @@ rozkliknutí firmy, nic se nemaže. Zpráva: [docs/SIGNALS_2026-10-05.md](docs/S
 
 **Chyby nalezené během práce:**
 - Řazení podle „růst − pokles“ vybíralo klidné akcie, které se skoro nehýbou.
-- Kalibrace je v horním pásmu plochá → všech 20 firem mělo stejné číslo. Pořadí je nyní podle surového skóre (stejné pořadí, bez remíz).
+- Kalibrace je v horním pásmu plochá → horní firmy mají stejnou šanci na růst. Mezi nimi rozhoduje menší riziko poklesu
+  (ověřené pravidlo). Pokus řadit podle surového skóre (běhy #7 a #8) vybral nejrozkolísanější akcie a nebyl ověřený
+  na validaci → vrácen (test `test_ranking_rule_from_validation`). Karty z těch běhů zůstávají (append-only).
+- Web: u každé firmy je vedle šance na růst i riziko poklesu (u 6 měsíců propadu), takže je pořadí vidět.
 - Potenciál z pásma byl pro všechny stejný → nově z analogií každé firmy.
 
 ## 2026-10-05 · v0.6.0 — Signály na 14 dní: pravděpodobnosti místo ceny, režim trhu, NEVÍM, zamčený test

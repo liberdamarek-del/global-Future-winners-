@@ -294,14 +294,15 @@ def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news
     }
 
 
-RANK_RULE = "šance na růst (pořadí podle skóre modelu); jen akcie, kde model vidí víc růstu než poklesu"
+RANK_RULE = "šance na růst; jen akcie, kde model vidí víc růstu než poklesu; při stejné šanci menší riziko poklesu"
 
 
 def rank_key(x: dict) -> tuple:
-    """Podmínka růst > pokles z kalibrovaných pravděpodobností; pořadí z nekalibrovaného skóre modelu (kalibrace je
-    monotónní, ale v nejvyšším pásmu dává všem stejnou hodnotu → bez toho by pořadí v čele rozhodovala náhoda)."""
+    """Pravidlo vybrané na VALIDACI (docs/SIGNALS_2026-10-05.md, kap. 7): kalibrovaná šance na růst, jen když je vyšší
+    než šance na pokles; při shodě (kalibrace je v horním pásmu plochá) rozhoduje rozdíl růst − pokles, tj. menší
+    riziko poklesu. Řazení podle surového skóre vybíralo nejrozkolísanější akcie a na validaci ověřené nebylo."""
     p = x["pred"]
-    return (p["raw"]["up5"] if p["up5"] > p["down5"] else -1.0, p["dir"])
+    return (p["up5"] if p["up5"] > p["down5"] else -1.0, p["dir"])
 
 
 def market_warning(ref: dict | None, base: dict) -> str:

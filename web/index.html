@@ -452,7 +452,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     } else {
       const hd = t.horni_desetina || {}, gr = t.rust || {};
       const flat = new Set(z.firmy.map((c) => Math.round((c.p_up || 0) * 100))).size <= 3;
-      $("zeb-foot").textContent = `${flat ? "Šance je u horních firem podobná (kalibrace je dál přesně nerozliší), pořadí uvnitř určuje skóre modelu. " : ""}Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Silných signálů dnes: ${fmt(z.silnych, 0)}${z.silnych ? "" : " — pořadí ukazuje nejlepší dostupné kandidáty, výhoda je malá"}. V zamčeném testu: horní desetina pořadí ${sgn(nil(hd.nad_tydnem) ? null : hd.nad_tydnem * 100, 1)} proti průměru týdne (šance na šum ${pct(hd.sum)}), běžná akcie dosáhne ${thr(z.prah_rust)} v ${pct(z.zaklad)} případů. Ne doporučení k nákupu.`;
+      $("zeb-foot").textContent = `${flat ? "Šance na růst je u horních firem podobná (model je v horním pásmu dál přesně nerozliší); mezi nimi rozhoduje menší riziko poklesu. " : ""}Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Silných signálů dnes: ${fmt(z.silnych, 0)}${z.silnych ? "" : " — pořadí ukazuje nejlepší dostupné kandidáty, výhoda je malá"}. V zamčeném testu: horní desetina pořadí ${sgn(nil(hd.nad_tydnem) ? null : hd.nad_tydnem * 100, 1)} proti průměru týdne (šance na šum ${pct(hd.sum)}), běžná akcie dosáhne ${thr(z.prah_rust)} v ${pct(z.zaklad)} případů. Ne doporučení k nákupu.`;
     }
   }
   document.querySelectorAll(".htab").forEach((t) => t.addEventListener("click", () => {

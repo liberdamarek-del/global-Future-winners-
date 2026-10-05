@@ -143,3 +143,13 @@ def test_one_month_view_and_purged_splits():
     assert M.split_of(date(2024, 6, 10).toordinal(), 33) == "TRAIN"
     assert M.split_of(date(2026, 3, 27).toordinal(), 33) is None
     assert M.split_of(date(2025, 8, 1).toordinal(), 33) == "LOCKED_TEST"
+
+
+def test_ranking_rule_from_validation():
+    from stockradar.signals import run
+    mk = lambda t, up, dn, raw: {"t": t, "pred": {"up5": up, "down5": dn, "dir": up - dn, "raw": {"up5": raw}}}
+    live = [mk("VOLATILE", 0.318, 0.31, 0.60), mk("CALM", 0.318, 0.20, 0.40), mk("DOWN", 0.30, 0.35, 0.90),
+            mk("LOWER", 0.29, 0.10, 0.35)]
+    order = [x["t"] for x in sorted(live, key=run.rank_key, reverse=True)]
+    # stejná šance na růst → přednost menšímu riziku poklesu; víc poklesu než růstu → na konec
+    assert order == ["CALM", "VOLATILE", "LOWER", "DOWN"]
