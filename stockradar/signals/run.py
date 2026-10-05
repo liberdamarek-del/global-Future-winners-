@@ -14,6 +14,7 @@ from stockradar.signals import panel as P
 from stockradar.signals import store
 from stockradar.signals.extra import Extra, Spy
 from stockradar.signals.regime import Regime, load_series, market_view
+from stockradar.sources import xtb
 from stockradar.timeutil import to_iso, utcnow
 
 MIN_CLASS_ROWS, MIN_CLASS_WEEKS = 5000, 15
@@ -134,8 +135,10 @@ def catalysts_for(sym, fund, cache_conn, main_conn, today: int) -> list[dict]:
 
 
 def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool = True, recent_insiders=None,
-        models: tuple[str, ...] = ("SIGNAL_14D", "SIGNAL_1M")) -> dict:
-    """Jeden panel, víc modelů (14 dní, 1 měsíc). Každý model má vlastní konfiguraci a vlastní zamčený test."""
+        models: tuple[str, ...] = ("SIGNAL_14D", "SIGNAL_1M"), xtb_check=None) -> dict:
+    """Jeden panel, víc modelů (14 dní, 1 měsíc). Každý model má vlastní konfiguraci a vlastní zamčený test.
+
+    `xtb_check(symbol, name)` (sources.xtb.Checker.check): do žebříčku jen akcie, které XTB nabízí (uživatel 2026-10-05)."""
     t0 = time.time()
     lg = lambda m: log(f"[{round(time.time() - t0)} s] {m}")
     data = study.load_data(cache_conn)
@@ -161,7 +164,7 @@ def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool =
         if f is not None:
             live_f.append((sym, j, f))
     shared = {"data": data, "fund": fund, "extra": extra, "regime": regime, "today": today, "rlabel": rlabel,
-              "live": live_f, "news": {}, "sm_top": smart_money_top(main_conn)}
+              "live": live_f, "news": {}, "sm_top": smart_money_top(main_conn), "xtb_check": xtb_check}
     out = {}
     for name in models:
         out[name] = run_model(name, panel, shared, cache_conn, main_conn, log=lg, workers=workers, with_news=with_news)
@@ -257,14 +260,18 @@ def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news
     # 2026-10-05 ze 3 předem daných pravidel podle týdenních TOP 20: nejvyšší šance na růst při riziku poklesu blízko
     # průměru; zamčený test se k výběru nepoužil)
     by_dir = sorted(live, key=rank_key, reverse=True)
+    top, xtb_info = pick_tradable(by_dir, sh["xtb_check"], lambda x: data.secs[x["sym"]].meta.get("name"), TOP_RANK)
+    log(f"{name}: XTB — {xtb_info}")
     worst = sorted(live, key=lambda x: (x["pred"]["dir"], -x["pred"]["down5"]))
-    chosen = by_dir[:TOP_RANK] + [x for x in worst if x not in by_dir[:TOP_RANK]][:TOP_DOWN]
+    chosen = top + [x for x in worst if x not in top][:TOP_DOWN]
     analogs = C.Analogs(pv, hist + po)
     cards = []
     for pos, x in enumerate(chosen):
         c = build_card(x, data, fund, cache_conn, main_conn, sm2, ctx2, analogs, dist, gap_sorted, rlabel,
                        today, sh["sm_top"], with_news, spec, sh["news"])
-        c["poradi"] = pos + 1 if pos < TOP_RANK else None
+        c["poradi"] = pos + 1 if pos < len(top) else None
+        c["poradi_celkem"] = x.get("poradi_celkem")
+        c["xtb"] = xtb.badge(x.get("xtb_row")) if pos < len(top) and sh["xtb_check"] else None
         c["model"] = name
         cards.append(c)
     log(f"{name}: karty {len(cards)}")
@@ -287,11 +294,35 @@ def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news
                  "plosny_posun_modelu": market_warning(ref_today, ctx2.base)},
         "trh": market_view(regime, today),
         "karty": cards,
+        "xtb": xtb_info,
+        # celé pořadí modelu (všechny dnešní akcie) — „kde je moje firma“, i když není v TOP 20
+        "poradi_vse": ",".join(x["sym"] for x in by_dir),
         "vahy": {t: sorted(({"znak": f, "nazev": P.ALL_FEATURES[f], "koef": round(w, 3)}
                             for f, w in zip(sm2.glob[t].features, sm2.glob[t].w)), key=lambda x: -abs(x["koef"]))[:12]
                  for t in ("up5", "down5")},
         "insideri_sec_do": _day(sh["extra"].insider_source_end),
     }
+
+
+def pick_tradable(ordered: list[dict], check, name_of, n: int, max_checks: int = 600) -> tuple[list[dict], dict]:
+    """Prvních `n` firem v pořadí modelu, které XTB nabízí jako akcie (bez kontroly = prvních n). Pořadí se nemění,
+    jen se přeskočí firmy mimo nabídku; každá vybraná nese své celkové pořadí (`poradi_celkem`)."""
+    for pos, x in enumerate(ordered, 1):
+        x["poradi_celkem"] = pos
+    if check is None:
+        return ordered[:n], {"kontrola": False}
+    chosen, skipped = [], {"NE": 0, "CFD": 0, "NEOVĚŘENO": 0}
+    for x in ordered[:max_checks]:
+        if len(chosen) >= n:
+            break
+        row = check(x["sym"], name_of(x))
+        if row and row["status"] == "AKCIE":
+            x["xtb_row"] = row
+            chosen.append(x)
+        else:
+            skipped[row["status"] if row else "NEOVĚŘENO"] += 1
+    return chosen, {"kontrola": True, "prohledano": sum(skipped.values()) + len(chosen), "vybrano": len(chosen),
+                    "preskoceno": skipped}
 
 
 RANK_RULE = "šance na růst; jen akcie, kde model vidí víc růstu než poklesu; při stejné šanci menší riziko poklesu"

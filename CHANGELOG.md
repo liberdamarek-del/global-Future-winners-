@@ -4,6 +4,23 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-05 · v0.8.0 — Žebříček jen z akcií, které nabízí XTB
+
+Důvod: uživatel 2026-10-05 — jeho broker (XTB) nenabízí např. australské a japonské akcie. Chce, aby se dostupnost
+ověřila dřív, než se firma dostane do žebříčku.
+
+| Soubor/modul | Změna |
+|---|---|
+| `sources/xtb.py` (nový) | Ověření na xtb.com/cz (veřejné vyhledávání nástrojů, bez e-mailu). Převod symbolů Yahoo → XTB (VST → VST.US, RR.L → RR.UK…). Stavy AKCIE / CFD / NE; u burz mimo nabídku XTB hledání podle jména firmy (Lasertec → 6K8.DE). Cache `xtb_offer` na 30 dní, po 5 chybách sítě stop |
+| `signals/run.py` | `pick_tradable`: model seřadí všechny akcie, do TOP 20 jdou první z nabídky XTB. Karta nese `xtb` a `poradi_celkem`, běh celé pořadí `poradi_vse` a souhrn kontroly |
+| `discovery/rocket.py`, `engine.py` | Druhý seznam `kandidati_xtb` (TOP 20 z nabídky XTB, vlastní limit 3 na obor); `kandidati` (ledger TOP 10) beze změny |
+| `site.py`, `web/index.html` | Žebříček z XTB seznamů; u firmy štítek „XTB VST.US“, v detailu datum ověření a pořadí v modelu bez ohledu na XTB; poznámka, kolik firem se přeskočilo |
+| `cli.py` | `signals` a `discover` ověřují XTB a vypíší počet dotazů na xtb.com |
+| `tests/unit/test_xtb.py` | Převod symbolů, akcie / CFD / jiná burza, cache a výpadek sítě, výběr TOP 20 (4 testy) |
+
+Co se nemění: modely, zamčené testy, pravidlo řazení, ledger (měří se model, ne broker). XTB dál NENÍ podmínkou
+predikcí v ledgeru (rozhodnutí 2026-10-02 platí pro ledger, žebříček je nově jen z nabídky XTB).
+
 ## 2026-10-05 · v0.7.0 — Hlavní stránka = žebříček TOP 20 (14 dní, 1 měsíc, 6 měsíců) + model na 1 měsíc
 
 Důvod: uživatel 2026-10-05 — na webu je moc informací. Hlavní část má být jednoduchý žebříček „Vítězové do 14 dnů /

@@ -21,6 +21,20 @@ rutina spustí `python -m stockradar update`, krátký výzkum novinek a nahraje
 | Učení | 9 faktorů (trend, přepálení, objem, volatilita, velikost, dohoda s Big Tech, katalyzátor…); váhy podle toho, co historicky fungovalo |
 | Predikce | TOP 5 se skóre ≥ 60 a šancí ≥ 50 %; MAIN PICK jen při skóre ≥ 70 a šanci ≥ 55 % |
 
+## Hlavní obrazovka: žebříček a XTB
+
+Záložky **Do 14 dní / Do 1 měsíce / Do 6 měsíců**, v každé TOP 20 firem seřazených modelem (dokument `stav/zebricek`).
+Od v0.8.0 jsou v žebříčku **jen akcie, které nabízí XTB** (rozhodnutí uživatele 2026-10-05):
+
+| Krok | Co dělá |
+|---|---|
+| Zdroj | veřejné vyhledávání nástrojů na xtb.com/cz (bez přihlášení, bez e-mailu) — `stockradar/sources/xtb.py` |
+| Domácí burza | přesná shoda symbolu: VST → `VST.US`, RR.L → `RR.UK`, NKT.CO → `NKT.DK`; jen skutečná akcie, ne CFD |
+| Jiná burza | firmy z burz mimo nabídku XTB (Japonsko, Austrálie, Kanada, Korea…) jen při stejném jménu firmy, např. Lasertec → `6K8.DE` (EUR) |
+| Pořadí | model seřadí všechny akcie; do TOP 20 jdou první firmy z nabídky XTB; celkové pořadí zůstává u firmy i v `poradi_vse` |
+| Cache | `xtb_offer` v `data/market_cache.db`, platnost 30 dní; po 5 chybách sítě se dál nezkouší a firmy zůstanou neověřené (do žebříčku nejdou) |
+| Ledger | beze změny: predikce raket (TOP 10) se zapisují podle modelu bez ohledu na brokera, aby šlo poctivě měřit model |
+
 ## Rychlý start
 
 Python 3.11+, bez externích závislostí.
@@ -106,7 +120,7 @@ python -m stockradar signals --no-news     # bez titulků Google News
 |---|---|---|
 | `state/*.jsonl` | **Zdroj pravdy**: firmy, listingy, XTB kontroly, katalyzátory, predikce, vyhodnocení, změny verdiktů, poučení, snapshoty | ano |
 | `data/stockradar.db` | Pracovní SQLite kopie, kdykoli obnovitelná ze `state/` | ne |
-| `data/market_cache.db` | Cache globálního objevování: seznam ~13 000 firem a 5 let cen (zlib), kdykoli stažitelná znovu | ne |
+| `data/market_cache.db` | Cache globálního objevování: seznam ~13 000 firem a 5 let cen (zlib), nabídka XTB (`xtb_offer`), kdykoli stažitelná znovu | ne |
 
 Git historie `state/predictions.jsonl` zároveň dokládá, že se historické predikce nepřepisovaly (§29).
 

@@ -439,6 +439,7 @@ def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
             "akcii": (full.get("dnes") or {}).get("akcii"), "trh": "USA (data SEC)", "razeni": full.get("razeni"),
             "silnych": (full.get("dnes") or {}).get("rozhodnuti", {}).get("RŮST"),
             "zaklad": (full.get("zaklad") or {}).get("up5"),
+            "xtb": full.get("xtb") or {"kontrola": False},
             "test": {"auc_rust": (test.get("up5") or {}).get("auc"), "auc_pokles": (test.get("down5") or {}).get("auc"),
                      "horni_desetina": test.get("horni_desetina"), "rust": dec.get("RŮST"), "stav": test.get("_stav")},
             "firmy": [_trim_card(c) | {"historie": [h for h in history(conn, c["ticker"]) if h["den"] < c["den_ceny"]][:4]}
@@ -450,14 +451,16 @@ def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
         t = rk.get("test") or {}
         top = (t.get(rk.get("razeni") or "asymetrie") or {}).get("top1") or {}
         firmy = []
-        for i, c in enumerate(rk.get("kandidati", [])[:20]):
+        xtb_list = rk.get("kandidati_xtb")       # od v0.8.0: jen akcie z nabídky XTB
+        for i, c in enumerate((xtb_list if xtb_list is not None else rk.get("kandidati", []))[:20]):
             firmy.append({k: c.get(k) for k in ("ticker", "nazev", "zeme", "obor", "faze", "cena", "mena", "den", "p_raketa",
                                                 "p_propad", "percentil", "skupina", "hist_rakety", "hist_propady",
                                                 "hist_median", "hist_q20", "hist_q80", "zakladni_cetnost", "proc", "proti",
-                                                "rust_3m", "rust_6m", "obrat_usd", "studie")}
+                                                "rust_3m", "rust_6m", "obrat_usd", "studie", "poradi_celkem", "xtb")}
                          | {"poradi": i + 1, "ledger": _ledger_rocket(conn, c["ticker"])})
         out["h6m"] = {"model": "ROCKET_6M", "horizont": "6 měsíců", "data_do": disc["data_through"], "probehlo": disc["run_at"],
                       "trh": "celý svět", "cil": rk.get("cil"), "propad": rk.get("propad"),
+                      "xtb": {"kontrola": xtb_list is not None},
                       "test": {"obdobi": rk.get("test_obdobi"), "zaklad": t.get("zaklad"), "horni_1": top,
                                "auc": t.get("auc_raketa"), "smerova_vyhoda": rk.get("smerova_vyhoda"),
                                "stabilita": rk.get("stabilita")},

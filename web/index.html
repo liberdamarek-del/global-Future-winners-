@@ -135,6 +135,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
 .rank .metric { text-align: right; font-family: var(--f-num); font-variant-numeric: tabular-nums; }
 .rank .metric b { font-size: 1.15rem; }
 .rank .badge { text-align: right; }
+.rank .xtbtag { font: 600 0.72rem/1 var(--f-num); color: var(--hit); background: var(--hit-bg); border-radius: 4px; padding: 1px 5px; }
 .rank .sub { display: block; font: 400 0.74rem/1.3 var(--f-body); color: var(--muted); white-space: nowrap; }
 .rowdetail { padding: 4px 12px 14px; display: grid; gap: 12px; border-top: 1px solid var(--line); }
 .more { display: block; }
@@ -392,7 +393,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
           <dt>Šance, že jde o šum</dt><dd>${pct(c.sance_sum)}</dd><dt>Cena ${esc(den(c.den_ceny))}</dt><dd>${fmt(c.cena, 2)} USD</dd></dl>
         <div style="display:grid;gap:6px"><span class="label">Důvěra ${fmt(c.duvera, 0)} / 100 · ${esc(c.final === "NEVÍM" ? "jen sledovat" : c.final)}</span>${bar(c.duvera, c.duvera >= 55 ? "hit" : "miss")}
           <div class="reasons">${comp.map(([n, v]) => `<div class="reason"><span>${esc(n)}</span><span class="num small">${nil(v) ? "–" : fmt(v, 0) + " / 100"}</span><span></span></div>`).join("")}</div></div></div>
-      <ul class="facts">
+      <ul class="facts">${xtbLine(c, z.akcii)}
         <li><b>Proč:</b> ${esc(c.proc || "")}${(c.penalizace || []).length ? ` · nižší důvěra: ${c.penalizace.map((p) => esc(p.duvod) + " (−" + p.body + ")").join("; ")}` : ""}</li>
         <li><b>Katalyzátory:</b> ${(c.katalyzatory || []).length ? c.katalyzatory.map((k) => `${esc(k.typ)} · ${esc(k.okno)} (${esc(k.jistota)})`).join("; ") : "NEOVĚŘENO"}</li>
         <li><b>Podobné situace v historii</b> (${fmt((c.analogie || {}).nezavislych, 0)} nezávislých): za ${esc(z.horizont)} medián ${pct(main.median, 1)}, aspoň +5 % v ${pct(main.nad5)}, aspoň −5 % v ${pct(main.pod5)}; za 3 měsíce medián ${pct(a60.median, 1)}</li>
@@ -403,6 +404,12 @@ details.fold[open] > summary { margin-bottom: 10px; }
         <li class="muted">${esc(c.obor || "")}${c.zeme ? " · " + esc(c.zeme) : ""} · zdroje: ceny Yahoo, fundamenty a výsledky SEC, insideři SEC/openinsider, zprávy Google News</li></ul>`;
   }
 
+  function xtbLine(c, total) {
+    const x = c.xtb, rank = nil(c.poradi_celkem) ? "" : ` Pořadí v modelu bez ohledu na XTB: ${fmt(c.poradi_celkem, 0)}.${total ? ` z ${fmt(total, 0)}` : ""}`;
+    if (!x) return rank ? `<li class="muted">${rank.trim()}</li>` : "";
+    const where = x.stav === "AKCIE" ? `${esc(x.symbol || "")}${x.mena ? " (" + esc(x.mena) + ")" : ""}${x.jina_burza ? " — jen na jiné burze než domácí" : ""}` : esc(x.stav);
+    return `<li><b>Na XTB:</b> ${where} · ověřeno ${esc(den(x.overeno))} na <a href="https://www.xtb.com/cz/akcie" target="_blank" rel="noopener">xtb.com</a>.${rank}</li>`;
+  }
   function rocketDetail(r) {
     const lg = r.ledger;
     return `<div class="odds"><div><span class="label">Raketa +50 % (model)</span><b class="pos">${pct(r.p_raketa)}</b></div>
@@ -411,7 +418,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
         <dt>Výnos 6 m v testu: medián / horní pětina</dt><dd>${pct(r.hist_median, 1)} / ${pct(r.hist_q80, 0)}</dd>
         <dt>Cena ${esc(den(r.den))}</dt><dd>${price(r.cena, r.mena)}</dd><dt>Za 3 / 6 měsíců</dt><dd>${pct(r.rust_3m)} / ${pct(r.rust_6m)}</dd>
         ${lg ? `<dt>V ledgeru od ${esc(den(lg.den))}</dt><dd class="${cls(lg.vynos_dosud)}">#${esc(lg.id)} · ${sgn(nil(lg.vynos_dosud) ? null : lg.vynos_dosud * 100, 1)}</dd>` : ""}</dl>
-      <ul class="facts">${(r.proc || []).length ? `<li><b>Proč:</b> ${r.proc.map(esc).join("; ")}</li>` : ""}${(r.proti || []).length ? `<li><b>Proti:</b> ${r.proti.map(esc).join("; ")}</li>` : ""}
+      <ul class="facts">${xtbLine(r, null)}${(r.proc || []).length ? `<li><b>Proč:</b> ${r.proc.map(esc).join("; ")}</li>` : ""}${(r.proti || []).length ? `<li><b>Proti:</b> ${r.proti.map(esc).join("; ")}</li>` : ""}
         ${(r.studie || []).length ? `<li><b>Klinické studie:</b> ${r.studie.map((s) => `<a href="https://clinicaltrials.gov/study/${esc(s.nct)}" target="_blank" rel="noopener">${esc(s.nct)}</a> ${esc(s.faze)} · ${esc(s.dokonceni)}`).join("; ")}</li>` : ""}
         <li class="muted">${esc(r.obor || "")} · ${esc(r.zeme || "")} · fáze ${esc(r.faze || "")} · zdroje: ceny Yahoo, fundamenty SEC, ClinicalTrials.gov</li></ul>`;
   }
@@ -430,18 +437,21 @@ details.fold[open] > summary { margin-bottom: 10px; }
     }
     const six = H === "h6m";
     $("zeb-col1").textContent = six ? "Šance +50 %" : `Šance ${thr(z.prah_rust)}`;
-    $("zeb-note").textContent = six
+    const xt = z.xtb || {}, xp = xt.preskoceno || {};
+    const xtbNote = xt.kontrola ? " Jen akcie, které nabízí XTB (ověřeno na xtb.com)." : " Dostupnost na XTB u tohoto běhu ještě nebyla ověřena.";
+    const xtbFoot = xt.kontrola && !six ? ` Mimo nabídku XTB přeskočeno ${fmt((xp.NE || 0) + (xp.CFD || 0) + (xp["NEOVĚŘENO"] || 0), 0)} firem${xp.CFD ? ` (z toho ${fmt(xp.CFD, 0)} jen jako CFD)` : ""}${xp["NEOVĚŘENO"] ? `, ${fmt(xp["NEOVĚŘENO"], 0)} nešlo ověřit` : ""}.` : "";
+    $("zeb-note").textContent = (six
       ? `Raketa = aspoň +50 % do 6 měsíců. Celý svět, seřazeno podle šance na raketu minus riziko propadu o třetinu. Data k ${den(z.data_do)}.`
-      : `Růst aspoň ${thr(z.prah_rust)} ${z.horizont === "14 dní" ? "do 14 dní" : "do 1 měsíce"}. Akcie USA (${fmt(z.akcii, 0)} likvidních), seřazeno podle šance na růst (jen tam, kde model vidí víc růstu než poklesu). Data k ${den(z.data_do)}.`;
+      : `Růst aspoň ${thr(z.prah_rust)} ${z.horizont === "14 dní" ? "do 14 dní" : "do 1 měsíce"}. Akcie USA (${fmt(z.akcii, 0)} likvidních), seřazeno podle šance na růst (jen tam, kde model vidí víc růstu než poklesu). Data k ${den(z.data_do)}.`) + xtbNote;
     $("zeb-list").innerHTML = z.firmy.map((c, i) => {
-      const nm = shortName(six ? c.nazev : c.firma);
+      const nm = shortName(six ? c.nazev : c.firma), xs = c.xtb && c.xtb.stav === "AKCIE" ? c.xtb.symbol : "";
       const m1 = six ? c.p_raketa : c.p_up, risk = six ? c.p_propad : c.p_down;
       const pot = six ? c.hist_q80 : (nil(c.potencial) ? c.pohyb_q80 : c.potencial);
       const badge = six ? `<span class="chip warn">horní ${c.skupina === "top1" ? "1" : c.skupina === "top5" ? "5" : "10"} %</span>`
         : (c.final === "RŮST" ? `<span class="chip ok">silný signál</span>` : `<span class="chip">sledovat</span>`) + `<span class="sub">důvěra ${fmt(c.duvera, 0)}</span>`;
       return `<li><details><summary>
           <span class="pos-n">${i + 1}</span>
-          <span class="who"><b>${esc(c.ticker)}</b> <span class="small nm">${esc(nm || "")}</span><span class="small muted nm">${esc(c.zeme || "")}${c.obor ? " · " + esc(c.obor) : ""}</span></span>
+          <span class="who"><b>${esc(c.ticker)}</b> <span class="small nm">${esc(nm || "")}</span><span class="small muted nm">${xs ? `<span class="xtbtag">XTB ${esc(xs)}</span> ` : ""}${esc(c.zeme || "")}${c.obor ? " · " + esc(c.obor) : ""}</span></span>
           <span class="metric m1"><b class="pos">${pct(m1)}</b><span class="sub">${six ? "propad" : "pokles"} ${pct(risk)}</span></span>
           <span class="metric m2 small">${nil(pot) ? "–" : "až " + sgn(pot * 100, 0)}</span>
           <span class="badge">${badge}</span></summary>
@@ -454,7 +464,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     } else {
       const hd = t.horni_desetina || {}, gr = t.rust || {};
       const flat = new Set(z.firmy.map((c) => Math.round((c.p_up || 0) * 100))).size <= 3;
-      $("zeb-foot").textContent = `${flat ? "Šance na růst je u horních firem podobná (model je v horním pásmu dál přesně nerozliší); mezi nimi rozhoduje menší riziko poklesu. " : ""}Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Silných signálů dnes: ${fmt(z.silnych, 0)}${z.silnych ? "" : " — pořadí ukazuje nejlepší dostupné kandidáty, výhoda je malá"}. V zamčeném testu: horní desetina pořadí ${sgn(nil(hd.nad_tydnem) ? null : hd.nad_tydnem * 100, 1)} proti průměru týdne (šance na šum ${pct(hd.sum)}), běžná akcie dosáhne ${thr(z.prah_rust)} v ${pct(z.zaklad)} případů. Ne doporučení k nákupu.`;
+      $("zeb-foot").textContent = `${xtbFoot.trim()} ${flat ? "Šance na růst je u horních firem podobná (model je v horním pásmu dál přesně nerozliší); mezi nimi rozhoduje menší riziko poklesu. " : ""}Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Silných signálů dnes: ${fmt(z.silnych, 0)}${z.silnych ? "" : " — pořadí ukazuje nejlepší dostupné kandidáty, výhoda je malá"}. V zamčeném testu: horní desetina pořadí ${sgn(nil(hd.nad_tydnem) ? null : hd.nad_tydnem * 100, 1)} proti průměru týdne (šance na šum ${pct(hd.sum)}), běžná akcie dosáhne ${thr(z.prah_rust)} v ${pct(z.zaklad)} případů. Ne doporučení k nákupu.`;
     }
   }
   document.querySelectorAll(".htab").forEach((t) => t.addEventListener("click", () => {

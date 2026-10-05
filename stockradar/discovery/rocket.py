@@ -23,6 +23,7 @@ from stockradar.discovery import study
 from stockradar.discovery.features import FEATURES, features_at
 from stockradar.discovery.fundamentals import FUND_FEATURES, Fundamentals
 from stockradar.discovery.winners import phase, trailing_returns
+from stockradar.sources.xtb import badge as xtb_badge
 
 TARGET = 0.50
 DROP = 1 / 1.5 - 1           # −33 %
@@ -378,7 +379,7 @@ def directional_edge(ev: dict, ranking: str) -> bool:
 
 # ------------------------------------------------------------------ celý běh
 
-def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: int = 10, log=print) -> dict:
+def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: int = 10, log=print, xtb_check=None) -> dict:
     fund = Fundamentals(cache_conn, data.secs.keys())
     log(f"Fundamenty SEC: {len(fund.cik)} firem s CIK, klinické studie u {len(fund.trials)} firem")
     panel = build_panel(data, heat, fund, log=log)
@@ -400,8 +401,8 @@ def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: 
     # finální model: všechny dny se známým výsledkem (víc dat, novější režim trhu)
     final_up, final_down = train(panel, labeled, "up", feats), train(panel, labeled, "down", feats)
     final_hold = train(panel, labeled, "hold", feats) if ranking.startswith("vydrzi") else None
-    candidates = score_today(data, heat, fund, final_up, final_down, ev, ranking, events, cache_conn, top_n=top_n,
-                             hold=final_hold)
+    candidates, tradable = score_today(data, heat, fund, final_up, final_down, ev, ranking, events, cache_conn,
+                                       top_n=top_n, hold=final_hold, xtb_check=xtb_check)
     return {
         "popis": "Raketa do 6 měsíců: cena během 126 obchodních dní aspoň 2 dny po sobě ≥ +50 %",
         "cil": TARGET, "propad": round(DROP, 3), "horizont_dni": HORIZON,
@@ -411,7 +412,8 @@ def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: 
         "test": ev, "test_jen_cena": ev_price, "razeni": ranking, "smerova_vyhoda": edge, "stabilita": stability,
         "vahy": sorted(({"znak": f, "nazev": ALL_FEATURES[f], "koef": round(w, 3)} for f, w in zip(final_up.features, final_up.w)),
                        key=lambda r: abs(r["koef"]), reverse=True),
-        "kandidati": candidates,
+        "kandidati": candidates,                 # pořadí modelu bez ohledu na brokera (ledger bere TOP 10)
+        **({"kandidati_xtb": tradable} if xtb_check else {}),   # žebříček na webu: jen akcie z nabídky XTB
         "_model": {"raketa": final_up.to_dict(), "propad": final_down.to_dict(),
                    **({"vydrzi": final_hold.to_dict()} if final_hold else {})},
     }
@@ -451,8 +453,13 @@ def _fmt(f: str, v) -> str:
     return f"{v:.2f}"
 
 
+MAX_XTB_CHECKS = 600     # strop dotazů na XTB za běh (cache je 30 dní, takže další běhy jsou rychlé)
+
+
 def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str, events: dict, cache_conn, *,
-                top_n: int, hold: Model | None = None) -> list[dict]:
+                top_n: int, hold: Model | None = None, xtb_check=None) -> tuple[list[dict], list[dict]]:
+    """Dva seznamy ve stejném pořadí modelu: všichni kandidáti a jen ti, které XTB nabízí jako akcie (každý seznam
+    má vlastní limit 3 firmy na obor)."""
     end = data.data_end
     recent = {e.symbol for kind in ("W1_30", "M1_50") for e in events.get(kind, [])
               if end - data.secs[e.symbol].prep.bars.days[e.end] <= 14}
@@ -487,8 +494,11 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
         scored.append((rank_key(ranking, pu, pdn, ph), sym, j, f, pu, pdn, rate))
     scored.sort(reverse=True)
     n = len(scored)
-    out, per_group = [], Counter()
+    out, per_group, out_x, per_group_x = [], Counter(), [], Counter()
+    checks = 0
     for pos, (key, sym, j, f, pu, pdn, rate) in enumerate(scored):
+        if len(out) >= top_n and (xtb_check is None or len(out_x) >= top_n):
+            break
         s = data.secs[sym]
         trailing = trailing_returns(s.prep.bars)
         ph = phase(trailing, sym in recent)
@@ -496,9 +506,13 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
         price_usd = s.prep.bars.closes[j] * rate if rate else 0
         if ph not in ("EARLY", "DEVELOPING") or turnover < MIN_TURNOVER_LIVE or price_usd < MIN_PRICE_LIVE:
             continue
-        if per_group[s.group] >= 3:
-            continue  # rozložení rizika: max. 3 firmy z jednoho oboru
-        per_group[s.group] += 1
+        need_main = len(out) < top_n and per_group[s.group] < 3       # rozložení rizika: max. 3 firmy z oboru
+        need_x = xtb_check is not None and len(out_x) < top_n and per_group_x[s.group] < 3 and checks < MAX_XTB_CHECKS
+        row = xtb_check(sym, s.meta.get("name")) if need_x else None
+        checks += need_x
+        ok_x = bool(row) and row["status"] == "AKCIE"
+        if not (need_main or ok_x):
+            continue
         pct = (pos + 1) / n
         bucket = "top1" if pct <= 0.01 else "top5" if pct <= 0.05 else "top10"
         hist = ev[ranking].get(bucket, {})
@@ -506,8 +520,8 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
         contrib = sorted(((k, v) for k, v in main.contributions(f).items() if f.get(k) is not None and f.get(k) == f.get(k)),
                          key=lambda kv: kv[1], reverse=True)
         trials = fund.upcoming_trials(cache_conn, sym, end) if f.get("p3_180") or f.get("p2_180") else []
-        out.append({
-            "ticker": sym, "nazev": s.meta.get("name"), "zeme": s.meta.get("country"),
+        item = {
+            "ticker": sym, "poradi_celkem": pos + 1, "nazev": s.meta.get("name"), "zeme": s.meta.get("country"),
             "obor": s.meta.get("industry") or s.meta.get("sector"), "faze": ph,
             "cena": round(s.prep.bars.closes[j], 4), "mena": s.currency, "den": s.prep.bars.date(j),
             "p_raketa": round(pu, 4), "p_propad": round(pdn, 4), "percentil": round(pct, 4), "skupina": bucket,
@@ -520,7 +534,11 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
             "obrat_usd": round(turnover), "fundamenty": bool(f.get("has_fund")),
             "studie": [{"nct": t["nct"], "faze": t["phase"], "dokonceni": t["pcd"], "typ": t["pcd_type"],
                         "nazev": (t["title"] or "")[:140]} for t in trials[:4]],
-        })
-        if len(out) >= top_n:
-            break
-    return out
+        }
+        if need_main:
+            per_group[s.group] += 1
+            out.append(item)
+        if ok_x:
+            per_group_x[s.group] += 1
+            out_x.append(item | {"xtb": xtb_badge(row)})
+    return out, out_x

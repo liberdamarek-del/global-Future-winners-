@@ -27,6 +27,9 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   (jakýkoli sektor a země) seřazených podle modelu, první = nejsilnější kandidát; detail až po rozkliknutí firmy.
   Vše ostatní (testy, rakety, smart money, výsledky, energie, sektory, zdroje) zůstává sbalené v „Další analýzy“.
   Data: dokument `stav/zebricek` (14 dní a 1 měsíc z `signals`, 6 měsíců z modelu raket v `discover`).
+- 2026-10-05 (2): **v žebříčku jen akcie, které nabízí XTB** — broker uživatele nenabízí např. australské a japonské
+  akcie. Ověřuje se na xtb.com (`stockradar/sources/xtb.py`, cache 30 dní) PŘED zařazením; jen skutečná akcie (ne CFD).
+  Ledger a modely se nemění (měří se model, ne broker); XTB dál NENÍ podmínkou predikcí v ledgeru.
 
 ## Denní úloha (rutina, po–pá večer)
 

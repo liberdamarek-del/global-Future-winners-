@@ -161,7 +161,12 @@ def cmd_discover(args) -> int:
         print("SEC EDGAR:", sec.refresh(cconn, log=log))
         print("ClinicalTrials.gov:", clinicaltrials.refresh(cconn, log=log))
     print("GLOBAL DISCOVERY …")
-    result = engine.run_discovery(cconn, news_events=args.news, news_winners=args.news_winners, log=log)
+    from stockradar.sources import xtb
+    checker = xtb.Checker(cconn)          # žebříček raket na webu jen z nabídky XTB (rozhodnutí uživatele 2026-10-05)
+    result = engine.run_discovery(cconn, news_events=args.news, news_winners=args.news_winners, log=log,
+                                  xtb_check=checker.check)
+    xsum = checker.summary()
+    print(f"XTB: {xsum['dotazu']} dotazů na xtb.com, {xsum['z_cache']} z cache, chyb {xsum['chyb']}")
     run_id = store.save_run(conn, result)
     created, notes = store.record_candidates(conn, cconn, result, run_id)
     rockets, rnotes = store.record_rockets(conn, cconn, result.get("rakety_6m") or {}, run_id)
@@ -230,8 +235,14 @@ def cmd_signals(args) -> int:
             print(f"openinsider: {len(recent)} nákupů od {start}")
         except Exception as exc:
             print(f"openinsider nedostupný: {exc}")
-    res = srun.run(cconn, conn, log=log, with_news=not args.no_news, recent_insiders=recent, workers=args.workers)
+    from stockradar.sources import xtb
+    checker = xtb.Checker(cconn)          # do žebříčku jen akcie z nabídky XTB (rozhodnutí uživatele 2026-10-05)
+    res = srun.run(cconn, conn, log=log, with_news=not args.no_news, recent_insiders=recent, workers=args.workers,
+                   xtb_check=checker.check)
     data = res.pop("_data")
+    xsum = checker.summary()
+    print(f"XTB: {xsum['dotazu']} dotazů na xtb.com, {xsum['z_cache']} z cache, chyb {xsum['chyb']}"
+          + (" — XTB NEDOSTUPNÉ, část firem neověřena" if xsum["nedostupne"] else ""))
     evaluated = sstore.evaluate_forecasts(conn, data)
     for name, r in res["modely"].items():
         r["vysledky_karet"] = sstore.scorecard(conn, r["obchodnich_dni"])
