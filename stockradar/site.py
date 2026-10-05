@@ -452,7 +452,8 @@ def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
         top = (t.get(rk.get("razeni") or "asymetrie") or {}).get("top1") or {}
         firmy = []
         xtb_list = rk.get("kandidati_xtb")       # od v0.8.0: jen akcie z nabídky XTB
-        for i, c in enumerate((xtb_list if xtb_list is not None else rk.get("kandidati", []))[:20]):
+        from stockradar.sources.xtb import unique_listing
+        for i, c in enumerate(unique_listing(xtb_list if xtb_list is not None else rk.get("kandidati", []))[:20]):
             firmy.append({k: c.get(k) for k in ("ticker", "nazev", "zeme", "obor", "faze", "cena", "mena", "den", "p_raketa",
                                                 "p_propad", "percentil", "skupina", "hist_rakety", "hist_propady",
                                                 "hist_median", "hist_q20", "hist_q80", "zakladni_cetnost", "proc", "proti",

@@ -85,3 +85,9 @@ def test_ranking_takes_first_twenty_offered_by_xtb():
     assert info["preskoceno"] == {"NE": 1, "CFD": 1, "NEOVĚŘENO": 1}
     top, info = run.pick_tradable(ordered, None, lambda x: None, 2)
     assert [x["sym"] for x in top] == ["A", "B"] and not info["kontrola"]
+
+
+def test_two_listings_of_one_company_are_one_row():
+    rows = [{"ticker": "HBM.TO", "xtb": {"symbol": "HBM.US"}}, {"ticker": "ERO.TO", "xtb": {"symbol": "ERO.US"}},
+            {"ticker": "HBM", "xtb": {"symbol": "HBM.US"}}, {"ticker": "X", "xtb": None}, {"ticker": "Y"}]
+    assert [r["ticker"] for r in xtb.unique_listing(rows)] == ["HBM.TO", "ERO.TO", "X", "Y"]   # bez XTB se neslučuje

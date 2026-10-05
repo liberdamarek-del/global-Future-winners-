@@ -168,6 +168,18 @@ class Checker:
                 "chyb": self.errors, "nedostupne": self.down, "overeno": to_iso(self.now)}
 
 
+def unique_listing(items: list[dict]) -> list[dict]:
+    """Jedna firma = jeden řádek: dvě kotace téže firmy (HBM.TO a HBM) vedou na stejný symbol XTB → nechá se lepší."""
+    seen, out = set(), []
+    for it in items:
+        key = (it.get("xtb") or {}).get("symbol")
+        if key and key in seen:
+            continue
+        seen.add(key)
+        out.append(it)
+    return out
+
+
 def badge(row: dict | None) -> dict:
     """Stručný údaj pro kartu firmy na webu."""
     if not row:

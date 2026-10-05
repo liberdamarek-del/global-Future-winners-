@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-05 · **Verze:** v0.7.0 · **Schema DB:** v6 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md)
+**Aktualizováno:** 2026-10-05 · **Verze:** v0.8.0 · **Schema DB:** v6 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -19,6 +19,8 @@
   za ~6 měsíců; využít všechny dostupné zdroje; jednodušší web.
 - 2026-10-05: hlavní obrazovka = **žebříček TOP 20** v záložkách „Do 14 dní / Do 1 měsíce / Do 6 měsíců“ (jakýkoli
   sektor a země, první = nejsilnější kandidát), detail po rozkliknutí firmy; ostatní analýzy zůstávají sbalené.
+- 2026-10-05 (2): v žebříčku **jen akcie, které nabízí XTB** (broker uživatele nemá např. australské a japonské
+  akcie); ověřuje se na xtb.com před zařazením. Ledger se nemění (XTB dál není podmínkou predikcí).
 
 ## Stav analýz
 
@@ -30,7 +32,7 @@
 | Predikce v ledgeru | 35 živých: #35 SO (energie, update běh #7, 2026-10-05), 5 nových raket na 6 měsíců z běhu objevování #4 (2026-10-05: PNR.AX, 4DX.AX, MGNX, ELS.AX, KOS; ostatní z TOP 10 už v ledgeru byly), 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
 | MAIN PICK | ŽÁDNÝ (nikdo nesplnil skóre ≥ 70 a šanci ≥ 55 %) |
 | Model | verze vah 3 (2026-10-05: Trend 120 dní 0,68 → 0,58, malá firma 0,13 → 0,05, objem 0,08 → 0,02); původně verze 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
-| XTB | u žádné firmy neověřeno (už není podmínka) |
+| XTB | žebříček jen z nabídky XTB (ověřeno na xtb.com 2026-10-05); ledger bez podmínky XTB, u predikcí v ledgeru se XTB nezapisuje |
 
 ## Globální objevování (Growth Engine) — první běh 2026-10-02
 
@@ -81,16 +83,16 @@
 | Dnes | 3 673 akcií: RŮST 0, POKLES 193, NEVÍM 3 480; trh NEVÍM |
 | NEVÍM / NEOVĚŘENO | konsenzus analytiků, short interest, opční toky, zprávy jako prediktor, mechanismy (nestabilní), mispricing (nepotvrzen), akcie mimo USA |
 
-## Žebříček na hlavní stránce (v0.7.0, signály běhy #9–#10, objevování #4, 2026-10-05)
+## Žebříček na hlavní stránce (v0.8.0, signály běhy #13–#14, objevování #5, 2026-10-05)
 
 | Horizont | Zdroj | Dnes (data k 2026-10-02) |
 |---|---|---|
-| Do 14 dní | SIGNAL_14D, TOP 20 z 3 673 US akcií | 1. TGTX, 2. KMX, 3. CRH; šance +5 % u všech 32 % (základ 23 %), riziko −5 % 20–26 %; silných signálů RŮST 0 |
-| Do 1 měsíce | SIGNAL_1M (zamčený test: AUC +10 % 0,64, −10 % 0,74; směr nepotvrzen), TOP 20 | 1. SND, 2. TGTX, 3. INSW; šance +10 % 25 % (základ 17 %), riziko −10 % 14–20 % |
-| Do 6 měsíců | model raket (celý svět), TOP 20, do ledgeru TOP 10 | 1. PDI.AX, 2. MLX.AX, 3. PNR.AX; raketa 24–49 %, propad 7–32 % |
+| Do 14 dní | SIGNAL_14D, TOP 20 z 3 673 US akcií, jen z nabídky XTB | 1. TGTX, 2. KMX, 3. CRH (na XTB jako CRH.UK); prověřeno 21, vyřazen 1 (EOLS); šance +5 % u všech 32 % (základ 23 %); silných signálů RŮST 0; Vistra celkově 370. |
+| Do 1 měsíce | SIGNAL_1M (zamčený test: AUC +10 % 0,64, −10 % 0,74; směr nepotvrzen), TOP 20 z nabídky XTB | 1. SND, 2. TGTX, 3. INSW; prověřeno 21, vyřazen 1 (FBRT); šance +10 % 25 % (základ 17 %); Vistra celkově 642. |
+| Do 6 měsíců | model raket (celý svět); web: TOP z nabídky XTB, ledger: TOP 10 modelu beze změny | 19 firem (z prvních 151 v pořadí modelu; HBM.TO a HBM = jedna firma): 1. MGNX, 2. KOS, 3. IRWD, 4. Lasertec (6K8.DE), 5. Frontline (FRO.NO); model sám vede PDI.AX, MLX.AX, PNR.AX (XTB je nenabízí) |
 | Pravidlo řazení | vybrané na validaci; při shodě šance menší riziko poklesu | průměrný výnos TOP 20 proti týdnu ≈ 0 → vyšší šance na velký růst, ne jistota |
 
-## HOTOVO (ověřeno testy — 109 testů prošlo 2026-10-05)
+## HOTOVO (ověřeno testy — 115 testů prošlo 2026-10-05)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -108,6 +110,7 @@
 | `sources/sec.py`, `sources/clinicaltrials.py`, `discovery/fundamentals.py` | SEC + ClinicalTrials.gov, znaky k danému dni bez look-ahead | `tests/unit/test_sources.py` |
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
+| `sources/xtb.py` | Nabídka XTB: symbol na domácí burze, pak jméno firmy (CRH → CRH.UK, Lasertec → 6K8.DE); akcie / CFD / NE; cache `xtb_offer` 30 dní; po 5 chybách sítě stop | `tests/unit/test_xtb.py` (6) |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
 | `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (12) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |

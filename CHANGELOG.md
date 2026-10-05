@@ -16,7 +16,15 @@ ověřila dřív, než se firma dostane do žebříčku.
 | `discovery/rocket.py`, `engine.py` | Druhý seznam `kandidati_xtb` (TOP 20 z nabídky XTB, vlastní limit 3 na obor); `kandidati` (ledger TOP 10) beze změny |
 | `site.py`, `web/index.html` | Žebříček z XTB seznamů; u firmy štítek „XTB VST.US“, v detailu datum ověření a pořadí v modelu bez ohledu na XTB; poznámka, kolik firem se přeskočilo |
 | `cli.py` | `signals` a `discover` ověřují XTB a vypíší počet dotazů na xtb.com |
-| `tests/unit/test_xtb.py` | Převod symbolů, akcie / CFD / jiná burza, hledání podle jména, cache a výpadek sítě, výběr TOP 20 (5 testů) |
+| `tests/unit/test_xtb.py` | Převod symbolů, akcie / CFD / jiná burza, hledání podle jména, cache a výpadek sítě, výběr TOP 20, jedna firma = jeden řádek (6 testů) |
+
+**Výsledek 2026-10-05 (signály běhy #13–#14, objevování #5):**
+- 14 dní: prověřeno 21 firem, vyřazena 1 (Evolus). CRH a Amrize jsou na XTB jen na domácí burze (CRH.UK, AMRZ.CH).
+- 1 měsíc: prověřeno 21, vyřazena 1 (Franklin BSP Realty); Frontline jako FRO.NO.
+- 6 měsíců: XTB nabízí 20 firem z prvních 151 v pořadí modelu, po sloučení dvou kotací Hudbay (HBM.TO, HBM) 19.
+  Prvních 5 modelu (PDI.AX, MLX.AX, PNR.AX, 8338.T, 4DX.AX) XTB nenabízí.
+- Dotazy na xtb.com: signály 42 + 32, objevování 64 (celkem 138), žádná chyba. E-mail se pro XTB nepoužívá.
+- Chyba nalezená během práce: dvě kotace jedné firmy vedly na stejný symbol XTB → `unique_listing` (test).
 
 Co se nemění: modely, zamčené testy, pravidlo řazení, ledger (měří se model, ne broker). XTB dál NENÍ podmínkou
 predikcí v ledgeru (rozhodnutí 2026-10-02 platí pro ledger, žebříček je nově jen z nabídky XTB).

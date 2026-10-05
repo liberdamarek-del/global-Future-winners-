@@ -495,7 +495,7 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
     scored.sort(reverse=True)
     n = len(scored)
     out, per_group, out_x, per_group_x = [], Counter(), [], Counter()
-    checks = 0
+    checks, seen_x = 0, set()
     for pos, (key, sym, j, f, pu, pdn, rate) in enumerate(scored):
         if len(out) >= top_n and (xtb_check is None or len(out_x) >= top_n):
             break
@@ -510,7 +510,7 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
         need_x = xtb_check is not None and len(out_x) < top_n and per_group_x[s.group] < 3 and checks < MAX_XTB_CHECKS
         row = xtb_check(sym, s.meta.get("name")) if need_x else None
         checks += need_x
-        ok_x = bool(row) and row["status"] == "AKCIE"
+        ok_x = bool(row) and row["status"] == "AKCIE" and row["xtb_symbol"] not in seen_x   # HBM.TO i HBM = jedna firma
         if not (need_main or ok_x):
             continue
         pct = (pos + 1) / n
@@ -539,6 +539,7 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
             per_group[s.group] += 1
             out.append(item)
         if ok_x:
+            seen_x.add(row["xtb_symbol"])
             per_group_x[s.group] += 1
             out_x.append(item | {"xtb": xtb_badge(row)})
     return out, out_x
