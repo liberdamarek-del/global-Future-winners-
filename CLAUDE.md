@@ -23,6 +23,10 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 - 2026-10-03: uživatel chce, aby Claude dělal vše sám a **průběžně zlepšoval kód** (i bez pokynu), aby uměl předpovědět
   firmy s růstem desítek až stovek procent za ~6 měsíců. Využívej všechny dostupné bezplatné zdroje ve všech sektorech.
   Web má být jednoduchý (rakety, výsledky, energie, model, sektory, zdroje).
+- 2026-10-05: **hlavní obrazovka = žebříček**: záložky „Do 14 dní / Do 1 měsíce / Do 6 měsíců“, v každé TOP 20 firem
+  (jakýkoli sektor a země) seřazených podle modelu, první = nejsilnější kandidát; detail až po rozkliknutí firmy.
+  Vše ostatní (testy, rakety, smart money, výsledky, energie, sektory, zdroje) zůstává sbalené v „Další analýzy“.
+  Data: dokument `stav/zebricek` (14 dní a 1 měsíc z `signals`, 6 měsíců z modelu raket v `discover`).
 
 ## Denní úloha (rutina, po–pá večer)
 
@@ -36,7 +40,7 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
    proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
-   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly) s `if_version` (URL v `web/dashboard.json`).
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
@@ -54,7 +58,9 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   sady), Sněmovna, Senát, 13D/13G, buybacky → test, SMART MONEY SCORE, 10 signálů ověřených ve Form 4 do ledgeru
   (strategie SMART_MONEY, WATCH 6 m) + dokument `stav/smartmoney` pro web (pak `update` a zápis 5 dokumentů `stav/*`).
   Verdikt VYSOKÁ jen při typu nákupu s výhodou potvrzenou v učení i testu (t ≥ 2). Zpráva: `docs/SMART_MONEY_*.md`.
-- **Signály na 14 dní (každou sobotu po smart money):** `python -m stockradar signals` — karta pravděpodobností
+- **Signály na 14 dní a 1 měsíc (každou sobotu po smart money):** `python -m stockradar signals` — dva modely
+  (SIGNAL_14D: ±5 % za 10 obchodních dní; SIGNAL_1M: ±10 % za 20 dní), každý s vlastním zamčeným testem; žebříček TOP 20
+  řazený podle šance na růst jen u akcií, kde model vidí víc růstu než poklesu (pravidlo vybrané na validaci). Karta pravděpodobností
   (P(+5 %), P(−5 %), P(lépe než obor), P(prudký pohyb), očekávaný pohyb, důvěra, RŮST / POKLES / NEVÍM), tržní režim
   na úrovni celého trhu, analogie, novost a kvalita zpráv, mechanismy „událost → dodavatelé“. Protokol TRAIN /
   VALIDATION / LOCKED TEST / POST / LIVE je pevný (`signals/model.py`); zamčený test se pro konfiguraci vyhodnotí

@@ -4,6 +4,38 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-05 · v0.7.0 — Hlavní stránka = žebříček TOP 20 (14 dní, 1 měsíc, 6 měsíců) + model na 1 měsíc
+
+Důvod: uživatel 2026-10-05 — na webu je moc informací. Hlavní část má být jednoduchý žebříček „Vítězové do 14 dnů /
+do 1 měsíce / do 6 měsíců“ (TOP 10–20, jakýkoli sektor a země, první = nejsilnější kandidát). Detaily až po
+rozkliknutí firmy, nic se nemaže. Zpráva: [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md), kapitola 7.
+
+| Soubor/modul | Změna |
+|---|---|
+| `signals/model.py`, `signals/panel.py` | Model **SIGNAL_1M** (+10 % / −10 % za 20 obchodních dní, ±20 %, obor za 20 dní); `SPECS`, `view()`, mezera 33 dní mezi obdobími; konfigurace SIGNAL_14D beze změny (test `a1b0f2e61e6c56cc`) |
+| `signals/run.py` | Oba modely v jednom běhu (panel jednou); žebříček TOP 20 podle pravidla vybraného na validaci + 5 nejslabších; pořadí, horizont, prahy a **potenciál** (horní pětina 40 analogií) na kartě |
+| `signals/card.py`, `signals/store.py` | Analogie podle horizontu; prahy z karty při vyhodnocení; `history()` = historie hodnocení firmy; skóre podle horizontu; duplicitní karty a záznamy registru se nezapisují |
+| `discovery/engine.py`, `discovery/store.py` | Rakety na 6 měsíců: TOP 20 pro web, do ledgeru dál jen TOP 10 (`ROCKET_LEDGER_TOP`) |
+| `site.py` | Nový dokument `stav/zebricek` (h14, h1m, h6m: TOP 20 + test modelu + historie); `stav/signaly` obsahuje oba modely |
+| `web/index.html` | Hlavní stránka: záložky 14 dní / 1 měsíc / 6 měsíců (volba se pamatuje), TOP 20 s šancí na růst a potenciálem, detail po rozkliknutí; ostatní sekce sbalené v „Další analýzy“ |
+| `cli.py` | `signals` počítá oba modely; nové nákupy insiderů z openinsider po 14denních oknech od posledního data SEC |
+| `tests/unit/test_signals.py` | + zmrazená konfigurace 14D, pohled 1M a oddělená období (11 testů) |
+
+**Zamčený test SIGNAL_1M** (pokus č. 1, 36 456 vzorků, 4 556 nezávislých):
+- AUC: +10 % 0,64, −10 % 0,74, ±20 % 0,84, obor 0,53.
+- Horní desetina +0,02 % nad týdnem (šum 48 %) → směr nepotvrzen.
+- Dolní desetina −4,0 % (t −3,7).
+
+**Pravidlo řazení (validace, ne test):** „šance na růst, jen když růst > pokles“.
+- 14 dní: TOP 20 dosáhlo +5 % v 33,8 % případů (základ 23,8 %), −5 % v 26,5 % (základ 24,2 %).
+- 1 měsíc: +10 % ve 25,2 % (základ 16,6 %), −10 % ve 24,1 % (základ 18,1 %).
+- Průměrný výnos proti týdnu ≈ 0 → žebříček = vyšší šance na velký růst, ne jistota.
+
+**Chyby nalezené během práce:**
+- Řazení podle „růst − pokles“ vybíralo klidné akcie, které se skoro nehýbou.
+- Kalibrace je v horním pásmu plochá → všech 20 firem mělo stejné číslo. Pořadí je nyní podle surového skóre (stejné pořadí, bez remíz).
+- Potenciál z pásma byl pro všechny stejný → nově z analogií každé firmy.
+
 ## 2026-10-05 · v0.6.0 — Signály na 14 dní: pravděpodobnosti místo ceny, režim trhu, NEVÍM, zamčený test
 
 Důvod: návrh uživatele 2026-10-05 (14 bodů: nepředpovídat cenu, mechanismus událost → akcie, překvapení, co je v ceně,

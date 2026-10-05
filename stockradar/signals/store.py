@@ -53,14 +53,15 @@ def save_forecasts(conn, run_id: int, cards: list[dict], *, now=None) -> list[in
     made = to_iso(now or utcnow())
     with conn:
         for c in cards:
-            if conn.execute("SELECT 1 FROM signal_forecasts WHERE symbol = ? AND price_date = ?",
-                            (c["ticker"], c["den_ceny"])).fetchone():
+            h = c.get("obchodnich_dni") or P.H
+            if conn.execute("SELECT 1 FROM signal_forecasts WHERE symbol = ? AND price_date = ? AND horizon_days = ?",
+                            (c["ticker"], c["den_ceny"], h)).fetchone():
                 continue
             cur = conn.execute(
                 "INSERT INTO signal_forecasts (run_id, made_at, symbol, name, price, price_date, currency, horizon_days,"
                 " regime, p_up, p_down, p_flat, p_beat_sector, p_big, expected_move, expected_low, expected_high,"
                 " confidence, decision, card_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (run_id, made, c["ticker"], c.get("firma"), c["cena"], c["den_ceny"], "USD", P.H, c["rezim"],
+                (run_id, made, c["ticker"], c.get("firma"), c["cena"], c["den_ceny"], "USD", h, c["rezim"],
                  c["p_up"], c["p_down"], c["p_flat"], c.get("p_obor"), c.get("p_prudky"), c.get("ocekavany_pohyb"),
                  c.get("pohyb_q20"), c.get("pohyb_q80"), c["duvera"], c["final"],
                  json.dumps(c, ensure_ascii=False, separators=(",", ":"))))
@@ -89,10 +90,13 @@ def evaluate_forecasts(conn, data: study.Data, *, now=None) -> list[dict]:
         lo = min(b.closes[i + 1:j + 1]) / b.closes[i] - 1
         if d0 not in snaps:
             snaps[d0] = P.snapshot(data, d0)
-        sec = snaps[d0]["med"].get(s.group, {}).get("f10")
-        up5, dn5 = int(r >= P.UP), int(r <= P.DOWN)
+        card = json.loads(f["card_json"])
+        key = "f10" if f["horizon_days"] == P.H else "f20" if f["horizon_days"] == P.H_1M else None
+        sec = snaps[d0]["med"].get(s.group, {}).get(key) if key else None
+        up_t, dn_t, big_t = card.get("prah_rust", P.UP), card.get("prah_pokles", P.DOWN), card.get("prah_prudky", P.BIG)
+        up5, dn5 = int(r >= up_t), int(r <= dn_t)
         beat = int(r - sec > 0) if sec is not None else None
-        big = int(max(hi, -lo) >= P.BIG)
+        big = int(max(hi, -lo) >= big_t)
         brier = statistics.fmean([(f["p_up"] - up5) ** 2, (f["p_down"] - dn5) ** 2])
         with conn:
             conn.execute("INSERT INTO signal_outcomes (forecast_id, evaluated_at, end_date, end_price, ret, sector_ret, up5,"
@@ -102,10 +106,26 @@ def evaluate_forecasts(conn, data: study.Data, *, now=None) -> list[dict]:
     return done
 
 
-def scorecard(conn) -> dict:
-    """Jak dopadly dřívější karty: podle rozhodnutí RŮST / POKLES / NEVÍM."""
-    rows = conn.execute("SELECT f.decision, f.p_up, f.p_down, f.confidence, o.* FROM signal_forecasts f"
+def history(conn, symbol: str, limit: int = 6) -> list[dict]:
+    """Historie hodnocení firmy: dřívější karty (všechny horizonty) a jak dopadly."""
+    rows = conn.execute("SELECT f.price_date, f.horizon_days, f.decision, f.p_up, f.p_down, f.confidence, f.card_json,"
+                        " o.ret, o.up5 FROM signal_forecasts f LEFT JOIN signal_outcomes o ON o.forecast_id = f.id"
+                        " WHERE f.symbol = ? ORDER BY f.price_date DESC, f.horizon_days LIMIT ?", (symbol, limit)).fetchall()
+    out = []
+    for r in rows:
+        card = json.loads(r["card_json"])
+        out.append({"den": r["price_date"], "horizont": card.get("horizont"), "poradi": card.get("poradi"),
+                    "p_up": r["p_up"], "p_down": r["p_down"], "rozhodnuti": r["decision"], "duvera": r["confidence"],
+                    "vysledek": r["ret"], "dosazeno": r["up5"]})
+    return out
+
+
+def scorecard(conn, horizon_days: int | None = None) -> dict:
+    """Jak dopadly dřívější karty: podle rozhodnutí RŮST / POKLES / NEVÍM (volitelně jen jeden horizont)."""
+    rows = conn.execute("SELECT f.decision, f.p_up, f.p_down, f.confidence, f.horizon_days, o.* FROM signal_forecasts f"
                         " JOIN signal_outcomes o ON o.forecast_id = f.id").fetchall()
+    if horizon_days is not None:
+        rows = [r for r in rows if r["horizon_days"] == horizon_days]
     out = {}
     for dec in ("RŮST", "POKLES", "NEVÍM"):
         rr = [r for r in rows if r["decision"] == dec]

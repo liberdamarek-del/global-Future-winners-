@@ -1,13 +1,13 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-05 · **Verze:** v0.6.0 · **Schema DB:** v6 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md)
+**Aktualizováno:** 2026-10-05 · **Verze:** v0.7.0 · **Schema DB:** v6 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
 
 ---
 
-## Rozhodnutí uživatele (2026-10-02, 2026-10-03)
+## Rozhodnutí uživatele (2026-10-02, 2026-10-03, 2026-10-05)
 
 - Pouze **bezplatné** zdroje dat.
 - **XTB není povinná podmínka** (stav XTB se jen informativně zapisuje).
@@ -17,6 +17,8 @@
   a kde. Používá se jen pro SEC EDGAR (www.sec.gov, data.sec.gov), každé použití v `email_usage` + web + denní zpráva.
 - 2026-10-03: Claude dělá vše sám a průběžně zlepšuje kód; cíl = předpovědět firmy s růstem desítek až stovek %
   za ~6 měsíců; využít všechny dostupné zdroje; jednodušší web.
+- 2026-10-05: hlavní obrazovka = **žebříček TOP 20** v záložkách „Do 14 dní / Do 1 měsíce / Do 6 měsíců“ (jakýkoli
+  sektor a země, první = nejsilnější kandidát), detail po rozkliknutí firmy; ostatní analýzy zůstávají sbalené.
 
 ## Stav analýz
 
@@ -79,7 +81,7 @@
 | Dnes | 3 673 akcií: RŮST 0, POKLES 193, NEVÍM 3 480; trh NEVÍM |
 | NEVÍM / NEOVĚŘENO | konsenzus analytiků, short interest, opční toky, zprávy jako prediktor, mechanismy (nestabilní), mispricing (nepotvrzen), akcie mimo USA |
 
-## HOTOVO (ověřeno testy — 106 testů prošlo 2026-10-05)
+## HOTOVO (ověřeno testy — 108 testů prošlo 2026-10-05)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -90,15 +92,15 @@
 | `universe.py` | Výzkum: uzly řetězce, firmy, dohody, katalyzátory se zdroji; API pro denní výzkum | `test_universe.py` |
 | `model.py` | 9 faktorů, učení vah z historie (IC, bez look-ahead), kalibrace, test mimo vzorek, verze modelu | `test_model.py` |
 | `update.py` | Denní běh: ceny → vyhodnocení → učení → skóre → predikce → snapshot → export → web | `test_update_pipeline.py` |
-| `site.py` | Data pro web (4 dokumenty, limit 170 kB kvůli serveru) | `test_update_pipeline.py`, `test_discovery_pipeline.py` |
-| `web/index.html` | Webový přehled (artifact s db) | syntax check; čtení dat ověřeno na úrovni `view` |
+| `site.py` | Data pro web (7 dokumentů `stav/*` včetně `zebricek`, limit 170 kB kvůli serveru) | `test_update_pipeline.py`, `test_discovery_pipeline.py` |
+| `web/index.html` | Webový přehled (artifact s db): hlavní stránka = žebříček se záložkami, ostatní v „Další analýzy“ | syntax check; vykreslení desktop/mobil (Playwright); čtení dat ověřeno na úrovni `view` |
 | `cli.py` | + `update`, `discover`, `sources`, `email`, `diag` | `tests/end_to_end/test_cli.py` |
 | `contact.py`, `migrations/0004` | E-mail jen pro SEC, evidence každého použití (nemazatelná) | `tests/unit/test_sources.py` |
 | `sources/sec.py`, `sources/clinicaltrials.py`, `discovery/fundamentals.py` | SEC + ClinicalTrials.gov, znaky k danému dni bez look-ahead | `tests/unit/test_sources.py` |
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
-| `signals/*`, `migrations/0006` | Signály na 14 dní: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (9) |
+| `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (11) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 
 ## ROZPRACOVÁNO

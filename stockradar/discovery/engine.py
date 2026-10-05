@@ -137,7 +137,7 @@ def run_discovery(cache_conn, *, news_events: int = 120, news_winners: int = 40,
 
     # --- 3b. vlastní predikce raket na 6 měsíců (fundamenty SEC + klinické studie + cena) ---
     try:
-        rockets = rocket.run(cache_conn, data, heat, events, log=log)
+        rockets = rocket.run(cache_conn, data, heat, events, top_n=20, log=log)   # žebříček TOP 20 (ledger TOP 10)
     except Exception as exc:  # model raket nesmí shodit zbytek objevování
         log(f"Model raket: CHYBA {exc}")
         rockets = {"chyba": str(exc)[:300], "kandidati": []}

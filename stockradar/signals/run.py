@@ -17,7 +17,7 @@ from stockradar.signals.regime import Regime, load_series, market_view
 from stockradar.timeutil import to_iso, utcnow
 
 MIN_CLASS_ROWS, MIN_CLASS_WEEKS = 5000, 15
-TOP_UP, TOP_DOWN = 12, 5
+TOP_RANK, TOP_DOWN = 20, 5      # žebříček TOP 20 + 5 nejslabších (varování v detailu)
 
 
 def _day(d: int) -> str:
@@ -133,7 +133,9 @@ def catalysts_for(sym, fund, cache_conn, main_conn, today: int) -> list[dict]:
     return out
 
 
-def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool = True, recent_insiders=None) -> dict:
+def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool = True, recent_insiders=None,
+        models: tuple[str, ...] = ("SIGNAL_14D", "SIGNAL_1M")) -> dict:
+    """Jeden panel, víc modelů (14 dní, 1 měsíc). Každý model má vlastní konfiguraci a vlastní zamčený test."""
     t0 = time.time()
     lg = lambda m: log(f"[{round(time.time() - t0)} s] {m}")
     data = study.load_data(cache_conn)
@@ -145,81 +147,100 @@ def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool =
     regime = Regime.from_db(main_conn)
     lg(f"Data: {len(data.secs)} firem, z toho US {len(us)}; insideři ze SEC do {_day(extra.insider_source_end)}")
     panel = P.build(data, fund, extra, regime, shares=M.share_for, log=lg)
-    feats = list(P.MODEL_FEATURES)
-    cfg = M.config_hash(feats)
-    split = {"TRAIN": [], "VALIDATION": [], "LOCKED_TEST": [], "POST": [], "LIVE": []}
-    last_labeled = max((panel.day[k] for k in range(len(panel)) if panel.y["up5"][k] >= 0), default=0)
-    for k in range(len(panel)):
-        s = M.split_of(panel.day[k])
-        if s and panel.y["up5"][k] >= 0:
-            split[s].append(k)
-    lg("Rozdělení: " + ", ".join(f"{k} {len(v)} ({M.n_independent(panel, v)} nezávislých)" for k, v in split.items() if v))
-    tr, va, te, po = split["TRAIN"], split["VALIDATION"], split["LOCKED_TEST"], split["POST"]
-
-    # 1) učení na TRAIN, meta-model a kalibrace na VALIDATION
-    glob1, reg1 = fit_stage(panel, tr, feats, workers=workers, log=lg)
-    choice, choice_detail = meta_choice(panel, va, glob1, reg1)
-    sm1 = M.SignalModel(feats, glob1, reg1, choice)
-    va_preds = calibrate_model(panel, sm1, va)
-    lg("Meta-model: " + ", ".join(f"{k}={v['volba']}" for k, v in choice_detail.items()))
-    tr_preds = [sm1.predict(panel.row(k), M.regime_class(panel.regime[k])) for k in tr]
-    ctx1 = C.Context(panel, tr, va, sm1, {}, tr_preds)
-
-    def decider(sm, ctx, rows, preds):
-        ref = C.day_reference([panel.day[k] for k in rows], preds)
-
-        def dec(pred, k):
-            f = panel.row(k)
-            conf, _ = C.confidence(pred, f, panel.regime[k], ctx, sm)
-            return C.decide(pred, conf, ctx.base, sm, ref.get(panel.day[k]))
-        return dec
-
-    val_metrics = M.evaluate(panel, va, va_preds, decider(sm1, ctx1, va, va_preds))
-    val_metrics["poznamka"] = "kalibrace i pásma se počítaly na těchto datech → optimistické; rozhoduje zamčený test"
-    store.record_eval(main_conn, M.MODEL_NAME, cfg, "VALIDATION", (_day(M.VAL[0]), _day(M.VAL[1])), val_metrics)
-
-    # 2) LOCKED TEST — jednou pro konfiguraci
-    locked = store.locked_result(main_conn, M.MODEL_NAME, cfg)
-    if locked is None:
-        te_preds = [sm1.predict(panel.row(k), M.regime_class(panel.regime[k])) for k in te]
-        test_metrics = M.evaluate(panel, te, te_preds, decider(sm1, ctx1, te, te_preds))
-        store.record_eval(main_conn, M.MODEL_NAME, cfg, "LOCKED_TEST", (_day(M.TEST[0]), _day(M.TEST[1])), test_metrics)
-        test_metrics["_stav"] = "vyhodnoceno poprvé v tomto běhu"
-        lg("ZAMČENÝ TEST vyhodnocen poprvé a zapsán do registru")
-    else:
-        test_metrics = locked
-        test_metrics["_stav"] = f"načteno z registru (vyhodnoceno {locked['_vyhodnoceno']}) — znovu se nepočítá"
-        lg("ZAMČENÝ TEST: konfigurace už vyhodnocena → jen načteno")
-    gap_ev = {"validace": gap_evidence(panel, va), "test": gap_evidence(panel, te)}
-
-    # 3) finální model: TRAIN + VALIDATION + TEST, kalibrace na POST (data po testu, model je neviděl)
-    hist = tr + va + te
-    glob2, reg2 = fit_stage(panel, hist, feats, choice, workers=workers, log=lg)
-    sm2 = M.SignalModel(feats, glob2, reg2, choice)
-    po_preds = calibrate_model(panel, sm2, po) if len(po) >= 3000 else None
-    if po_preds is None:                     # málo dat po testu → kalibrace z validace prvního modelu
-        sm2.cal, sm2.bands = sm1.cal, sm1.bands
-    hist_preds = [sm2.predict(panel.row(k), M.regime_class(panel.regime[k])) for k in hist]
-    ctx2 = C.Context(panel, hist, po, sm2, {}, hist_preds)
-    post_metrics = M.evaluate(panel, po, po_preds, decider(sm2, ctx2, po, po_preds)) if po_preds else {"vzorku": len(po)}
-    if po_preds:
-        post_metrics["poznamka"] = "finální model; kalibrace na těchto datech (rozlišení je mimo vzorek)"
-        store.record_eval(main_conn, M.MODEL_NAME, cfg, "POST", (_day(M.POST_START), _day(last_labeled)), post_metrics)
-    lg("Finální model naučen a zkalibrován")
-
-    # 4) dnešní karty
+    # dnešní znaky (společné pro všechny modely)
     today = data.data_end
     snap = P.snapshot(data, today)
     rf = regime.features(today)
     rlabel = regime.label(today)
-    live = []
+    live_f = []
     for sym, j in snap["idx"].items():
         s = data.secs[sym]
         if today - s.prep.bars.days[j] > 4:
             continue
         f = P.sample(data, s, j, snap["rate"][sym], snap, fund, extra, rf)
-        if f is None:
-            continue
+        if f is not None:
+            live_f.append((sym, j, f))
+    shared = {"data": data, "fund": fund, "extra": extra, "regime": regime, "today": today, "rlabel": rlabel,
+              "live": live_f, "news": {}, "sm_top": smart_money_top(main_conn)}
+    out = {}
+    for name in models:
+        out[name] = run_model(name, panel, shared, cache_conn, main_conn, log=lg, workers=workers, with_news=with_news)
+    mech = mechanism.lead_lag_test(data, periods={"uceni": (data.data_start, M.TRAIN_END),
+                                                  "validace_a_test": (M.VAL[0], M.TEST[1])}, log=lg)
+    for r in out.values():
+        r["mechanismy"] = mech
+    return {"_data": data, "modely": out}
+
+
+def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news) -> dict:
+    spec = M.SPECS[name]
+    pv = M.view(panel, name)
+    data, fund, regime, today, rlabel = sh["data"], sh["fund"], sh["regime"], sh["today"], sh["rlabel"]
+    feats = list(P.MODEL_FEATURES)
+    cfg = M.config_hash(feats, name)
+    split = {"TRAIN": [], "VALIDATION": [], "LOCKED_TEST": [], "POST": [], "LIVE": []}
+    labeled = [k for k in range(len(pv)) if pv.y["up5"][k] >= 0]
+    last_labeled = max((pv.day[k] for k in labeled), default=0)
+    for k in labeled:
+        s = M.split_of(pv.day[k], spec["gap"])
+        if s:
+            split[s].append(k)
+    log(f"{name}: " + ", ".join(f"{k} {len(v)} ({M.n_independent(pv, v)} nezávislých)" for k, v in split.items() if v))
+    tr, va, te, po = split["TRAIN"], split["VALIDATION"], split["LOCKED_TEST"], split["POST"]
+
+    # 1) učení na TRAIN, meta-model a kalibrace na VALIDATION
+    glob1, reg1 = fit_stage(pv, tr, feats, workers=workers, log=log)
+    choice, choice_detail = meta_choice(pv, va, glob1, reg1)
+    sm1 = M.SignalModel(feats, glob1, reg1, choice)
+    va_preds = calibrate_model(pv, sm1, va)
+    log(f"{name} meta-model: " + ", ".join(f"{k}={v['volba']}" for k, v in choice_detail.items()))
+    tr_preds = [sm1.predict(pv.row(k), M.regime_class(pv.regime[k])) for k in tr]
+    ctx1 = C.Context(pv, tr, va, sm1, {}, tr_preds)
+
+    def decider(sm, ctx, rows, preds):
+        ref = C.day_reference([pv.day[k] for k in rows], preds)
+
+        def dec(pred, k):
+            conf, _ = C.confidence(pred, pv.row(k), pv.regime[k], ctx, sm)
+            return C.decide(pred, conf, ctx.base, sm, ref.get(pv.day[k]))
+        return dec
+
+    val_metrics = M.evaluate(pv, va, va_preds, decider(sm1, ctx1, va, va_preds))
+    val_metrics["poznamka"] = "kalibrace i pásma se počítaly na těchto datech → optimistické; rozhoduje zamčený test"
+    store.record_eval(main_conn, name, cfg, "VALIDATION", (_day(M.VAL[0]), _day(M.VAL[1])), val_metrics)
+
+    # 2) LOCKED TEST — jednou pro konfiguraci
+    locked = store.locked_result(main_conn, name, cfg)
+    if locked is None:
+        te_preds = [sm1.predict(pv.row(k), M.regime_class(pv.regime[k])) for k in te]
+        test_metrics = M.evaluate(pv, te, te_preds, decider(sm1, ctx1, te, te_preds))
+        store.record_eval(main_conn, name, cfg, "LOCKED_TEST", (_day(M.TEST[0]), _day(M.TEST[1])), test_metrics)
+        test_metrics["_stav"] = "vyhodnoceno poprvé v tomto běhu"
+        log(f"{name}: ZAMČENÝ TEST vyhodnocen poprvé a zapsán do registru")
+    else:
+        test_metrics = locked
+        test_metrics["_stav"] = f"načteno z registru (vyhodnoceno {locked['_vyhodnoceno']}) — znovu se nepočítá"
+        log(f"{name}: ZAMČENÝ TEST už vyhodnocen → jen načteno")
+    gap_ev = {"validace": gap_evidence(pv, va), "test": gap_evidence(pv, te)}
+
+    # 3) finální model: TRAIN + VALIDATION + TEST, kalibrace na POST (data po testu, model je neviděl)
+    hist = tr + va + te
+    glob2, reg2 = fit_stage(pv, hist, feats, choice, workers=workers, log=log)
+    sm2 = M.SignalModel(feats, glob2, reg2, choice)
+    po_preds = calibrate_model(pv, sm2, po) if len(po) >= 3000 else None
+    if po_preds is None:                     # málo dat po testu → kalibrace z validace prvního modelu
+        sm2.cal, sm2.bands = sm1.cal, sm1.bands
+    hist_preds = [sm2.predict(pv.row(k), M.regime_class(pv.regime[k])) for k in hist]
+    ctx2 = C.Context(pv, hist, po, sm2, {}, hist_preds)
+    post_metrics = M.evaluate(pv, po, po_preds, decider(sm2, ctx2, po, po_preds)) if po_preds else {"vzorku": len(po)}
+    if po_preds:
+        post_metrics["poznamka"] = "finální model; kalibrace na těchto datech (rozlišení je mimo vzorek)"
+        store.record_eval(main_conn, name, cfg, "POST", (_day(M.POST_START), _day(last_labeled)), post_metrics)
+    log(f"{name}: finální model naučen a zkalibrován")
+
+    # 4) dnešní žebříček a karty
+    live = []
+    for sym, j, f in sh["live"]:
         pred = sm2.predict(f, M.regime_class(rlabel))
         conf, pen = C.confidence(pred, f, rlabel, ctx2, sm2)
         live.append({"sym": sym, "j": j, "f": f, "pred": pred, "conf": conf, "pen": pen,
@@ -228,36 +249,38 @@ def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool =
                  "down5": statistics.median(x["pred"]["down5"] for x in live)} if live else None
     for x in live:
         x["dec"], x["why"] = C.decide(x["pred"], x["conf"], ctx2.base, sm2, ref_today)
-    lg(f"Dnes ({_day(today)}): {len(live)} akcií, rozhodnutí " +
-       str({d: sum(1 for x in live if x["dec"] == d) for d in ("RŮST", "POKLES", "NEVÍM")}))
+    log(f"{name} dnes ({_day(today)}): {len(live)} akcií, rozhodnutí " +
+        str({d: sum(1 for x in live if x["dec"] == d) for d in ("RŮST", "POKLES", "NEVÍM")}))
     dist = {g: sorted(x["contrib"][g] for x in live) for g in P.FEATURE_GROUPS}
     gap_sorted = sorted(x["f"]["gap"] for x in live if C.finite(x["f"].get("gap")))
-    by_dir = sorted(live, key=lambda x: x["pred"]["dir"], reverse=True)
-    chosen = [x for x in by_dir if x["dec"] == "RŮST"][:TOP_UP]
-    if len(chosen) < TOP_UP:                       # doplnit nejsilnější NEVÍM, ať je vidět, proč model odmítl
-        chosen += [x for x in by_dir if x not in chosen][:TOP_UP - len(chosen)]
-    chosen += [x for x in reversed(by_dir) if x not in chosen][:TOP_DOWN]
-    sm_top = smart_money_top(main_conn)
-    analogs = C.Analogs(panel, hist + po)
+    # pořadí žebříčku: šance na růst, ale jen u akcií, kde model vidí víc růstu než poklesu (vybráno na VALIDACI
+    # 2026-10-05 ze 3 předem daných pravidel podle týdenních TOP 20: nejvyšší šance na růst při riziku poklesu blízko
+    # průměru; zamčený test se k výběru nepoužil)
+    by_dir = sorted(live, key=rank_key, reverse=True)
+    worst = sorted(live, key=lambda x: (x["pred"]["dir"], -x["pred"]["down5"]))
+    chosen = by_dir[:TOP_RANK] + [x for x in worst if x not in by_dir[:TOP_RANK]][:TOP_DOWN]
+    analogs = C.Analogs(pv, hist + po)
     cards = []
-    for x in chosen:
-        cards.append(build_card(x, data, fund, cache_conn, main_conn, sm2, ctx2, analogs, dist, gap_sorted, rlabel,
-                                today, sm_top, with_news))
-    lg(f"Karty: {len(cards)}")
-    mech = mechanism.lead_lag_test(data, periods={"uceni": (data.data_start, M.TRAIN_END),
-                                                  "validace_a_test": (M.VAL[0], M.TEST[1])}, log=lg)
-    result = {
-        "vytvoreno": to_iso(utcnow()), "data_do": _day(today), "model": M.MODEL_NAME, "verze_modelu": M.MODEL_VERSION,
-        "konfigurace": cfg, "protokol": {"train_do": _day(M.TRAIN_END), "validace": [_day(M.VAL[0]), _day(M.VAL[1])],
-                                         "zamceny_test": [_day(M.TEST[0]), _day(M.TEST[1])],
-                                         "post": [_day(M.POST_START), _day(last_labeled)],
-                                         "pokusu_na_testu": store.locked_attempts(main_conn, M.MODEL_NAME)},
-        "vzorky": {k: {"n": len(v), "nezavislych": M.n_independent(panel, v),
-                       "tydnu": len({M.week(panel.day[kk]) for kk in v})} for k, v in split.items() if v},
+    for pos, x in enumerate(chosen):
+        c = build_card(x, data, fund, cache_conn, main_conn, sm2, ctx2, analogs, dist, gap_sorted, rlabel,
+                       today, sh["sm_top"], with_news, spec, sh["news"])
+        c["poradi"] = pos + 1 if pos < TOP_RANK else None
+        c["model"] = name
+        cards.append(c)
+    log(f"{name}: karty {len(cards)}")
+    return {
+        "vytvoreno": to_iso(utcnow()), "data_do": _day(today), "model": name, "horizont": spec["nazev"],
+        "obchodnich_dni": spec["h"], "prah_rust": spec["up"], "prah_pokles": spec["down"], "prah_prudky": spec["big"],
+        "verze_modelu": M.MODEL_VERSION, "konfigurace": cfg, "razeni": RANK_RULE,
+        "protokol": {"train_do": _day(M.TRAIN_END), "validace": [_day(M.VAL[0]), _day(M.VAL[1])],
+                     "zamceny_test": [_day(M.TEST[0]), _day(M.TEST[1])], "post": [_day(M.POST_START), _day(last_labeled)],
+                     "mezera_dni": spec["gap"] or 21, "pokusu_na_testu": store.locked_attempts(main_conn, name)},
+        "vzorky": {k: {"n": len(v), "nezavislych": M.n_independent(pv, v),
+                       "tydnu": len({M.week(pv.day[kk]) for kk in v})} for k, v in split.items() if v},
         "znaky": {g: [{"znak": f, "nazev": P.ALL_FEATURES[f]} for f in fs] for g, fs in P.FEATURE_GROUPS.items()},
         "meta_model": choice_detail, "kalibrace": {t: sm2.cal[t] for t in sm2.cal}, "pasma": sm2.bands,
         "zaklad": ctx2.base, "validace": val_metrics, "zamceny_test": test_metrics, "post": post_metrics,
-        "mispricing_dukaz": gap_ev, "rezim": regime.describe(today), "mechanismy": mech,
+        "mispricing_dukaz": gap_ev, "rezim": regime.describe(today),
         "dnes": {"akcii": len(live), "rozhodnuti": {d: sum(1 for x in live if x["dec"] == d) for d in ("RŮST", "POKLES", "NEVÍM")},
                  "median_p_up": round(ref_today["up5"], 4) if ref_today else None,
                  "median_p_down": round(ref_today["down5"], 4) if ref_today else None,
@@ -267,10 +290,18 @@ def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool =
         "vahy": {t: sorted(({"znak": f, "nazev": P.ALL_FEATURES[f], "koef": round(w, 3)}
                             for f, w in zip(sm2.glob[t].features, sm2.glob[t].w)), key=lambda x: -abs(x["koef"]))[:12]
                  for t in ("up5", "down5")},
-        "insideri_sec_do": _day(extra.insider_source_end),
+        "insideri_sec_do": _day(sh["extra"].insider_source_end),
     }
-    result["_data"] = data
-    return result
+
+
+RANK_RULE = "šance na růst (pořadí podle skóre modelu); jen akcie, kde model vidí víc růstu než poklesu"
+
+
+def rank_key(x: dict) -> tuple:
+    """Podmínka růst > pokles z kalibrovaných pravděpodobností; pořadí z nekalibrovaného skóre modelu (kalibrace je
+    monotónní, ale v nejvyšším pásmu dává všem stejnou hodnotu → bez toho by pořadí v čele rozhodovala náhoda)."""
+    p = x["pred"]
+    return (p["raw"]["up5"] if p["up5"] > p["down5"] else -1.0, p["dir"])
 
 
 def market_warning(ref: dict | None, base: dict) -> str:
@@ -296,7 +327,7 @@ def smart_money_top(main_conn) -> dict:
 
 
 def build_card(x, data, fund, cache_conn, main_conn, sm, ctx, analogs, dist, gap_sorted, rlabel, today, sm_top,
-               with_news) -> dict:
+               with_news, spec=None, news_cache=None) -> dict:
     sym, f, pred = x["sym"], x["f"], x["pred"]
     s = data.secs[sym]
     band = M.band_of(sm.bands, pred["dir"])
@@ -306,14 +337,25 @@ def build_card(x, data, fund, cache_conn, main_conn, sm, ctx, analogs, dist, gap
     score = {g: C.percentile(dist[g], x["contrib"][g]) for g in dist}
     mis = C.percentile(gap_sorted, f["gap"]) if C.finite(f.get("gap")) else None
     smi = sm_top.get(sym)
-    info = news.for_symbol(s.meta.get("name") or sym, sym, date.fromordinal(today)) if with_news else {"stav": "nezjišťováno"}
+    spec = spec or M.SPECS["SIGNAL_14D"]
+    if not with_news:
+        info = {"stav": "nezjišťováno"}
+    elif news_cache is not None and sym in news_cache:
+        info = news_cache[sym]
+    else:
+        info = news.for_symbol(s.meta.get("name") or sym, sym, date.fromordinal(today))
+        if news_cache is not None:
+            news_cache[sym] = info
     j = x["j"]
     c = s.prep.bars.closes
     card = {
         "ticker": sym, "firma": s.meta.get("name"), "obor": s.group, "sektor": s.meta.get("sector"),
+        "zeme": s.meta.get("country"), "horizont": spec["nazev"], "obchodnich_dni": spec["h"],
+        "prah_rust": spec["up"], "prah_pokles": spec["down"], "prah_prudky": spec["big"],
         "cena": round(c[j], 4), "den_ceny": s.prep.bars.date(j), "rezim": rlabel,
         "p_up": round(pred["up5"], 4), "p_down": round(pred["down5"], 4), "p_flat": round(pred["flat"], 4),
         "p_obor": round(pred["beat_sec"], 4), "p_prudky": round(pred["big"], 4),
+        "potencial": (an["horizonty"].get(str(spec["h"])) or {}).get("q80"),
         "ocekavany_pohyb": band.get("vynos_prumer"), "pohyb_median": band.get("vynos_median"),
         "pohyb_q20": band.get("vynos_q20"), "pohyb_q80": band.get("vynos_q80"), "nad_oborem": band.get("nad_oborem"),
         "sance_sum": band.get("sum"), "pasmo": band.get("pasmo"), "pasmo_nezavislych": band.get("n_indep"),
@@ -327,8 +369,8 @@ def build_card(x, data, fund, cache_conn, main_conn, sm, ctx, analogs, dist, gap
                        "drift": f.get("drift"), "dni_od_vysledku": f.get("days_since_ann")},
         "relativni_sila": {"vuci_oboru_tyden": f.get("rel_r5"), "vuci_oboru_mesic": f.get("rel_r20"),
                            "obor_mesic": f.get("sec_r20"), "akcie_mesic": f.get("r20")},
-        "katalyzatory": cats[:4], "ocekavany_cas": (cats[0]["okno"] if cats and (cats[0]["dni_do"] or 99) <= 30
-                                                     else f"horizont {P.H} obchodních dní"),
+        "katalyzatory": cats[:4], "ocekavany_cas": (cats[0]["okno"] if cats and (cats[0]["dni_do"] or 99) <= spec["h"] * 3
+                                                     else f"horizont {spec['h']} obchodních dní"),
         "analogie": an, "informace": info,
         "mechanismus": [m["nazev"] for m in mechanism.MECHANISMS if any(s.group in lay for lay in m["vrstvy"])],
     }

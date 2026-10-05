@@ -100,6 +100,7 @@ def record_candidates(conn: sqlite3.Connection, cache_conn, result: dict, run_id
 
 
 ROCKET_HORIZON_DAYS = 180
+ROCKET_LEDGER_TOP = 10   # do ledgeru jen TOP 10 (žebříček na webu ukazuje TOP 20)
 TOO_LATE_JUMP = 0.25  # cena od posledního závěru v cache vyskočila o 25 % a víc → raketa už startuje, nezapisovat
 
 
@@ -145,7 +146,7 @@ def record_rockets(conn: sqlite3.Connection, cache_conn, rockets: dict, run_id: 
     created, notes = [], []
     edge = rockets.get("smerova_vyhoda", False)
     since = to_iso(now - timedelta(days=ROCKET_HORIZON_DAYS))
-    for row in rockets.get("kandidati", []):
+    for row in rockets.get("kandidati", [])[:ROCKET_LEDGER_TOP]:
         bars = cache.load_series(cache_conn, row["ticker"])
         if bars is None:
             continue

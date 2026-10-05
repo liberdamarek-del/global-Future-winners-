@@ -348,51 +348,135 @@ def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
     }
 
 
+SIGNAL_MODELS = (("SIGNAL_14D", "h14"), ("SIGNAL_1M", "h1m"))
+
+
+def _latest_signal_run(conn, name: str):
+    return conn.execute("SELECT * FROM signal_runs WHERE model_name = ? ORDER BY id DESC LIMIT 1", (name,)).fetchone()
+
+
+def _trim_metrics(m):
+    if not isinstance(m, dict):
+        return m
+    keep = ("vzorku", "nezavislych", "tydnu", "up5", "down5", "beat_sec", "big", "horni_desetina", "dolni_desetina",
+            "rozhodnuti", "podle_rezimu", "_stav", "poznamka")
+    return {k: m[k] for k in keep if k in m}
+
+
+def _trim_card(c: dict) -> dict:
+    c = dict(c)
+    info = c.get("informace") or {}
+    c["informace"] = {k: info.get(k) for k in ("stav", "titulku", "pribehu", "prepisu", "pribehu_7d", "novych_7d",
+                                               "novost", "kvalita", "typ")} | {
+        "nove": [{k: n.get(k) for k in ("poprve", "titulek", "prvni_zdroj", "kvalita", "kopii", "url")}
+                 for n in (info.get("nove") or [])[:2]]}
+    an = c.get("analogie") or {}
+    keep_h = {str(c.get("obchodnich_dni") or 10), "60"}
+    c["analogie"] = {"pocet": an.get("pocet"), "nezavislych": an.get("nezavislych"),
+                     "horizonty": {h: v for h, v in (an.get("horizonty") or {}).items() if h in keep_h}}
+    for k in ("pasmo", "pasmo_nezavislych", "nejistota", "sektor", "mechanismus", "ocekavany_cas", "model", "rezim",
+              "pohyb_median", "nad_oborem"):
+        c.pop(k, None)
+    c["katalyzatory"] = (c.get("katalyzatory") or [])[:3]
+    return c
+
+
 def build_signals_doc(conn: sqlite3.Connection) -> dict | None:
-    """Dokument stav/signaly — výtah z posledního běhu signálního enginu (14 dní)."""
-    run = conn.execute("SELECT * FROM signal_runs ORDER BY id DESC LIMIT 1").fetchone()
-    if run is None:
+    """Dokument stav/signaly — jak se modely testují (protokol, zamčený test, trh, mechanismy). Karty jsou v žebříčku."""
+    models = {}
+    for name, _ in SIGNAL_MODELS:
+        run = _latest_signal_run(conn, name)
+        if run is None:
+            continue
+        full = json.loads(run["result_json"])
+        models[name] = {
+            "beh": {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"],
+                    "konfigurace": run["config_hash"]},
+            "horizont": full.get("horizont") or "14 dní", "prah_rust": full.get("prah_rust", 0.05),
+            "prah_pokles": full.get("prah_pokles", -0.05), "protokol": full.get("protokol"), "vzorky": full.get("vzorky"),
+            "zaklad": full.get("zaklad"), "validace": _trim_metrics(full.get("validace")),
+            "zamceny_test": _trim_metrics(full.get("zamceny_test")), "post": _trim_metrics(full.get("post")),
+            "meta_model": full.get("meta_model"), "pasma": full.get("pasma"),
+            "kalibrace": {t: full.get("kalibrace", {}).get(t) for t in ("up5", "down5")},
+            "dnes": full.get("dnes"), "mispricing_dukaz": full.get("mispricing_dukaz"), "vahy": full.get("vahy"),
+            "vysledky_karet": full.get("vysledky_karet"), "insideri_sec_do": full.get("insideri_sec_do"),
+            "varovani": [_trim_card(c) for c in full.get("karty", []) if not c.get("poradi") and c.get("final") == "POKLES"][:5],
+        }
+        if "trh" not in models.get("_spolecne", {}):
+            models["_spolecne"] = {"trh": full.get("trh"), "rezim": full.get("rezim"),
+                                   "mechanismy": {k: {kk: vv for kk, vv in v.items() if kk != "nejsilnejsi_vazby"} | {
+                                       "nejsilnejsi_vazby": v.get("nejsilnejsi_vazby", [])[:4]}
+                                       for k, v in (full.get("mechanismy") or {}).get("obdobi", {}).items()}}
+    return {"modely": models} if models else None
+
+
+def _ledger_rocket(conn, ticker: str) -> dict | None:
+    r = conn.execute("SELECT p.id, p.made_at, p.price, p.currency FROM predictions p JOIN listings l ON l.id = p.listing_id"
+                     " WHERE l.yahoo_symbol = ? AND p.source = 'DISCOVERY' AND COALESCE(p.strategy, 'ROCKET_6M') = 'ROCKET_6M'"
+                     " ORDER BY p.id DESC LIMIT 1", (ticker,)).fetchone()
+    if r is None:
         return None
-    full = json.loads(run["result_json"])
-
-    def trim(m):
-        if not isinstance(m, dict):
-            return m
-        keep = ("vzorku", "nezavislych", "tydnu", "up5", "down5", "beat_sec", "big", "horni_desetina", "dolni_desetina",
-                "rozhodnuti", "podle_rezimu", "_stav", "poznamka")
-        return {k: m[k] for k in keep if k in m}
-    cards = []
-    for c in full.get("karty", []):
-        c = dict(c)
-        info = c.get("informace") or {}
-        c["informace"] = {k: info.get(k) for k in ("stav", "titulku", "pribehu", "prepisu", "pribehu_7d", "novych_7d",
-                                                   "novost", "kvalita", "typ")} | {"nove": (info.get("nove") or [])[:2]}
-        cards.append(c)
-    return {
-        "beh": {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"],
-                "konfigurace": run["config_hash"]},
-        "protokol": full.get("protokol"), "vzorky": full.get("vzorky"), "zaklad": full.get("zaklad"),
-        "validace": trim(full.get("validace")), "zamceny_test": trim(full.get("zamceny_test")), "post": trim(full.get("post")),
-        "meta_model": full.get("meta_model"), "pasma": full.get("pasma"),
-        "kalibrace": {t: full.get("kalibrace", {}).get(t) for t in ("up5", "down5")},
-        "trh": full.get("trh"), "rezim": full.get("rezim"), "dnes": full.get("dnes"),
-        "mechanismy": {k: {kk: vv for kk, vv in v.items() if kk != "nejsilnejsi_vazby"} | {
-            "nejsilnejsi_vazby": v.get("nejsilnejsi_vazby", [])[:4]} for k, v in (full.get("mechanismy") or {}).get("obdobi", {}).items()},
-        "mispricing_dukaz": full.get("mispricing_dukaz"), "vahy": full.get("vahy"), "karty": cards,
-        "vysledky_karet": full.get("vysledky_karet"), "insideri_sec_do": full.get("insideri_sec_do"),
-    }
+    last = _latest_close(conn, ticker)
+    return {"id": r["id"], "den": r["made_at"][:10], "cena": r["price"], "mena": r["currency"],
+            "vynos_dosud": round(last[0] / r["price"] - 1, 4) if last and r["price"] else None}
 
 
-def write_signals_doc(conn: sqlite3.Connection, web_dir: Path) -> int:
-    doc = build_signals_doc(conn)
-    if doc is None:
-        return 0
+def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
+    """Dokument stav/zebricek — hlavní obrazovka: TOP 20 pro 14 dní, 1 měsíc a 6 měsíců + detail každé firmy."""
+    from stockradar.signals.store import history
+    out = {}
+    for name, key in SIGNAL_MODELS:
+        run = _latest_signal_run(conn, name)
+        if run is None:
+            continue
+        full = json.loads(run["result_json"])
+        rows = sorted((c for c in full.get("karty", []) if c.get("poradi")), key=lambda c: c["poradi"])
+        test = full.get("zamceny_test") or {}
+        dec = (test.get("rozhodnuti") or {})
+        out[key] = {
+            "model": name, "horizont": full.get("horizont") or "14 dní", "data_do": run["data_through"],
+            "probehlo": run["run_at"], "prah_rust": full.get("prah_rust", 0.05), "prah_pokles": full.get("prah_pokles", -0.05),
+            "akcii": (full.get("dnes") or {}).get("akcii"), "trh": "USA (data SEC)", "razeni": full.get("razeni"),
+            "silnych": (full.get("dnes") or {}).get("rozhodnuti", {}).get("RŮST"),
+            "zaklad": (full.get("zaklad") or {}).get("up5"),
+            "test": {"auc_rust": (test.get("up5") or {}).get("auc"), "auc_pokles": (test.get("down5") or {}).get("auc"),
+                     "horni_desetina": test.get("horni_desetina"), "rust": dec.get("RŮST"), "stav": test.get("_stav")},
+            "firmy": [_trim_card(c) | {"historie": [h for h in history(conn, c["ticker"]) if h["den"] < c["den_ceny"]][:4]}
+                      for c in rows[:20]],
+        }
+    disc = conn.execute("SELECT * FROM discovery_runs ORDER BY id DESC LIMIT 1").fetchone()
+    if disc is not None:
+        rk = json.loads(disc["result_json"]).get("rakety_6m") or {}
+        t = rk.get("test") or {}
+        top = (t.get(rk.get("razeni") or "asymetrie") or {}).get("top1") or {}
+        firmy = []
+        for i, c in enumerate(rk.get("kandidati", [])[:20]):
+            firmy.append({k: c.get(k) for k in ("ticker", "nazev", "zeme", "obor", "faze", "cena", "mena", "den", "p_raketa",
+                                                "p_propad", "percentil", "skupina", "hist_rakety", "hist_propady",
+                                                "hist_median", "hist_q20", "hist_q80", "zakladni_cetnost", "proc", "proti",
+                                                "rust_3m", "rust_6m", "obrat_usd", "studie")}
+                         | {"poradi": i + 1, "ledger": _ledger_rocket(conn, c["ticker"])})
+        out["h6m"] = {"model": "ROCKET_6M", "horizont": "6 měsíců", "data_do": disc["data_through"], "probehlo": disc["run_at"],
+                      "trh": "celý svět", "cil": rk.get("cil"), "propad": rk.get("propad"),
+                      "test": {"obdobi": rk.get("test_obdobi"), "zaklad": t.get("zaklad"), "horni_1": top,
+                               "auc": t.get("auc_raketa"), "smerova_vyhoda": rk.get("smerova_vyhoda"),
+                               "stabilita": rk.get("stabilita")},
+                      "firmy": firmy}
+    return out or None
+
+
+def write_signals_doc(conn: sqlite3.Connection, web_dir: Path) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
-    text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
-    if len(text.encode()) > DOC_LIMIT:
-        raise ValueError(f"dokument signaly má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
-    (web_dir / "stav_signaly.json").write_text(text, encoding="utf-8")
-    return len(text.encode())
+    sizes = {}
+    for name, doc in (("signaly", build_signals_doc(conn)), ("zebricek", build_zebricek_doc(conn))):
+        if doc is None:
+            continue
+        text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
+        if len(text.encode()) > DOC_LIMIT:
+            raise ValueError(f"dokument {name} má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
+        (web_dir / f"stav_{name}.json").write_text(text, encoding="utf-8")
+        sizes[name] = len(text.encode())
+    return sizes
 
 
 def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
@@ -408,6 +492,9 @@ def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[s
     signals = build_signals_doc(conn)
     if signals is not None:
         docs["signaly"] = signals
+    ranking = build_zebricek_doc(conn)
+    if ranking is not None:
+        docs["zebricek"] = ranking
     for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:

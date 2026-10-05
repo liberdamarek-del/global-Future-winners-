@@ -49,7 +49,50 @@ def share_for(day: int) -> float:
     return 0.0                      # mezery mezi obdobími
 
 
-def split_of(day: int) -> str | None:
+# Horizonty: 14 dní je původní model (konfigurace se nesmí změnit — zamčený test už proběhl); 1 měsíc je samostatný
+# model se stejným protokolem, jen s delší mezerou mezi obdobími (cíl 20 obchodních dní ≈ 4 týdny).
+SPECS = {
+    "SIGNAL_14D": {"nazev": "14 dní", "h": P.H, "up": P.UP, "down": P.DOWN, "big": P.BIG, "gap": None,
+                   "labels": dict(zip(TARGETS, ("up5", "down5", "beat_sec", "big"))), "ex_sec": "ex_sec"},
+    "SIGNAL_1M": {"nazev": "1 měsíc", "h": P.H_1M, "up": P.UP_1M, "down": P.DOWN_1M, "big": P.BIG_1M, "gap": 33,
+                  "labels": dict(zip(TARGETS, ("up10_20", "down10_20", "beat_sec_20", "big20_20"))), "ex_sec": "ex_sec_20"},
+}
+
+
+class HorizonView:
+    """Pohled na panel pro jiný horizont: cíle up5/down5/beat_sec/big znamenají jeho prahy (např. ±10 % za měsíc)."""
+
+    def __init__(self, panel, spec: dict):
+        self._p = panel
+        self.y = {t: panel.y[lab] for t, lab in spec["labels"].items()}
+        self.ex_sec = getattr(panel, spec["ex_sec"])
+        self.main_h = spec["h"]
+
+    def __getattr__(self, name):
+        return getattr(self._p, name)
+
+    def __len__(self):
+        return len(self._p)
+
+
+def view(panel, model_name: str):
+    return panel if model_name == "SIGNAL_14D" else HorizonView(panel, SPECS[model_name])
+
+
+def split_of(day: int, gap: int | None = None) -> str | None:
+    """gap = mezera v kalendářních dnech před začátkem dalšího období (delší horizont → delší mezera)."""
+    if gap:
+        if day <= min(TRAIN_END, VAL[0] - gap):
+            return "TRAIN"
+        if VAL[0] <= day <= min(VAL[1], TEST[0] - gap):
+            return "VALIDATION"
+        if TEST[0] <= day <= min(TEST[1], POST_START - gap):
+            return "LOCKED_TEST"
+        return "POST" if day >= POST_START else None
+    return _split_14d(day)
+
+
+def _split_14d(day: int) -> str | None:
     if day <= TRAIN_END:
         return "TRAIN"
     if VAL[0] <= day <= VAL[1]:
@@ -65,13 +108,16 @@ def regime_class(label: str | None) -> str:
     return "KLID" if label == "BÝČÍ KLIDNÝ" else "STRES"
 
 
-def config_hash(features: list[str]) -> str:
+def config_hash(features: list[str], model_name: str = "SIGNAL_14D") -> str:
     from stockradar.signals import card
+    spec = SPECS[model_name]
     rules = {"conf_min": card.CONF_MIN, "edge": card.EDGE_MIN, "dir": card.DIR_MIN, "analog": card.ANALOG_FEATURES,
              "penalty_rules": "1.0"}
-    cfg = {"v": MODEL_VERSION, "features": features, "rules": rules, "targets": TARGETS, "h": P.H, "up": P.UP, "down": P.DOWN,
-           "big": P.BIG, "train_end": TRAIN_END, "val": VAL, "test": TEST, "bins": rocket.BINS, "l2": rocket.L2,
-           "sweeps": rocket.SWEEPS, "universe": [P.MIN_TURNOVER, P.MIN_PRICE], "step": P.STEP_DAYS}
+    cfg = {"v": MODEL_VERSION, "features": features, "rules": rules, "targets": TARGETS, "h": spec["h"], "up": spec["up"],
+           "down": spec["down"], "big": spec["big"], "train_end": TRAIN_END, "val": VAL, "test": TEST, "bins": rocket.BINS,
+           "l2": rocket.L2, "sweeps": rocket.SWEEPS, "universe": [P.MIN_TURNOVER, P.MIN_PRICE], "step": P.STEP_DAYS}
+    if model_name != "SIGNAL_14D":            # 14 dní: přesně původní otisk (zamčený test už proběhl)
+        cfg.update({"model": model_name, "gap": spec["gap"], "labels": spec["labels"]})
     return hashlib.sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -229,7 +275,8 @@ def direction_bands(panel, rows, preds: list[dict]) -> dict:
     bands = {"edges": [scores[g[-1]] for g in groups[:-1]], "pasma": []}
     for b, g in enumerate(groups):
         rr = [rows[i] for i in g]
-        f10 = sorted(min(max(panel.fwd[10][k], -0.9), 2.0) for k in rr if panel.fwd[10][k] == panel.fwd[10][k])
+        h = panel.main_h
+        f10 = sorted(min(max(panel.fwd[h][k], -0.9), 2.0) for k in rr if panel.fwd[h][k] == panel.fwd[h][k])
         ex = [panel.ex_sec[k] - mean_all for k in rr if panel.ex_sec[k] == panel.ex_sec[k]]
         t = weekly_t(panel, [k for k in rr if panel.ex_sec[k] == panel.ex_sec[k]], ex)
         bands["pasma"].append({
@@ -300,7 +347,7 @@ def _bucket(panel, rr: list[int], ref: list[int]) -> dict:
     lab = [k for k in rr if panel.y["up5"][k] >= 0]
     if not lab:
         return {"n": len(rr)}
-    f10 = sorted(panel.fwd[10][k] for k in lab)
+    f10 = sorted(panel.fwd[panel.main_h][k] for k in lab)
     ref_ex = {}
     for k in ref:
         if panel.ex_sec[k] == panel.ex_sec[k]:

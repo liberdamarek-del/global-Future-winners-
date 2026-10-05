@@ -233,18 +233,20 @@ def cmd_signals(args) -> int:
     res = srun.run(cconn, conn, log=log, with_news=not args.no_news, recent_insiders=recent, workers=args.workers)
     data = res.pop("_data")
     evaluated = sstore.evaluate_forecasts(conn, data)
-    res["vysledky_karet"] = sstore.scorecard(conn)
-    res["nove_vyhodnoceno"] = len(evaluated)
-    res = srun.clean(res)
-    run_id = sstore.save_run(conn, res, sm_model.MODEL_NAME, res["konfigurace"])
-    ids = sstore.save_forecasts(conn, run_id, res["karty"])
+    for name, r in res["modely"].items():
+        r["vysledky_karet"] = sstore.scorecard(conn, r["obchodnich_dni"])
+        r["nove_vyhodnoceno"] = len(evaluated)
+        r = srun.clean(r)
+        run_id = sstore.save_run(conn, r, name, r["konfigurace"])
+        ids = sstore.save_forecasts(conn, run_id, r["karty"])
+        d = r["dnes"]["rozhodnuti"]
+        t = r["zamceny_test"]
+        print(f"{name} (běh #{run_id}): {len(ids)} nových karet; dnes RŮST {d['RŮST']}, POKLES {d['POKLES']},"
+              f" NEVÍM {d['NEVÍM']}; zamčený test ({t.get('_stav')}): AUC růst {t.get('up5', {}).get('auc')},"
+              f" pokles {t.get('down5', {}).get('auc')}")
     export_state(conn, state_dir())
-    size = write_signals_doc(conn, web_dir())
-    d = res["dnes"]["rozhodnuti"]
-    print(f"Běh signálů #{run_id}: {len(ids)} karet (dnes RŮST {d['RŮST']}, POKLES {d['POKLES']}, NEVÍM {d['NEVÍM']}),"
-          f" vyhodnoceno dřívějších karet {len(evaluated)}, web stav/signaly {size // 1024} kB")
-    t = res["zamceny_test"]
-    print(f"Zamčený test ({t.get('_stav')}): AUC P(+5 %) {t.get('up5', {}).get('auc')}, P(−5 %) {t.get('down5', {}).get('auc')}")
+    sizes = write_signals_doc(conn, web_dir())
+    print(f"Vyhodnoceno dřívějších karet: {len(evaluated)}; web: " + ", ".join(f"{k} {v // 1024} kB" for k, v in sizes.items()))
     _print_email_today(conn)
     return 0
 

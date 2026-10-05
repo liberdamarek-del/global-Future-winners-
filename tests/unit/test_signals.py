@@ -120,3 +120,26 @@ def test_protocol_periods_do_not_overlap():
     assert order == ["TRAIN", "VALIDATION", "LOCKED_TEST", "POST"]
     assert M.split_of(date(2024, 7, 10).toordinal()) is None          # mezera 3 týdny (cíl je 10 obchodních dní)
     assert M.share_for(date(2024, 7, 10).toordinal()) == 0
+
+
+def test_14d_config_is_frozen_after_locked_test():
+    # zamčený test SIGNAL_14D proběhl s touto konfigurací (2026-10-05); jakákoli změna = nový pokus → vědomě a v CHANGELOG
+    assert M.config_hash(list(panel.MODEL_FEATURES)) == "a1b0f2e61e6c56cc"
+    assert M.config_hash(list(panel.MODEL_FEATURES), "SIGNAL_1M") != "a1b0f2e61e6c56cc"
+
+
+def test_one_month_view_and_purged_splits():
+    c = [100.0] * 260 + [100 + 1.05 * i for i in range(1, 21)] + [121.0] * 130
+    lab = panel.fwd_labels(c, 259)
+    assert lab["up10_20"] and not lab["down10_20"] and lab["big20_20"]          # +21 % za 20 dní
+    p = panel.SPanel(["r5"])
+    p.add("X", 738000, "a", "BÝČÍ KLIDNÝ", {"r5": 0.0}, {**lab, "ex_sec_20": 0.03, "beat_sec_20": True})
+    v = M.view(p, "SIGNAL_1M")
+    assert v.y["up5"][0] == 1 and v.main_h == 20 and v.ex_sec[0] == pytest.approx(0.03) and len(v) == 1
+    assert M.view(p, "SIGNAL_14D") is p
+    # 1 měsíc: delší mezera před dalším obdobím, aby se cíle (20 obchodních dní) nepřekrývaly
+    assert M.split_of(date(2024, 6, 28).toordinal()) == "TRAIN"
+    assert M.split_of(date(2024, 6, 28).toordinal(), 33) is None
+    assert M.split_of(date(2024, 6, 10).toordinal(), 33) == "TRAIN"
+    assert M.split_of(date(2026, 3, 27).toordinal(), 33) is None
+    assert M.split_of(date(2025, 8, 1).toordinal(), 33) == "LOCKED_TEST"

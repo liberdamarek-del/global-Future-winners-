@@ -52,6 +52,9 @@ FEATURE_GROUPS = {
 ALL_FEATURES = {**PRICE_FEATURES, **RS_FEATURES, **REGIME_FEATURES, **FUND_FEATURES, **EXTRA_FEATURES, **MECH_FEATURES}
 MODEL_FEATURES = [f for g in FEATURE_GROUPS.values() for f in g]
 LABELS = ("up5", "down5", "big", "beat_sec")
+# 1 měsíc (20 obchodních dní): ±10 %, prudký pohyb ±20 %, proti oboru — samostatný model SIGNAL_1M
+H_1M, UP_1M, DOWN_1M, BIG_1M = 20, 0.10, -0.10, 0.20
+LABELS_1M = ("up10_20", "down10_20", "big20_20", "beat_sec_20")
 
 
 def keep(symbol: str, day: int, share: float) -> bool:
@@ -63,9 +66,11 @@ class SPanel:
     def __init__(self, features: list[str]):
         self.features = features
         self.cols = {f: array("d") for f in features}
-        self.y = {k: array("b") for k in LABELS}
+        self.y = {k: array("b") for k in LABELS + LABELS_1M}
         self.fwd = {h: array("d") for h in HORIZONS}
         self.ex_sec = array("d")
+        self.ex_sec_20 = array("d")
+        self.main_h = H                    # hlavní horizont (pro výnosy v pásmech a analogiích)
         self.day = array("i")
         self.sym: list[str] = []
         self.group: list[str] = []
@@ -79,12 +84,13 @@ class SPanel:
         for k in self.features:
             v = f.get(k)
             self.cols[k].append(nan if v is None else float(v))
-        for k in LABELS:
+        for k in LABELS + LABELS_1M:
             self.y[k].append(-1 if lab is None or lab.get(k) is None else int(lab[k]))
         for h in HORIZONS:
             v = lab.get(f"fwd_{h}") if lab else None
             self.fwd[h].append(nan if v is None else v)
         self.ex_sec.append(nan if lab is None or lab.get("ex_sec") is None else lab["ex_sec"])
+        self.ex_sec_20.append(nan if lab is None or lab.get("ex_sec_20") is None else lab["ex_sec_20"])
         self.day.append(day)
         self.sym.append(sym)
         self.group.append(group)
@@ -102,6 +108,11 @@ def fwd_labels(c, i: int) -> dict | None:
     hi = max(c[i + 1:i + H + 1]) / c[i] - 1
     lo = min(c[i + 1:i + H + 1]) / c[i] - 1
     out.update({"up5": r >= UP, "down5": r <= DOWN, "big": max(hi, -lo) >= BIG})
+    if out["fwd_20"] is not None:
+        r20 = out["fwd_20"]
+        hi20 = max(c[i + 1:i + H_1M + 1]) / c[i] - 1
+        lo20 = min(c[i + 1:i + H_1M + 1]) / c[i] - 1
+        out.update({"up10_20": r20 >= UP_1M, "down10_20": r20 <= DOWN_1M, "big20_20": max(hi20, -lo20) >= BIG_1M})
     return out
 
 
@@ -144,12 +155,14 @@ def snapshot(data: study.Data, day: int, ptr: dict | None = None) -> dict:
     for sym, j in idx.items():
         s = data.secs[sym]
         c = s.prep.bars.closes
-        g = per_group.setdefault(s.group, {"r5": [], "r20": [], "r60": [], "f10": []})
+        g = per_group.setdefault(s.group, {"r5": [], "r20": [], "r60": [], "f10": [], "f20": []})
         for n, key in ((5, "r5"), (20, "r20"), (60, "r60")):
             if c[j - n] > 0:
                 g[key].append(c[j] / c[j - n] - 1)
         if j + H < len(c) and c[j] > 0:
             g["f10"].append(c[j + H] / c[j] - 1)
+        if j + H_1M < len(c) and c[j] > 0:
+            g["f20"].append(c[j + H_1M] / c[j] - 1)
     med = {g: {k: (statistics.median(v) if len(v) >= 5 else None) for k, v in vals.items()} for g, vals in per_group.items()}
     allr20 = [data.secs[s].prep.bars.closes[j] / data.secs[s].prep.bars.closes[j - 20] - 1 for s, j in idx.items()
               if data.secs[s].prep.bars.closes[j - 20] > 0]
@@ -199,6 +212,10 @@ def build(data: study.Data, fund, extra, regime, *, shares: dict, log=print) -> 
                 if m10 is not None:
                     lab["ex_sec"] = lab["fwd_10"] - m10
                     lab["beat_sec"] = lab["ex_sec"] > 0
+                m20 = snap["med"].get(s.group, {}).get("f20")
+                if m20 is not None and lab.get("fwd_20") is not None:
+                    lab["ex_sec_20"] = lab["fwd_20"] - m20
+                    lab["beat_sec_20"] = lab["ex_sec_20"] > 0
             panel.add(sym, day, s.group, rlabel, f, lab)
         if n % 25 == 0:
             log(f"panel {study.day_str(day)}: {len(panel)} vzorků")

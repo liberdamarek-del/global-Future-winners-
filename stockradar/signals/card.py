@@ -101,7 +101,7 @@ def decide(pred: dict, conf: int, base: dict, sm: M.SignalModel, ref: dict | Non
 class Analogs:
     def __init__(self, panel: P.SPanel, rows: list[int]):
         self.panel = panel
-        self.rows = [k for k in rows if panel.fwd[10][k] == panel.fwd[10][k]]
+        self.rows = [k for k in rows if panel.fwd[panel.main_h][k] == panel.fwd[panel.main_h][k]]
         self.mu, self.sd = {}, {}
         for f in ANALOG_FEATURES:
             vals = [panel.cols[f][k] for k in self.rows if panel.cols[f][k] == panel.cols[f][k]]
@@ -142,13 +142,15 @@ class Analogs:
             v = sorted(pn.fwd[h][r] for r in picked if pn.fwd[h][r] == pn.fwd[h][r])
             if len(v) >= 5:
                 out["horizonty"][str(h)] = {"n": len(v), "median": round(v[len(v) // 2], 4),
+                                            "q20": round(v[int(0.2 * (len(v) - 1))], 4),
+                                            "q80": round(v[int(0.8 * (len(v) - 1))], 4),
                                             "prumer": round(statistics.fmean(min(x, 2.0) for x in v), 4),
                                             "kladnych": round(sum(1 for x in v if x > 0) / len(v), 3),
                                             "nad5": round(sum(1 for x in v if x >= 0.05) / len(v), 3),
                                             "pod5": round(sum(1 for x in v if x <= -0.05) / len(v), 3)}
         from stockradar.discovery import study
         out["priklady"] = [{"ticker": pn.sym[r], "den": study.day_str(pn.day[r]),
-                            "vynos_14d": round(pn.fwd[10][r], 4)} for r in picked[:6]]
+                            "vynos": round(pn.fwd[pn.main_h][r], 4)} for r in picked[:6]]
         return out
 
 
