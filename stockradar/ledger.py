@@ -82,6 +82,8 @@ class PredictionInput:
     target_move_pct: float | None = None   # cíl predikce rakety (např. +50 = max. cena aspoň +50 % v horizontu)
     p_drop_pct: float | None = None        # šance na propad (zrcadlově, např. −33 %)
     base_rate_pct: float | None = None     # kolik % všech akcií cíl historicky splnilo (srovnání s náhodou)
+    strategy: str | None = None            # ROCKET_6M / SMART_MONEY (u zdroje DISCOVERY)
+    smart_money_run_id: int | None = None
 
 
 def record_prediction(
@@ -161,9 +163,9 @@ def record_prediction(
                 score_financial_health, score_valuation, score_technical, score_dilution_risk,
                 score_execution_risk, score_rocket, score_overall_setup, model_version,
                 benchmark_symbol, benchmark_price, p_rocket_pct, model_run_id, source, discovery_run_id,
-                target_move_pct, p_drop_pct, base_rate_pct)
+                target_move_pct, p_drop_pct, base_rate_pct, strategy, smart_money_run_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 mode, made_iso, made_iso if mode == "LIVE" else to_iso(now),
                 listing["company_id"], p.listing_id, p.horizon,
@@ -183,7 +185,7 @@ def record_prediction(
                 s["financial_health"], s["valuation"], s["technical"], s["dilution_risk"],
                 s["execution_risk"], s["rocket"], s["overall_setup"], __version__,
                 p.benchmark_symbol, p.benchmark_price, p.p_rocket_pct, p.model_run_id, p.source, p.discovery_run_id,
-                p.target_move_pct, p.p_drop_pct, p.base_rate_pct,
+                p.target_move_pct, p.p_drop_pct, p.base_rate_pct, p.strategy, p.smart_money_run_id,
             ),
         )
     return cur.lastrowid

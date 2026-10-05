@@ -22,6 +22,7 @@ TABLES = (
     "model_versions",
     "model_runs",
     "discovery_runs",
+    "smart_money_runs",
     "predictions",
     "prediction_outcomes",
     "status_changes",

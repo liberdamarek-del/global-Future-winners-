@@ -36,7 +36,12 @@ FORMS = {
     "S-1": "OFFER", "S-3": "OFFER", "F-1": "OFFER", "F-3": "OFFER",
     "424B1": "OFFER", "424B3": "OFFER", "424B4": "OFFER", "424B5": "OFFER",
     "SC 13D": "13D", "SCHEDULE 13D": "13D", "SC 13D/A": "13DA", "SCHEDULE 13D/A": "13DA",
+    "SC 13G": "13G", "SCHEDULE 13G": "13G",
 }
+# Roční ukazatele (celý fiskální rok z 10-K; čtvrtletní hodnoty jsou v 10-Q kumulativní, proto roční)
+ANNUAL_FRAMES = [
+    ("buyback", "us-gaap", "PaymentsForRepurchaseOfCommonStock", "USD"),
+]
 
 
 def quarters(start: date, end: date) -> list[tuple[int, int]]:
@@ -101,6 +106,32 @@ def fetch_frames(cache_conn, *, start: date, end: date, refresh_recent: int = 3,
     return {"dotazu": fetched, "chyb": errors}
 
 
+def fetch_annual(cache_conn, *, start_year: int = 2020, end_year: int | None = None, log=print) -> dict:
+    """Roční fakta (např. skutečně vyplacené zpětné odkupy akcií z výkazu peněžních toků)."""
+    end_year = end_year or utcnow().year - 1
+    done = {(r[0], r[1]) for r in cache_conn.execute("SELECT tag, period FROM sec_frames_done")}
+    fetched = 0
+    for concept, tax, tag, unit in ANNUAL_FRAMES:
+        for y in range(start_year, end_year + 1):
+            period = f"CY{y}"
+            if (tag, period) in done and y < end_year:
+                continue
+            try:
+                rows = parse_frame(json.loads(contact.http_get(FRAME_URL.format(tax=tax, tag=tag, unit=unit, period=period),
+                                                               f"fundamenty: {concept} (XBRL frames, roční)")))
+            except Exception as exc:
+                log(f"SEC {tag} {period}: {str(exc)[:80]}")
+                continue
+            with cache_conn:
+                cache_conn.executemany(
+                    "INSERT OR REPLACE INTO sec_facts (cik, concept, period, end_day, val, source) VALUES (?, ?, ?, ?, ?, ?)",
+                    [(cik, concept, period, end_day, val, tag) for cik, end_day, val in rows])
+                cache_conn.execute("INSERT OR REPLACE INTO sec_frames_done (tag, period, n, fetched_at) VALUES (?, ?, ?, ?)",
+                                   (tag, period, len(rows), to_iso(utcnow())))
+            fetched += 1
+    return {"dotazu": fetched}
+
+
 def parse_master(text: str) -> list[tuple[str, int, str, str]]:
     out = []
     for line in text.splitlines():
@@ -145,5 +176,6 @@ def refresh(cache_conn, *, start: date = date(2021, 1, 1), end: date | None = No
     out = {"tickeru": fetch_tickers(cache_conn)}
     out["frames"] = fetch_frames(cache_conn, start=start, end=end, log=log)
     out["index"] = fetch_index(cache_conn, start=start, end=end, log=log)
+    out["rocni"] = fetch_annual(cache_conn, log=log)
     out["stav"] = "DONE"
     return out

@@ -53,8 +53,8 @@ def _accuracy(conn: sqlite3.Connection) -> list[dict]:
 
 def _rocket_accuracy(conn: sqlite3.Connection) -> dict:
     """Predikce raket: rozhodnuté (HIT kdykoli, MISS po uplynutí horizontu) proti predikované šanci."""
-    preds = conn.execute("SELECT id, probability_pct, base_rate_pct FROM predictions"
-                         " WHERE mode = 'LIVE' AND source = 'DISCOVERY'").fetchall()
+    preds = conn.execute("SELECT id, probability_pct, base_rate_pct FROM predictions WHERE mode = 'LIVE'"
+                         " AND source = 'DISCOVERY' AND COALESCE(strategy, '') <> 'SMART_MONEY'").fetchall()
     decided = hits = 0
     expected = []
     for p in preds:
@@ -180,7 +180,8 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
             " JOIN companies c ON c.id = p.company_id WHERE p.mode = 'LIVE' ORDER BY p.made_at DESC LIMIT 300"):
         outs = {o["horizon_days"]: o for o in conn.execute(
             "SELECT * FROM prediction_outcomes WHERE prediction_id = ?", (p["id"],))}
-        rocket = p["source"] == "DISCOVERY"
+        smart = p["strategy"] == "SMART_MONEY"
+        rocket = p["source"] == "DISCOVERY" and not smart
         live = None
         last = _latest_close(conn, p["yahoo_symbol"]) if p["yahoo_symbol"] else None
         if last and bench_close and p["benchmark_price"]:
@@ -204,8 +205,8 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
             "vysledky": {str(n): {"vynos": o["return_pct"], "nad_spy": o["excess_return_pct"], "vysledek": o["result"],
                                   "max": round((o["max_price"] / p["price"] - 1) * 100, 1) if o["max_price"] else None,
                                   "den": o["observed_at"][:10]} for n, o in outs.items()},
-            "typ": "raketa" if rocket else "energie", "horizont": p["horizon"], "stav": state,
-            "konec": (datetime.fromisoformat(p["made_at"][:10]) + timedelta(days=180 if rocket else 30)).date().isoformat(),
+            "typ": "raketa" if rocket else "smart money" if smart else "energie", "horizont": p["horizon"], "stav": state,
+            "konec": (datetime.fromisoformat(p["made_at"][:10]) + timedelta(days=180 if rocket or smart else 30)).date().isoformat(),
         })
     predikce = {"aktualizovano": to_iso(now), "predikce": preds, "presnost": aktualni["presnost"],
                 "presnost_rakety": _rocket_accuracy(conn)}
@@ -274,6 +275,79 @@ def build_discovery_doc(conn: sqlite3.Connection) -> dict | None:
     return doc
 
 
+SM_GROUPS = (  # předem daný výběr skupin pro web (úplné tabulky jsou v smart_money_runs a v docs/)
+    ("insideri", "Insider: AKTIVNÍ nákup (všechny)"), ("insideri", "Insider aktivní: CFO"),
+    ("insideri", "Insider aktivní: CEO"), ("insideri", "Insider aktivní: jen člen představenstva"),
+    ("insideri", "Insider aktivní: 10% vlastník (fond, majitel)"), ("insideri", "Insider aktivní: 3+ insideři do 30 dní"),
+    ("insideri", "Insider aktivní: hodnota ≥ 1 mil. USD"),
+    ("insideri", "Insider aktivní: po propadu 30 %+ od ročního maxima"),
+    ("insideri", "Insider: automatický nákup (plán 10b5-1)"), ("insideri", "Insider: přidělené akcie (odměna)"),
+    ("insideri", "Insider: uplatnění opce"),
+    ("politici", "Politici: AKTIVNÍ nákup (všichni)"), ("politici", "Politici: Sněmovna"), ("politici", "Politici: Senát"),
+    ("politici", "Politici: nákup opcí"), ("politici", "Politici: Nancy Pelosi (většinou manžel)"),
+    ("podily", "Velký podíl: 13D aktivista"), ("podily", "Velký podíl: 13G pasivní investor"),
+    ("buybacky", "Buyback ≥5 % kapitalizace"), ("buybacky", "Buyback ≥ 2 % při rostoucích tržbách"),
+    ("buybacky", "Buyback ≥ 2 % při klesajících tržbách"), ("buybacky", "Buyback žádný"),
+)
+
+
+def smart_money_conclusion(avp: dict) -> dict:
+    """Předem dané pravidlo: vzorec je „potvrzený“, jen když typ nákupu porazil pasivní transakce ve stejném měsíci
+    v učení 2021–24 I v testu 2025–26 a v obou s t ≥ 2. Jinak se řekne přímo, že potvrzený není."""
+    def pick(rows):
+        return {(r["situace"], r["skupina"]): r for r in rows}
+    tr, te = pick(avp.get("uceni_2021_2024", [])), pick(avp.get("test_2025_2026", []))
+    both = []
+    for key, a in tr.items():
+        b = te.get(key)
+        if b and a["rozdil"] is not None and b["rozdil"] is not None:
+            both.append({"situace": key[0], "skupina": key[1], "uceni": a["rozdil"], "t_uceni": a["t"],
+                         "test": b["rozdil"], "t_test": b["t"], "n_test": b["n"]})
+    ok = [x for x in both if x["uceni"] > 0 and x["test"] > 0 and (x["t_uceni"] or 0) >= 2 and (x["t_test"] or 0) >= 2]
+    stable = sorted((x for x in both if x["uceni"] > 0 and x["test"] > 0), key=lambda x: min(x["uceni"], x["test"]),
+                    reverse=True)
+    best_hist = max(both, key=lambda x: x["t_uceni"] or 0, default=None)
+    return {"potvrzeno": bool(ok), "potvrzene_typy": ok, "kladne_v_obou": stable[:5], "nejsilnejsi_v_uceni": best_hist}
+
+
+def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
+    """Dokument stav/smartmoney — výtah z posledního běhu smart money."""
+    run = conn.execute("SELECT * FROM smart_money_runs ORDER BY id DESC LIMIT 1").fetchone()
+    if run is None:
+        return None
+    full = json.loads(run["result_json"])
+
+    def row(name, st):
+        a, b = st.get("6m") or {}, st.get("12m") or {}
+        return {"skupina": name, "n": a.get("n"), "vynos_median": a.get("vynos_median"),
+                "nad_kontrolou": a.get("nad_kontrolou_prumer"), "t": a.get("t_mesice"),
+                "porazilo_spy": a.get("porazilo_spy"), "nad_kontrolou_12m": b.get("nad_kontrolou_prumer"),
+                "t_12m": b.get("t_mesice"), "max": a.get("max6m_median"), "min": a.get("min6m_median")}
+    srovnani = [row(name, full[sec][name]) for sec, name in SM_GROUPS if name in full.get(sec, {})]
+    keep = ("ticker", "firma", "kdo", "funkce", "insideru", "typ", "zverejneno", "obchod", "hodnota_usd", "cena_nakupu",
+            "cena_posledni", "cena_aktualni", "den_ceny", "pohyb_od_zverejneni", "skore", "fundament", "buyback",
+            "katalyzator", "historie_nakupujiciho", "korelace_vs_pricina", "hlavni_riziko", "verdikt", "verdikt_proc")
+    top = [{k: s.get(k) for k in keep} | {"form4": [o.get("url") for o in s.get("overeni", [])][:3]}
+           for s in (full.get("aktualni") or {}).get("top", [])]
+    pel = [p for p in full.get("pelosi", []) if p.get("trida") == "AKTIVNÍ NÁKUP" and p.get("vstup")]
+    return {
+        "beh": {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"]},
+        "pocty": full.get("pocty"), "zpozdeni": full.get("zpozdeni_zverejneni"),
+        "zaver": smart_money_conclusion(full.get("aktivni_vs_pasivni", {})),
+        "srovnani": srovnani,
+        "aktivni_vs_pasivni": [r for r in full.get("aktivni_vs_pasivni", {}).get("cele_obdobi", [])
+                               if r["situace"] in ("vše", "po propadu 30 %+")],
+        "po_letech": full.get("insider_po_letech"),
+        "vs_qqq": full.get("vs_qqq"),
+        "pelosi": pel[-12:], "pelosi_pocet": len(full.get("pelosi", [])),
+        "politici_osoby": [p for p in full.get("politici_osoby", []) if p.get("n")][:8],
+        "politici_aktualni": (full.get("politici_aktualni") or [])[:12],
+        "skore": (full.get("skore") or {}).get("test_kvintily"),
+        "top": top, "kandidatu": (full.get("aktualni") or {}).get("kandidatu"),
+        "nakupu": (full.get("aktualni") or {}).get("pocet_nakupu"),
+    }
+
+
 def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
     sizes = {}
@@ -281,6 +355,9 @@ def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[s
     discovery = build_discovery_doc(conn)
     if discovery is not None:
         docs["objevy"] = discovery
+    smart = build_smart_money_doc(conn)
+    if smart is not None:
+        docs["smartmoney"] = smart
     for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:

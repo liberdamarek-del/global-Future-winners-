@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-04 · **Verze:** v0.4.1 · **Schema DB:** v4 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md)
+**Aktualizováno:** 2026-10-05 · **Verze:** v0.5.0 · **Schema DB:** v5 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -25,7 +25,7 @@
 | Firmy na radaru | 46 veřejných firem v 11 článcích řetězce AI → elektřina + Holtec (před IPO) + 9 případů z §31 |
 | Dohody Big Tech | 22 se zdrojem (11× Google, 4× Meta, 2× Amazon, 2× Microsoft, 3 ostatní) |
 | Katalyzátory | 8 (žádný s ověřeným přesným datem; odhady jako okno) |
-| Predikce v ledgeru | 17 živých: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
+| Predikce v ledgeru | 29 živých: 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
 | MAIN PICK | ŽÁDNÝ (nikdo nesplnil skóre ≥ 70 a šanci ≥ 55 %) |
 | Model | verze vah 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
 | XTB | u žádné firmy neověřeno (už není podmínka) |
@@ -56,7 +56,19 @@
 | Kvalita dat (v0.4.1) | 26 řad s neupraveným reverse splitem se před analýzou upraví (DHY, WCT …) |
 | Evidence e-mailu | 2026-10-03: 174 dotazů (první stažení SEC), 2026-10-04: 40 (týdenní obnova); po opravě v0.4.1 týdně ~20 |
 
-## HOTOVO (ověřeno testy — 89 testů prošlo 2026-10-04)
+## Smart money (v0.5.0, běh #3, 2026-10-05)
+
+| Položka | Stav |
+|---|---|
+| Data | SEC Form 3/4/5 sady 2021Q4–2026Q1 (32 555 aktivních nákupů insiderů, 1 058 automatických 10b5-1, 347 „koupil a do 10 dní prodal“), Sněmovna 7 771 + Senát 1 248 nákupů, 3 496 × 13D, 31 995 × 13G, 8 511 firmo-let buybacků |
+| Metoda | vstup den po zveřejnění; 1 t–12 m; S&P 500 + kontrola ze stejného oboru (pevný výběr); aktivní − pasivní ve stejném měsíci; učení 2021–24 / test 2025–26 |
+| Výsledek | opakovatelný vzorec NEPOTVRZEN: insideři po propadu +5,7 % (t 4,9) v učení → −5,1 % (t −2,3) v testu; politici −1,6 % (t −0,7); Pelosi vs QQQ 6 m medián −0,5 %, 48 % porazilo (n 25); 13D −8,0 % (t −4,3); buybacky bez efektu |
+| Skóre | test 2025–26: odliší jen nejslabší pětinu (0–20) |
+| Signály | 10 ověřených ve Form 4 (SBLK, GRNT, BLX, INR = STŘEDNÍ; NOMD, PRE, CC, KMPR, ELAN, AVBC = NÍZKÁ); žádná VYSOKÁ |
+| Web | sekce Smart money, dokument `stav/smartmoney` (~37 kB) |
+| NEOVĚŘENO | Trump (OGE 278-T jsou skeny), 13F, short interest, oznámení buybacků z 8-K, EPS, zisk opcí |
+
+## HOTOVO (ověřeno testy — 97 testů prošlo 2026-10-05)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -75,13 +87,14 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
+| `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 
 ## ROZPRACOVÁNO
 
 | Co | Stav |
 |---|---|
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
-| Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `update` + `diag` + jedno zlepšení kódu s testem + web |
+| Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `update` + `diag` + jedno zlepšení kódu s testem + web |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |
 

@@ -4,6 +4,39 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-05 · v0.5.0 — Smart money: insideři, politici (Pelosi), velké podíly, buybacky
+
+Důvod: pokyn uživatele 2026-10-05 „PROVEĎ HISTORICKOU A AKTUÁLNÍ ANALÝZU SMART MONEY A VELKÝCH NÁKUPŮ AKCIÍ“.
+Zpráva: [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md).
+
+| Soubor/modul | Změna | Důvod |
+|---|---|---|
+| `smartmoney/sources.py` | SEC Insider Transactions Data Sets (Form 3/4/5, příznak 10b5-1, prodeje kupujících), Sněmovna PTR (PDF → text), Senát eFD | primární data |
+| `smartmoney/analysis.py`, `events.py`, `groups.py` | Typy AKTIVNÍ / AUTOMATICKÝ / PASIVNÍ / NEJASNÉ; event study od dne po zveřejnění (1 t–12 m, max/min, S&P, kontrola ze stejného oboru, t přes měsíce); aktivní − pasivní ve stejném měsíci; CSV „každý případ“ | zadání §2–§3, §8 |
+| `smartmoney/score.py` | SMART MONEY SCORE 0–100 (učení 2021–24, test 2025–26), předchozí úspěšnost nakupujícího bez look-ahead | zadání §6 |
+| `smartmoney/current.py`, `report.py`, `store.py` | Aktuální nákupy (openinsider) → ověření v originálním Form 4 → TOP 10 s verdiktem VYSOKÁ/STŘEDNÍ/NÍZKÁ → ledger | zadání §7, §10 |
+| `migrations/0005_smart_money.sql` | `predictions.strategy` (ROCKET_6M / SMART_MONEY), `smart_money_runs` (append-only) | evidence běhů |
+| `sources/sec.py` | 13G ve formulářích, roční zpětné odkupy z XBRL frames | buybacky, podíly |
+| `site.py`, `web/index.html` | Sekce „Smart money“ (závěr, 10 signálů, historie, politici a Pelosi, test skóre), filtr v Výsledcích; dokument `stav/smartmoney` | web |
+| `cli.py` | `smart-money [--no-download]` | týdenní běh |
+| `lessons` | SM-ESPP-FLIP-WIX | chyba nalezená během analýzy |
+
+**Chyby nalezené a opravené během analýzy:**
+- *WIX (běh #1):* kód P ve Form 4 byl zaměstnanecký nákup se slevou 32 % a prodej druhý den → nově NEJASNÉ (hned prodáno)
+  / PASIVNÍ (sleva > 12 %); historická data SEC stažena znovu i s prodeji kupujících (347 takových případů).
+- *Kontrolní skupina:* vybírala se ze sdíleného generátoru náhody → výsledek malé skupiny (Pelosi) závisel na počtu
+  ostatních událostí. Nově pevný výběr pro každou akcii a den (běh #3).
+
+**Hlavní výsledky (běh #3, ceny do 2026-10-02):** aktivní nákup insidera − pasivní transakce za 6 m: učení 2021–24
++2,1 % (t 2,91), test 2025–26 −4,1 % (t −2,9);
+po propadu 30 %+ v učení silná výhoda, v testu záporná; politici bez výhody; Pelosi statisticky neprokázaná; 13D záporné;
+buybacky bez efektu. **Opakovatelný vzorec nepotvrzen** → žádný signál VYSOKÁ. V ledgeru 12 predikcí SMART_MONEY
+(#18–#29, WATCH 6 m: 10 z běhu #1 včetně neplatné WIX, AVBC a ELAN z běhu #2; běh #3 vybral stejných 10 firem).
+
+**Test:** `python -m pytest` — 97 testů (8 nových pro smart money). **Výsledek:** 97/97 prošlo. **E-mail:** 2026-10-05 celkem 133 dotazů (www.sec.gov, data.sec.gov).
+
+---
+
 ## 2026-10-04 · v0.4.1 — týdenní zlepšení: stabilita modelu raket, reverse splity, čerstvost ceny, méně dotazů s e-mailem
 
 Důvod: sobotní rutina „objevování + zlepšování“ (běh objevování #3, 2026-10-04; data k závěru 2026-10-02).

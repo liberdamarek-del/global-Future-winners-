@@ -97,6 +97,64 @@ CREATE TABLE IF NOT EXISTS ct_studies (
     fetched_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ix_ct_sponsor ON ct_studies(sponsor);
+-- Smart money: insider transakce (SEC Form 3/4/5, strukturovaná data), politici (Sněmovna, Senát), buybacky
+CREATE TABLE IF NOT EXISTS insider_tx (
+    accession   TEXT NOT NULL,
+    sk          INTEGER NOT NULL,
+    filing_date TEXT NOT NULL,          -- kdy se nákup dozvěděla veřejnost
+    trans_date  TEXT,
+    issuer_cik  INTEGER,
+    ticker      TEXT,
+    issuer      TEXT,
+    owner_cik   INTEGER,
+    owner       TEXT,
+    rel         TEXT,                   -- Director / Officer / TenPercentOwner / Other (může jich být víc)
+    title       TEXT,                   -- funkce (CEO, CFO …)
+    code        TEXT NOT NULL,          -- P nákup na trhu, A přidělení, M uplatnění opce, F daň, S prodej …
+    shares      REAL,
+    price       REAL,
+    ad          TEXT,                   -- A nabyto / D zcizeno
+    owned_after REAL,
+    direct      TEXT,                   -- D přímo / I nepřímo (trust, fond …)
+    plan10b51   INTEGER,                -- 1 = automatický plán 10b5-1 (pole od 2023)
+    form        TEXT,
+    PRIMARY KEY (accession, sk)
+);
+CREATE INDEX IF NOT EXISTS ix_insider_ticker ON insider_tx(ticker, filing_date);
+CREATE INDEX IF NOT EXISTS ix_insider_code ON insider_tx(code, filing_date);
+CREATE TABLE IF NOT EXISTS insider_done (
+    quarter     TEXT PRIMARY KEY,
+    n           INTEGER NOT NULL,
+    fetched_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS congress_docs (
+    doc_id      TEXT PRIMARY KEY,
+    chamber     TEXT NOT NULL,          -- HOUSE / SENATE
+    member      TEXT NOT NULL,
+    filed       TEXT NOT NULL,
+    url         TEXT NOT NULL,
+    status      TEXT NOT NULL,          -- OK / BEZ_TEXTU (sken) / CHYBA
+    n_rows      INTEGER NOT NULL DEFAULT 0,
+    fetched_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS congress_tx (
+    doc_id      TEXT NOT NULL,
+    row         INTEGER NOT NULL,
+    chamber     TEXT NOT NULL,
+    member      TEXT NOT NULL,
+    owner       TEXT,                   -- SP manžel/ka, JT společně, DC dítě, Self …
+    filed       TEXT NOT NULL,          -- kdy se transakce dozvěděla veřejnost
+    tx_date     TEXT,
+    ticker      TEXT,
+    asset       TEXT,
+    asset_type  TEXT,                   -- ST akcie, OP opce, …
+    tx_type     TEXT,                   -- P nákup, S prodej, S (partial), E výměna
+    amount_min  REAL,
+    amount_max  REAL,
+    description TEXT,
+    PRIMARY KEY (doc_id, row)
+);
+CREATE INDEX IF NOT EXISTS ix_congress_member ON congress_tx(member, tx_date);
 CREATE TABLE IF NOT EXISTS ct_sponsor_map (
     sponsor     TEXT PRIMARY KEY,
     symbol      TEXT,                   -- NULL = sponzor nenalezen mezi kotovanými firmami

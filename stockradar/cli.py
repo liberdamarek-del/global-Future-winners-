@@ -177,6 +177,37 @@ def cmd_discover(args) -> int:
     return 0
 
 
+def cmd_smart_money(args) -> int:
+    """Smart money: insideři (SEC Form 4), politici (Sněmovna, Senát), 13D/13G, buybacky → test + aktuální signály."""
+    from datetime import date
+
+    from stockradar.discovery import cache as dcache
+    from stockradar.smartmoney import report, sources
+    from stockradar.smartmoney import store as sm_store
+    from stockradar.sources import sec
+
+    conn = _open()
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    if not args.no_download:
+        print("SEC insider:", sources.fetch_insiders(cconn, log=log))
+        today = date.today()
+        print("SEC index:", sec.fetch_index(cconn, start=date(2021, 1, 1), end=today, log=log))
+        print("SEC buybacky:", sec.fetch_annual(cconn, log=log))
+        print("Sněmovna:", sources.fetch_house(cconn, years=[today.year - 1, today.year], log=log))
+        print("Senát:", sources.fetch_senate(cconn, start=f"01/01/{today.year - 1}", log=log))
+        sources.senate_roles(cconn, start=f"01/01/{today.year - 1}")
+    result = report.run(cconn, conn, log=log, csv_dir=db_path().parent)
+    run_id = sm_store.save_run(conn, result)
+    created, notes = sm_store.record_signals(conn, cconn, result, run_id)
+    export_state(conn, state_dir())
+    print(f"Běh smart money #{run_id}: {len(result['aktualni']['top'])} signálů, do ledgeru {len(created)}")
+    for n in notes:
+        print(f"  ! {n}")
+    _print_email_today(conn)
+    return 0
+
+
 def cmd_email(args) -> int:
     from stockradar.contact import email, usage_summary
     conn = _open(create=False)
@@ -330,6 +361,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_disc.set_defaults(func=cmd_discover)
     sub.add_parser("lessons", help="učební případy a poučení (§30, §31)").set_defaults(func=cmd_lessons)
     sub.add_parser("sources", help="obnoví SEC EDGAR a ClinicalTrials.gov (cache objevování)").set_defaults(func=cmd_sources)
+    p_sm = sub.add_parser("smart-money", help="nákupy insiderů, politiků, velké podíly a buybacky: test + signály")
+    p_sm.add_argument("--no-download", action="store_true", help="nestahovat nová data (jen analýza)")
+    p_sm.set_defaults(func=cmd_smart_money)
     p_email = sub.add_parser("email", help="kolikrát a kde byl použit e-mail uživatele")
     p_email.add_argument("--days", type=int, default=14)
     p_email.set_defaults(func=cmd_email)

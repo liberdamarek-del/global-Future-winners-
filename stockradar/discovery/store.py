@@ -185,7 +185,7 @@ def record_rockets(conn: sqlite3.Connection, cache_conn, rockets: dict, run_id: 
                 key_risk="; ".join((row.get("proti") or [])[:2] + [f"šance na propad ≤ −33 %: {pct(row['hist_propady'])} %"]),
                 scores=Scores(rocket=int(round((1 - row["percentil"]) * 100))),
                 benchmark_symbol=config.BENCHMARK_SYMBOL, benchmark_price=bench,
-                source="DISCOVERY", discovery_run_id=run_id,
+                source="DISCOVERY", discovery_run_id=run_id, strategy="ROCKET_6M",
             ), now=now)
             created.append(pid)
         except LedgerRuleError as exc:

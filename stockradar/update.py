@@ -46,6 +46,8 @@ ROCKET_LIMIT_DAYS = {"D0_14": 14, "D15_45": 45, "M6_PLUS": 180}  # do kdy musí 
 
 def rocket_target(p) -> float | None:
     """Cíl predikce rakety v % (None = predikce „lépe než S&P 500“ energetického modelu)."""
+    if p["strategy"] == "SMART_MONEY":
+        return None  # tvrzení „porazí S&P 500“, ne cíl růstu
     if p["target_move_pct"] is not None:
         return p["target_move_pct"]
     if p["source"] == "DISCOVERY":

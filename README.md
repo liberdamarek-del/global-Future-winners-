@@ -64,6 +64,25 @@ python -m stockradar update                           # data pro web včetně st
 
 Omezení: seznamy jsou dnešní (survivorship bias), fundamenty jen pro firmy podávající u SEC (USA), příčiny z titulků jsou AUTO.
 
+## Smart money (insideři, politici, velké podíly, buybacky)
+
+Výsledky a metodika: [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md). Běží týdně po objevování nebo ručně:
+
+```bash
+python -m stockradar smart-money                 # stáhne SEC Form 4 sady, Sněmovnu, Senát, 13D/13G, buybacky; test + signály
+python -m stockradar smart-money --no-download   # jen přepočet nad staženými daty
+```
+
+| Krok | Co dělá | Zdroj (zdarma) |
+|---|---|---|
+| Insideři | každý nákup/odměna/opce; typ AKTIVNÍ / AUTOMATICKÝ (10b5-1) / PASIVNÍ / NEJASNÉ (i „koupil a do 10 dní prodal“) | SEC Insider Transactions Data Sets |
+| Politici | výkazy PTR Sněmovny (PDF) a Senátu (eFD), Pelosi zvlášť, srovnání s QQQ | disclosures-clerk.house.gov, efdsearch.senate.gov |
+| Velké podíly, buybacky | nové 13D/13G; vyplacené odkupy za rok vůči kapitalizaci | SEC full-index, XBRL frames |
+| Test | vstup den po zveřejnění; 1 t–12 m vs S&P 500 a kontrola ze stejného oboru; aktivní − pasivní ve stejném měsíci; učení 2021–24, test 2025–26 | Yahoo chart API |
+| Skóre a signály | SMART MONEY SCORE 0–100, 10 aktuálních nákupů ověřených ve Form 4 → ledger (WATCH, 6 m) a web | openinsider.com (seznam) + sec.gov (ověření) |
+
+Každý případ zvlášť: `data/smart_money_udalosti.csv` a `data/smart_money_politici.csv` (mimo git).
+
 ## Kde jsou data
 
 | Místo | Co | V gitu |

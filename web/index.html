@@ -3,8 +3,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: control-room board — a status strip, then six stacked panels read top-down:
-   6-month rocket calls → their scorecard → AI→power chain → how the models learn → winners & sector waves → sources & e-mail log.
+/* Layout: control-room board — a status strip, then seven stacked panels read top-down:
+   6-month rocket calls → smart-money signals → their scorecard → AI→power chain → how the models learn → winners & sector waves → sources & e-mail log.
    Detail lives in folded <details>, so the first screen shows only the calls and their odds. */
 :root {
   --bg: #F1F3F2; --panel: #FFFFFF; --ink: #10181C; --muted: #56656C; --line: #D6DEDF; --chip: #E6ECEC;
@@ -96,7 +96,8 @@ details summary { cursor: pointer; font-weight: 600; }
 .tab { font: inherit; font-size: 0.88rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.two-col { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.two-col { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+.panel > *, .two-col > *, details.fold > div { min-width: 0; }
 .verdict { border-left: 4px solid var(--accent); padding: 8px 12px; background: var(--bg); border-radius: 6px; display: grid; gap: 4px; }
 
 @media (max-width: 640px) { .layer { grid-template-columns: 1fr; } h1 { font-size: 1.9rem; } }
@@ -126,7 +127,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     </div>
     <div id="warnings"></div>
     <nav class="jump" aria-label="Sekce">
-      <a href="#rakety">Rakety</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
+      <a href="#rakety">Rakety</a><a href="#smart">Smart money</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
       <a href="#model">Jak se model učí</a><a href="#sektory">Vítězové a sektory</a><a href="#zdroje">Zdroje a e-mail</a>
     </nav>
   </header>
@@ -138,19 +139,29 @@ details.fold[open] > summary { margin-bottom: 10px; }
     <p class="small muted">Šance = jak často akcie se stejně vysokým skóre opravdu vyrostly o +50 % v období, které model při učení neviděl. Propad = jak často spadly o třetinu. Nejde o doporučení k nákupu.</p>
   </section>
 
+  <section class="panel" id="smart" aria-labelledby="h-sm">
+    <header><h2 id="h-sm">Smart money</h2><span class="small muted" id="sm-run">Nákupy insiderů, politiků, fondů a zpětné odkupy</span></header>
+    <div id="sm-verdict"><div class="empty">Analýza se objeví po týdenním běhu (python -m stockradar smart-money).</div></div>
+    <div class="cards" id="sm-cards"></div>
+    <details class="fold"><summary>Co ukázala historie 2021–2026</summary><div id="sm-hist" class="two-col"></div></details>
+    <details class="fold"><summary>Politici a Nancy Pelosi</summary><div id="sm-pol" style="display:grid;gap:14px"></div></details>
+    <details class="fold"><summary>Jak spolehlivé je skóre</summary><div id="sm-score"></div></details>
+  </section>
+
   <section class="panel" id="vysledky" aria-labelledby="h-res">
     <header><h2 id="h-res">Výsledky predikcí</h2><span class="small muted">Původní predikce se nikdy nepřepisuje.</span></header>
     <div class="stats" id="accuracy"></div>
     <div class="seg" role="tablist" aria-label="Typ predikce">
       <button type="button" class="tab" id="f-all" data-f="" aria-selected="true">Vše</button>
       <button type="button" class="tab" id="f-rk" data-f="raketa" aria-selected="false">Rakety</button>
+      <button type="button" class="tab" id="f-sm" data-f="smart money" aria-selected="false">Smart money</button>
       <button type="button" class="tab" id="f-en" data-f="energie" aria-selected="false">Energie</button>
     </div>
     <div class="tablewrap"><table>
       <thead><tr><th>Datum</th><th>Firma</th><th>Predikce</th><th class="r">Cena</th><th class="r">Teď</th><th class="r">Max. dosud</th><th class="r">+7 d</th><th class="r">+30 d</th><th class="r">+3 m</th><th class="r">+6 m</th><th>Stav</th></tr></thead>
       <tbody id="pred-rows"><tr><td colspan="11" class="muted">Data se načítají…</td></tr></tbody>
     </table></div>
-    <p class="small muted">Raketa: HIT = cena aspoň jednou dosáhla +50 % do 6 měsíců, MISS = nedosáhla, „čeká“ = 6 měsíců ještě neuplynulo. Energie: HIT = akcie porazila S&amp;P 500.</p>
+    <p class="small muted">Raketa: HIT = cena aspoň jednou dosáhla +50 % do 6 měsíců, MISS = nedosáhla, „čeká“ = 6 měsíců ještě neuplynulo. Energie a smart money: HIT = akcie porazila S&amp;P 500 (smart money se rozhoduje po 6 měsících).</p>
   </section>
 
   <section class="panel" id="energie" aria-labelledby="h-en">
@@ -248,7 +259,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
   const BINDING = {FIRM: ["pevná", "ok"], FRAMEWORK: ["rámcová", "warn"], OPTION: ["opce", "warn"], PENDING: ["čeká na schválení", "warn"], NEOVERENO: ["neověřeno", "warn"]};
   const RANK = {raketa: "jen šance na raketu", asymetrie: "raketa minus propad", pomer: "poměr raketa / propad", vydrzi: "raketa, která vydrží", vydrzi_asym: "vydrží minus propad"};
 
-  let A = null, P = null, R = null, D = null, filt = "";
+  let A = null, P = null, R = null, D = null, S = null, filt = "";
   try { filt = localStorage.getItem("gfw_filter") || ""; } catch (e) {}
 
   function renderTop() {
@@ -296,6 +307,83 @@ details.fold[open] > summary { margin-bottom: 10px; }
     }).join("");
   }
 
+  // ---------------------------------------------------------------- smart money
+  const VERD = {"VYSOKÁ": "ok", "STŘEDNÍ": "warn", "NÍZKÁ": "err"};
+  const usd = (v) => nil(v) ? "–" : v >= 1e6 ? fmt(v / 1e6, 2) + " mil. USD" : fmt(v / 1e3, 0) + " tis. USD";
+  const tcell = (t) => `<td class="r num${nil(t) ? " muted" : Math.abs(t) >= 2 ? "" : " muted"}">${nil(t) ? "–" : fmt(t, 1)}</td>`;
+  function fund(f) {
+    if (!f) return "NEOVĚŘENO";
+    const parts = [];
+    if (!nil(f.rust_trzeb)) parts.push(`tržby ${sgn(f.rust_trzeb)} r/r`);
+    if (!nil(f.cena_trzby)) parts.push(`P/S ${fmt(f.cena_trzby, 1)}`);
+    if (!nil(f.hotovost_kapitalizace)) parts.push(`hotovost ${pc(f.hotovost_kapitalizace, 0)} kap.`);
+    if (!nil(f.redeni_rok)) parts.push(`akcií za rok ${sgn(f.redeni_rok)}`);
+    return parts.length ? parts.join(" · ") : "NEOVĚŘENO (chybí XBRL)";
+  }
+  function renderSmart() {
+    if (!S) return;
+    const b = S.beh || {}, z = S.zaver || {}, n = S.pocty || {}, best = z.nejsilnejsi_v_uceni || {};
+    $("sm-run").textContent = `Běh #${b.id} z ${praha(b.probehlo)} · ceny do ${den(b.data_do)}`;
+    const both = (z.kladne_v_obou || []).slice(0, 3).map((x) => `${esc(x.skupina)}${x.situace !== "vše" ? " (" + esc(x.situace) + ")" : ""}: ${sgn(x.uceni * 100)} → ${sgn(x.test * 100)}`).join("; ");
+    $("sm-verdict").innerHTML = `<div class="verdict">
+      <span><b>${z.potvrzeno ? "V datech JE opakovatelný vzorec." : "Opakovatelný vzorec v datech NENÍ potvrzen."}</b>
+      ${z.potvrzeno ? esc(z.potvrzene_typy.map((x) => x.skupina).join(", ")) : `Nejsilnější typ v letech 2021–24 (${esc(best.skupina || "")}${best.situace && best.situace !== "vše" ? ", " + esc(best.situace) : ""}) měl náskok <b class="pos">${sgn((best.uceni || 0) * 100)}</b> za 6 měsíců (t ${fmt(best.t_uceni, 1)}), ale v letech 2025–26 <b class="neg">${sgn((best.test || 0) * 100)}</b> (t ${fmt(best.t_test, 1)}).`}</span>
+      <span class="small">Srovnání: aktivní nákup insidera minus přidělené akcie a opce ve stejném měsíci a situaci (ty o budoucnosti nic neříkají). ${both ? `Kladné v obou obdobích, ale bez statistické jistoty: ${both}.` : ""}</span>
+      <span class="small muted">Změřeno ${fmt(n["insider:AKTIVNÍ NÁKUP"], 0)} aktivních nákupů insiderů (SEC Form 4), ${fmt(n["politik:AKTIVNÍ NÁKUP"], 0)} nákupů politiků (Sněmovna, Senát), ${fmt(n["podíl:13D aktivista"], 0)} podílů 13D, ${fmt(n["podíl:13G pasivní investor"], 0)} podílů 13G a ${fmt(["buyback:≥5 % kapitalizace", "buyback:2–5 %", "buyback:0–2 %", "buyback:žádný"].reduce((a, k) => a + (n[k] || 0), 0), 0)} ročních buybacků. Vstup vždy až den po zveřejnění.</span></div>
+      <p class="small muted">Aktuální výběr: ${fmt(S.nakupu, 0)} nákupů insiderů za 60 dní → ${fmt(S.kandidatu, 0)} kandidátů → 10 nejlepších, každý ověřený v originálním Form 4. Signál je jen ke sledování, ne doporučení k nákupu.</p>`;
+    const q = S.skore || [];
+    $("sm-cards").innerHTML = (S.top || []).map((s) => {
+      const k = q.find((x) => s.skore >= x.od && s.skore < x.do) || {};
+      const now = nil(s.cena_aktualni) ? s.cena_posledni : s.cena_aktualni;
+      const mv = nil(now) || nil(s.cena_nakupu) ? null : (now / s.cena_nakupu - 1) * 100;
+      return `<article class="card">
+        <div class="head"><div><div class="tick">${esc(s.ticker)}</div><div class="small">${esc(s.firma)}</div></div>
+          <span class="chip ${VERD[s.verdikt] || ""}">${esc(s.verdikt)}</span></div>
+        <div class="small"><b>${esc((s.kdo || []).slice(0, 3).join(", "))}${s.insideru > 3 ? ` a další (${fmt(s.insideru, 0)} insiderů)` : ""}</b><div class="muted">${esc(s.funkce || "")}</div></div>
+        <dl class="kv"><dt>Typ</dt><dd>${esc((s.typ || "").replace(" (ověřeno ve Form 4)", ""))}</dd>
+          <dt>Obchod / zveřejněno</dt><dd>${esc(den(s.obchod))} / ${esc(den(s.zverejneno))}</dd>
+          <dt>Velikost</dt><dd>${usd(s.hodnota_usd)}</dd>
+          <dt>Cena při nákupu → teď</dt><dd>${fmt(s.cena_nakupu, 2)} → ${fmt(now, 2)} USD <span class="${cls(mv)}">${sgn(mv)}</span></dd>
+          <dt>SMART MONEY SCORE</dt><dd><b>${fmt(s.skore, 0)}</b> / 100</dd>
+          <dt>Pásmo skóre v testu 2025–26</dt><dd>${pct(k.vynos_q20)} / <b>${pct(k.vynos_median)}</b> / ${pct(k.vynos_q80)}</dd></dl>
+        <ul class="facts">
+          <li><b>Fundament:</b> ${esc(fund(s.fundament))}</li>
+          <li><b>Buyback:</b> ${esc(s.buyback || "NEOVĚŘENO")}</li>
+          <li><b>Nejbližší katalyzátor:</b> ${esc((s.katalyzator || ["NEOVĚŘENO"]).join("; "))}</li>
+          <li><b>Úspěšnost nakupujícího:</b> ${esc(s.historie_nakupujiciho || "NEOVĚŘENO")}</li>
+          <li><b>Hlavní riziko:</b> ${esc(s.hlavni_riziko || "")}</li>
+          <li class="muted">${esc(s.verdikt_proc || "")}. ${esc(s.korelace_vs_pricina || "")}</li></ul>
+        <div class="small">${(s.form4 || []).filter(Boolean).map((u, i) => `<a href="${url(u)}" target="_blank" rel="noopener">Form 4 (${i + 1})</a>`).join(" · ")}</div>
+      </article>`;
+    }).join("") || `<div class="empty">Žádný aktuální signál neprošel filtry.</div>`;
+    const rows = (S.srovnani || []).map((r) => `<tr><td>${esc(r.skupina)}</td><td class="r num">${fmt(r.n, 0)}</td><td class="r num ${cls(r.vynos_median)}">${pct(r.vynos_median, 1)}</td>
+      <td class="r num ${cls(r.nad_kontrolou)}">${pct(r.nad_kontrolou, 1)}</td>${tcell(r.t)}<td class="r num">${pct(r.porazilo_spy)}</td><td class="r num ${cls(r.nad_kontrolou_12m)}">${pct(r.nad_kontrolou_12m, 1)}</td></tr>`).join("");
+    const avp = (S.aktivni_vs_pasivni || []).map((r) => `<tr><td>${esc(r.skupina)}${r.situace !== "vše" ? ` <span class="muted">· ${esc(r.situace)}</span>` : ""}</td><td class="r num">${fmt(r.n, 0)}</td>
+      <td class="r num ${cls(r.rozdil)}">${pct(r.rozdil, 1)}</td>${tcell(r.t)}<td class="r num">${pct(r.mesicu_kladnych)}</td></tr>`).join("");
+    const yrs = Object.entries(S.po_letech || {}).map(([y, v]) => `<tr><td>${esc(y)}</td><td class="r num">${fmt(v.n, 0)}</td><td class="r num ${cls(v.nad_kontrolou_prumer)}">${pct(v.nad_kontrolou_prumer, 1)}</td>${tcell(v.t_mesice)}</tr>`).join("");
+    $("sm-hist").innerHTML = `<div class="tablewrap"><h3>Výsledek 6 měsíců po zveřejnění</h3><table><thead><tr><th>Skupina</th><th class="r">Počet</th><th class="r">Medián výnosu</th><th class="r">Nad kontrolou</th><th class="r">t</th><th class="r">Porazilo S&amp;P</th><th class="r">Nad kontrolou 12 m</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="small muted">Kontrola = 5 náhodných firem ze stejného oboru a podobné velikosti ve stejný den. t = statistika přes kalendářní měsíce (|t| ≥ 2 ≈ málo pravděpodobná náhoda). I pasivní transakce (odměny, opce) „porážejí“ kontrolu — proto je férové srovnání vedle.</p></div>
+      <div style="display:grid;gap:14px;align-content:start"><div class="tablewrap"><h3>Aktivní nákup minus pasivní (stejný měsíc)</h3><table><thead><tr><th>Kdo / situace</th><th class="r">Počet</th><th class="r">Náskok 6 m</th><th class="r">t</th><th class="r">Kladných měsíců</th></tr></thead><tbody>${avp}</tbody></table></div>
+      <div class="tablewrap"><h3>Aktivní nákupy insiderů podle roku</h3><table><thead><tr><th>Rok zveřejnění</th><th class="r">Počet</th><th class="r">Nad kontrolou 6 m</th><th class="r">t</th></tr></thead><tbody>${yrs}</tbody></table></div></div>`;
+    const v = S.vs_qqq || {}, tech = (v["Politici: aktivní nákup — technologie"] || {})["6m"] || {}, pa = v["Nancy Pelosi: aktivní nákup"] || {};
+    const pel = (S.pelosi || []).slice().reverse().map((p) => `<tr><td class="num">${esc(den(p.datum_obchodu))}<div class="small muted">zveř. ${esc(den(p.zverejneno))}</div></td><td><b>${esc(p.ticker)}</b> <span class="small muted">${p.typ_aktiva === "OP" ? "opce (měřena akcie)" : "akcie"}</span></td>
+      <td class="small">${esc(p.castka || "")}</td><td class="r num ${cls(p.vs_qqq_1m)}">${sgn(p.vs_qqq_1m)}</td><td class="r num ${cls(p.vs_qqq_6m)}">${sgn(p.vs_qqq_6m)}</td><td class="r num ${cls(p.vs_qqq_12m)}">${sgn(p.vs_qqq_12m)}</td></tr>`).join("");
+    const pol = (S.politici_aktualni || []).map((p) => `<li>${esc(p.politik)} (${esc(p.kdo || "")}): <b>${esc(p.ticker)}</b> ${esc(p.typ_aktiva)} ${usd(p.castka_od)}–${usd(p.castka_do)}, obchod ${esc(den(p.obchod))}, zveřejněno ${esc(den(p.zverejneno))} <span class="muted">${esc(p.zdroj || "")}</span></li>`).join("");
+    $("sm-pol").innerHTML = `<div class="stats">${stat("Technologie politiků vs Nasdaq 100", pct(tech.porazilo_qqq), `porazilo QQQ za 6 m · medián ${pct(tech.nad_qqq_median, 1)} · ${fmt(tech.n, 0)} nákupů`)}
+      ${stat("Pelosi vs QQQ za 6 m", pct((pa["6m"] || {}).porazilo_qqq), `průměr ${pct((pa["6m"] || {}).nad_qqq_prumer, 1)}, medián ${pct((pa["6m"] || {}).nad_qqq_median, 1)} · n = ${fmt((pa["6m"] || {}).n, 0)}`)}
+      ${stat("Pelosi vs QQQ za 12 m", pct((pa["12m"] || {}).porazilo_qqq), `průměr ${pct((pa["12m"] || {}).nad_qqq_prumer, 1)}, medián ${pct((pa["12m"] || {}).nad_qqq_median, 1)} · n = ${fmt((pa["12m"] || {}).n, 0)}`)}
+      ${stat("Zpoždění zveřejnění", `${fmt((S.zpozdeni || {}).HOUSE && S.zpozdeni.HOUSE.median_dni, 0)} dní`, `medián u Sněmovny; Senát ${fmt((S.zpozdeni || {}).SENATE && S.zpozdeni.SENATE.median_dni, 0)}, insideři ${fmt((S.zpozdeni || {}).INSIDER && S.zpozdeni.INSIDER.median_dni, 0)}`)}</div>
+      <p class="small">${["Politici: AKTIVNÍ nákup (všichni)", "Politici: Nancy Pelosi (většinou manžel)"].map((name) => {
+        const r = (S.srovnani || []).find((x) => x.skupina === name);
+        return r ? `<b>${esc(name.replace("Politici: ", ""))}</b>: ${fmt(r.n, 0)} nákupů, za 6 m ${pct(r.nad_kontrolou, 1)} proti kontrole (t ${fmt(r.t, 1)}) → ${nil(r.t) || Math.abs(r.t) < 2 ? "statisticky neodlišitelné od náhody" : r.t > 0 ? "statisticky lepší" : "statisticky horší"}.` : "";
+      }).join(" ")} U opcí se měří podkladová akcie, ne zisk opce.</p>
+      <div class="tablewrap"><h3>Poslední změřené nákupy Pelosi (vstup den po zveřejnění, srovnání s QQQ)</h3><table><thead><tr><th>Obchod</th><th>Akcie</th><th>Částka</th><th class="r">1 m</th><th class="r">6 m</th><th class="r">12 m</th></tr></thead><tbody>${pel}</tbody></table></div>
+      ${pol ? `<div><h3>Nové nákupy politiků (60 dní)</h3><ul class="facts small">${pol}</ul></div>` : ""}`;
+    $("sm-score").innerHTML = `<div class="tablewrap"><table><thead><tr><th>Skóre</th><th class="r">Nákupů v testu</th><th class="r">Porazilo kontrolu</th><th class="r">Porazilo S&amp;P</th><th class="r">Medián výnosu 6 m</th><th class="r">Horní pětina</th></tr></thead><tbody>
+      ${q.map((x) => `<tr><td>${esc(x.skore)}</td><td class="r num">${fmt(x.n, 0)}</td><td class="r num">${pct(x.porazilo_kontrolu)}</td><td class="r num">${pct(x.porazilo_spy)}</td><td class="r num ${cls(x.vynos_median)}">${pct(x.vynos_median, 1)}</td><td class="r num">${pct(x.vynos_q80)}</td></tr>`).join("")}</tbody></table></div>
+      <p class="small muted">Model se učil na nákupech zveřejněných 2021–2024 a test je na 2025–26, které neviděl. Skóre spolehlivě odliší jen nejslabší pětinu; mezi 20 a 100 rozdíl skoro není. Proto rozhoduje hlavně verdikt podle typu nakupujícího a skóre pod 20 nákup vyřazuje.</p>`;
+  }
+
   // ---------------------------------------------------------------- výsledky
   function outcome(o) {
     if (!o) return '<td class="r muted">–</td>';
@@ -312,7 +400,8 @@ details.fold[open] > summary { margin-bottom: 10px; }
     const list = (P.predikce || []).filter((p) => !filt || p.typ === filt);
     $("pred-rows").innerHTML = list.length ? list.map((p) => {
       const v = p.vysledky || {}, a = p.aktualne || {};
-      const what = p.typ === "raketa" ? `<span class="chip warn">raketa</span> +${fmt(p.cil, 0)} % do 6 m · šance ${pc(p.p_beat, 0)}` : `<span class="chip">energie</span> lépe než S&amp;P · ${pc(p.p_beat, 0)}`;
+      const what = p.typ === "raketa" ? `<span class="chip warn">raketa</span> +${fmt(p.cil, 0)} % do 6 m · šance ${pc(p.p_beat, 0)}` :
+        p.typ === "smart money" ? `<span class="chip acc">smart money</span> lépe než S&amp;P do 6 m · ${pc(p.p_beat, 0)}` : `<span class="chip">energie</span> lépe než S&amp;P · ${pc(p.p_beat, 0)}`;
       const st = p.stav === "HIT" ? "hit" : p.stav === "MISS" ? "miss" : "";
       return `<tr><td class="num">${esc(den(p.datum))}</td><td><b>${esc(p.ticker)}</b><div class="small muted">${esc(p.nazev)}</div></td><td class="small">${what}</td>
         <td class="r num">${price(p.cena, p.mena)}</td><td class="r num ${cls(a.vynos)}">${sgn(a.vynos)}</td><td class="r num ${cls(a.max_dosud)}">${sgn(a.max_dosud)}</td>
@@ -452,6 +541,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     db.doc("stav/predikce").onSnapshot((s) => { if (s.exists) { P = s.data(); renderPreds(); } }, fail);
     db.doc("stav/retezec").onSnapshot((s) => { if (s.exists) { R = s.data(); renderChain(); } }, fail);
     db.doc("stav/objevy").onSnapshot((s) => { if (s.exists) { D = s.data(); renderDiscovery(); } }, fail);
+    db.doc("stav/smartmoney").onSnapshot((s) => { if (s.exists) { S = s.data(); renderSmart(); } }, fail);
   })();
 })();
 </script>

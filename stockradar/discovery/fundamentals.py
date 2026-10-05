@@ -56,6 +56,7 @@ class Fundamentals:
             form = r["form"]
             if form in REPORT_FORMS:
                 reports.setdefault(r["cik"], []).append(d)
+                self.filings.setdefault(r["cik"], {}).setdefault("REPORT", []).append(d)
             kind = ("8K" if form == "8-K" else "OFFER" if form.startswith(("S-", "F-", "424B")) else
                     "13D" if "13D" in form and not form.endswith("/A") else None)
             if kind:

@@ -36,7 +36,7 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
    proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
-   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy) s `if_version` (URL v `web/dashboard.json`).
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
@@ -50,6 +50,10 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   **model raket na 6 měsíců** (`discovery/rocket.py`) → `discovery_runs` + ledger (predikce raket s cílem +50 %,
   zdroj DISCOVERY, automatické katalyzátory z klinických studií). Potom `python -m stockradar update`
   (data pro web včetně `stav/objevy`) a zápis 4 dokumentů `stav/*` do artifactu.
+- **Smart money (každou sobotu po objevování):** `python -m stockradar smart-money` — nová data SEC Form 4 (čtvrtletní
+  sady), Sněmovna, Senát, 13D/13G, buybacky → test, SMART MONEY SCORE, 10 signálů ověřených ve Form 4 do ledgeru
+  (strategie SMART_MONEY, WATCH 6 m) + dokument `stav/smartmoney` pro web (pak `update` a zápis 5 dokumentů `stav/*`).
+  Verdikt VYSOKÁ jen při typu nákupu s výhodou potvrzenou v učení i testu (t ≥ 2). Zpráva: `docs/SMART_MONEY_*.md`.
 - **Zlepšování (každou sobotu po objevování):** podívej se na `diag`, vyhodnocené predikce v ledgeru a test modelu
   raket; vyber jedno konkrétní zlepšení z plánu v `docs/AUDIT_2026-10-03.md` (kapitola 3) nebo z nových chyb,
   implementuj ho s testem, `python -m pytest`, zapiš do CHANGELOG a PROJECT_STATE, commit + push. Výsledek modelu
