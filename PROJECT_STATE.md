@@ -27,9 +27,9 @@
 | Firmy na radaru | 46 veřejných firem v 11 článcích řetězce AI → elektřina + Holtec (před IPO) + 9 případů z §31 |
 | Dohody Big Tech | 22 se zdrojem (11× Google, 4× Meta, 2× Amazon, 2× Microsoft, 3 ostatní) |
 | Katalyzátory | 8 (žádný s ověřeným přesným datem; odhady jako okno) |
-| Predikce v ledgeru | 34 živých: 5 nových raket na 6 měsíců z běhu objevování #4 (2026-10-05: PNR.AX, 4DX.AX, MGNX, ELS.AX, KOS; ostatní z TOP 10 už v ledgeru byly), 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
+| Predikce v ledgeru | 35 živých: #35 SO (energie, update běh #7, 2026-10-05), 5 nových raket na 6 měsíců z běhu objevování #4 (2026-10-05: PNR.AX, 4DX.AX, MGNX, ELS.AX, KOS; ostatní z TOP 10 už v ledgeru byly), 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
 | MAIN PICK | ŽÁDNÝ (nikdo nesplnil skóre ≥ 70 a šanci ≥ 55 %) |
-| Model | verze vah 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
+| Model | verze vah 3 (2026-10-05: Trend 120 dní 0,68 → 0,58, malá firma 0,13 → 0,05, objem 0,08 → 0,02); původně verze 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
 | XTB | u žádné firmy neověřeno (už není podmínka) |
 
 ## Globální objevování (Growth Engine) — první běh 2026-10-02
@@ -80,6 +80,15 @@
 | Zamčený test | AUC +5 % 0,60 · −5 % 0,69 · ±10 % 0,83 · obor 0,53; RŮST bez výhody (+0,6 %, šum 65 %); POKLES −0,9 % (šum 10 %) |
 | Dnes | 3 673 akcií: RŮST 0, POKLES 193, NEVÍM 3 480; trh NEVÍM |
 | NEVÍM / NEOVĚŘENO | konsenzus analytiků, short interest, opční toky, zprávy jako prediktor, mechanismy (nestabilní), mispricing (nepotvrzen), akcie mimo USA |
+
+## Žebříček na hlavní stránce (v0.7.0, signály běhy #9–#10, objevování #4, 2026-10-05)
+
+| Horizont | Zdroj | Dnes (data k 2026-10-02) |
+|---|---|---|
+| Do 14 dní | SIGNAL_14D, TOP 20 z 3 673 US akcií | 1. TGTX, 2. KMX, 3. CRH; šance +5 % u všech 32 % (základ 23 %), riziko −5 % 20–26 %; silných signálů RŮST 0 |
+| Do 1 měsíce | SIGNAL_1M (zamčený test: AUC +10 % 0,64, −10 % 0,74; směr nepotvrzen), TOP 20 | 1. SND, 2. TGTX, 3. INSW; šance +10 % 25 % (základ 17 %), riziko −10 % 14–20 % |
+| Do 6 měsíců | model raket (celý svět), TOP 20, do ledgeru TOP 10 | 1. PDI.AX, 2. MLX.AX, 3. PNR.AX; raketa 24–49 %, propad 7–32 % |
+| Pravidlo řazení | vybrané na validaci; při shodě šance menší riziko poklesu | průměrný výnos TOP 20 proti týdnu ≈ 0 → vyšší šance na velký růst, ne jistota |
 
 ## HOTOVO (ověřeno testy — 109 testů prošlo 2026-10-05)
 
