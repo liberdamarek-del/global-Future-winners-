@@ -23,7 +23,7 @@ from stockradar.signals.regime import REGIME_FEATURES, label_from
 
 H = 10                          # obchodních dní ≈ 14 kalendářních
 UP, DOWN, BIG = 0.05, -0.05, 0.10
-HORIZONS = (1, 5, 10, 20, 60, 120)
+HORIZONS = (1, 5, 10, 20, 60, 120, 126)
 STEP_DAYS = 7
 MIN_TURNOVER, MIN_PRICE = 1_000_000, 2.0
 
@@ -49,12 +49,26 @@ FEATURE_GROUPS = {
     "kapital": ["ins_n30", "ins_val90", "bb_yield", "g13_90", "d13_180", "acc20"],
     "mechanismus": list(MECH_FEATURES),
 }
-ALL_FEATURES = {**PRICE_FEATURES, **RS_FEATURES, **REGIME_FEATURES, **FUND_FEATURES, **EXTRA_FEATURES, **MECH_FEATURES}
+# 6 měsíců (SIGNAL_6M): vzorec „základny“ (dlouho do strany u supportu — popis uživatele 2026-10-06) a kauzální vítr
+# z komodit (causal/chains.py). V modelech na 14 dní a 1 měsíc NEJSOU (jejich konfigurace a zamčené testy se nemění).
+BASE_FEATURES = {"range63": "Rozpětí ceny za 3 měsíce (malé = do strany)", "dist_low126": "Odstup od 6měsíčního minima (supportu)",
+                 "support_tests": "Testy supportu za 6 měsíců (dotyky do 3 % od minima)"}
+CAUSAL_FEATURES = {"wind4": "Kauzální vítr z komodit za měsíc (očekávaný pohyb oboru)",
+                   "wind13": "Kauzální vítr z komodit za 3 měsíce",
+                   "wind13_gap": "Kauzální vítr za 3 měsíce, který ještě není v ceně oboru"}
+ALL_FEATURES = {**PRICE_FEATURES, **RS_FEATURES, **REGIME_FEATURES, **FUND_FEATURES, **EXTRA_FEATURES, **MECH_FEATURES,
+                **BASE_FEATURES, **CAUSAL_FEATURES}
 MODEL_FEATURES = [f for g in FEATURE_GROUPS.values() for f in g]
+FEATURE_GROUPS_6M = {**FEATURE_GROUPS, "zakladna": list(BASE_FEATURES), "kauzalni": list(CAUSAL_FEATURES)}
+MODEL_FEATURES_6M = [f for g in FEATURE_GROUPS_6M.values() for f in g]
 LABELS = ("up5", "down5", "big", "beat_sec")
 # 1 měsíc (20 obchodních dní): ±10 %, prudký pohyb ±20 %, proti oboru — samostatný model SIGNAL_1M
 H_1M, UP_1M, DOWN_1M, BIG_1M = 20, 0.10, -0.10, 0.20
 LABELS_1M = ("up10_20", "down10_20", "big20_20", "beat_sec_20")
+# 6 měsíců (126 obchodních dní): +40 % / −25 %, prudký pohyb ±50 % během období, proti oboru — model SIGNAL_6M
+H_6M, UP_6M, DOWN_6M, BIG_6M = 126, 0.40, -0.25, 0.50
+LABELS_6M = ("up40_126", "down25_126", "big50_126", "beat_sec_126")
+ALL_LABELS = LABELS + LABELS_1M + LABELS_6M
 
 
 def keep(symbol: str, day: int, share: float) -> bool:
@@ -66,10 +80,11 @@ class SPanel:
     def __init__(self, features: list[str]):
         self.features = features
         self.cols = {f: array("d") for f in features}
-        self.y = {k: array("b") for k in LABELS + LABELS_1M}
+        self.y = {k: array("b") for k in ALL_LABELS}
         self.fwd = {h: array("d") for h in HORIZONS}
         self.ex_sec = array("d")
         self.ex_sec_20 = array("d")
+        self.ex_sec_126 = array("d")
         self.main_h = H                    # hlavní horizont (pro výnosy v pásmech a analogiích)
         self.day = array("i")
         self.sym: list[str] = []
@@ -84,13 +99,14 @@ class SPanel:
         for k in self.features:
             v = f.get(k)
             self.cols[k].append(nan if v is None else float(v))
-        for k in LABELS + LABELS_1M:
+        for k in ALL_LABELS:
             self.y[k].append(-1 if lab is None or lab.get(k) is None else int(lab[k]))
         for h in HORIZONS:
             v = lab.get(f"fwd_{h}") if lab else None
             self.fwd[h].append(nan if v is None else v)
         self.ex_sec.append(nan if lab is None or lab.get("ex_sec") is None else lab["ex_sec"])
         self.ex_sec_20.append(nan if lab is None or lab.get("ex_sec_20") is None else lab["ex_sec_20"])
+        self.ex_sec_126.append(nan if lab is None or lab.get("ex_sec_126") is None else lab["ex_sec_126"])
         self.day.append(day)
         self.sym.append(sym)
         self.group.append(group)
@@ -113,6 +129,11 @@ def fwd_labels(c, i: int) -> dict | None:
         hi20 = max(c[i + 1:i + H_1M + 1]) / c[i] - 1
         lo20 = min(c[i + 1:i + H_1M + 1]) / c[i] - 1
         out.update({"up10_20": r20 >= UP_1M, "down10_20": r20 <= DOWN_1M, "big20_20": max(hi20, -lo20) >= BIG_1M})
+    if out.get("fwd_126") is not None:
+        r6 = out["fwd_126"]
+        hi6 = max(c[i + 1:i + H_6M + 1]) / c[i] - 1
+        lo6 = min(c[i + 1:i + H_6M + 1]) / c[i] - 1
+        out.update({"up40_126": r6 >= UP_6M, "down25_126": r6 <= DOWN_6M, "big50_126": max(hi6, -lo6) >= BIG_6M})
     return out
 
 
@@ -155,7 +176,7 @@ def snapshot(data: study.Data, day: int, ptr: dict | None = None) -> dict:
     for sym, j in idx.items():
         s = data.secs[sym]
         c = s.prep.bars.closes
-        g = per_group.setdefault(s.group, {"r5": [], "r20": [], "r60": [], "f10": [], "f20": []})
+        g = per_group.setdefault(s.group, {"r5": [], "r20": [], "r60": [], "f10": [], "f20": [], "f126": []})
         for n, key in ((5, "r5"), (20, "r20"), (60, "r60")):
             if c[j - n] > 0:
                 g[key].append(c[j] / c[j - n] - 1)
@@ -163,13 +184,28 @@ def snapshot(data: study.Data, day: int, ptr: dict | None = None) -> dict:
             g["f10"].append(c[j + H] / c[j] - 1)
         if j + H_1M < len(c) and c[j] > 0:
             g["f20"].append(c[j + H_1M] / c[j] - 1)
+        if j + H_6M < len(c) and c[j] > 0:
+            g["f126"].append(c[j + H_6M] / c[j] - 1)
     med = {g: {k: (statistics.median(v) if len(v) >= 5 else None) for k, v in vals.items()} for g, vals in per_group.items()}
     allr20 = [data.secs[s].prep.bars.closes[j] / data.secs[s].prep.bars.closes[j - 20] - 1 for s, j in idx.items()
               if data.secs[s].prep.bars.closes[j - 20] > 0]
     return {"idx": idx, "rate": rate_of, "med": med, "mkt_r20": statistics.median(allr20) if allr20 else None}
 
 
-def sample(data, s, j, rate, snap, fund, extra, regime_f) -> dict | None:
+def base_features(c, j: int) -> dict:
+    """Vzorec „základny“: jak úzce se cena 3 měsíce drží, jak daleko je od 6měsíčního minima a kolikrát ho testovala."""
+    if j < 126:
+        return {}
+    w63 = c[j - 63:j + 1]
+    lo = min(c[j - 126:j + 1])
+    if lo <= 0 or min(w63) <= 0:
+        return {}
+    touch = [k for k in range(j - 126, j + 1) if c[k] <= lo * 1.03]
+    tests = 1 + sum(1 for a, b in zip(touch, touch[1:]) if b - a >= 10)
+    return {"range63": max(w63) / min(w63) - 1, "dist_low126": c[j] / lo - 1, "support_tests": float(tests)}
+
+
+def sample(data, s, j, rate, snap, fund, extra, regime_f, causal=None) -> dict | None:
     f = features_at(s.prep, j, rate)
     if f is None:
         return None
@@ -186,10 +222,13 @@ def sample(data, s, j, rate, snap, fund, extra, regime_f) -> dict | None:
     fu = fund.features(s.symbol, day, c[j] * rate)
     f.update(fu)
     f.update(extra.features(s.symbol, s.prep.bars, j, c[j] * rate, fu.get("log_mcap")))
+    f.update(base_features(c, j))
+    if causal is not None:
+        f.update(causal.features(s.group, day))
     return f
 
 
-def build(data: study.Data, fund, extra, regime, *, shares: dict, log=print) -> SPanel:
+def build(data: study.Data, fund, extra, regime, *, shares: dict, log=print, causal=None) -> SPanel:
     """shares: funkce den → podíl vzorkovaných akcií (víc v obdobích pro validaci a test)."""
     panel = SPanel(list(ALL_FEATURES))
     ptr: dict[str, int] = {}
@@ -203,7 +242,7 @@ def build(data: study.Data, fund, extra, regime, *, shares: dict, log=print) -> 
             if share <= 0 or not keep(sym, day, share):
                 continue
             s = data.secs[sym]
-            f = sample(data, s, j, snap["rate"][sym], snap, fund, extra, rf)
+            f = sample(data, s, j, snap["rate"][sym], snap, fund, extra, rf, causal)
             if f is None:
                 continue
             lab = fwd_labels(s.prep.bars.closes, j)
@@ -216,6 +255,10 @@ def build(data: study.Data, fund, extra, regime, *, shares: dict, log=print) -> 
                 if m20 is not None and lab.get("fwd_20") is not None:
                     lab["ex_sec_20"] = lab["fwd_20"] - m20
                     lab["beat_sec_20"] = lab["ex_sec_20"] > 0
+                m126 = snap["med"].get(s.group, {}).get("f126")
+                if m126 is not None and lab.get("fwd_126") is not None:
+                    lab["ex_sec_126"] = lab["fwd_126"] - m126
+                    lab["beat_sec_126"] = lab["ex_sec_126"] > 0
             panel.add(sym, day, s.group, rlabel, f, lab)
         if n % 25 == 0:
             log(f"panel {study.day_str(day)}: {len(panel)} vzorků")

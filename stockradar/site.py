@@ -349,6 +349,7 @@ def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
 
 
 SIGNAL_MODELS = (("SIGNAL_14D", "h14"), ("SIGNAL_1M", "h1m"))
+SIGNAL_ANALYTICS = SIGNAL_MODELS + (("SIGNAL_6M", "h6m"),)      # testy všech modelů (6 měsíců má vlastní žebříček)
 
 
 def _latest_signal_run(conn, name: str):
@@ -384,7 +385,7 @@ def _trim_card(c: dict) -> dict:
 def build_signals_doc(conn: sqlite3.Connection) -> dict | None:
     """Dokument stav/signaly — jak se modely testují (protokol, zamčený test, trh, mechanismy). Karty jsou v žebříčku."""
     models = {}
-    for name, _ in SIGNAL_MODELS:
+    for name, _ in SIGNAL_ANALYTICS:
         run = _latest_signal_run(conn, name)
         if run is None:
             continue
@@ -469,10 +470,71 @@ def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
     return out or None
 
 
+def build_zebricek6m_doc(conn: sqlite3.Connection) -> dict | None:
+    """Dokument stav/zebricek6m — „Vítězové do 6 měsíců“ z modelu SIGNAL_6M: všechny firmy + zvlášť velké (≥ 10 mld. USD)."""
+    from stockradar.signals.store import history
+    run = _latest_signal_run(conn, "SIGNAL_6M")
+    if run is None:
+        return None
+    full = json.loads(run["result_json"])
+    test = full.get("zamceny_test") or {}
+    cards = full.get("karty", [])
+    pick = lambda key: [_trim_card(c) | {"historie": [h for h in history(conn, c["ticker"]) if h["den"] < c["den_ceny"]][:3]}
+                        for c in sorted((c for c in cards if c.get(key)), key=lambda c: c[key])[:20]]
+    return {"model": "SIGNAL_6M", "horizont": full.get("horizont"), "data_do": run["data_through"], "probehlo": run["run_at"],
+            "prah_rust": full.get("prah_rust"), "prah_pokles": full.get("prah_pokles"), "akcii": (full.get("dnes") or {}).get("akcii"),
+            "trh": "USA (data SEC)", "razeni": full.get("razeni"), "zaklad": full.get("zaklad"), "xtb": full.get("xtb"),
+            "silnych": (full.get("dnes") or {}).get("rozhodnuti", {}).get("RŮST"),
+            "test": {"auc_rust": (test.get("up5") or {}).get("auc"), "auc_pokles": (test.get("down5") or {}).get("auc"),
+                     "zaklad_rust": (test.get("up5") or {}).get("zaklad"), "zaklad_pokles": (test.get("down5") or {}).get("zaklad"),
+                     "horni_desetina": test.get("horni_desetina"), "dolni_desetina": test.get("dolni_desetina"),
+                     "stav": test.get("_stav")},
+            "firmy": pick("poradi"), "velke": pick("poradi_velke"),
+            "vyhnout": [_trim_card(c) for c in cards if not c.get("poradi") and not c.get("poradi_velke")
+                        and c.get("final") == "POKLES"][:5]}
+
+
+def build_causal_doc(conn: sqlite3.Connection) -> dict | None:
+    """Dokument stav/kauzalni — poslední kauzální radar (karty událostí, řetězce, příležitosti, test řetězců)."""
+    r = conn.execute("SELECT * FROM causal_runs ORDER BY id DESC LIMIT 1").fetchone()
+    if r is None:
+        return None
+    full = json.loads(r["result_json"])
+    cards = []
+    for c in full.get("karty", []):
+        z = dict(c.get("zpravy") or {})
+        z["titulky"] = (z.get("titulky") or [])[:3]
+        cards.append(c | {"retez": (c.get("retez") or [])[:10], "zpravy": z, "udalosti": (c.get("udalosti") or [])[:3]})
+    reg = full.get("test_retezcu") or {}
+    lt = reg.get("zamceny_test") or {}
+    return {"beh": {"id": r["id"], "probehlo": r["run_at"], "data_do": r["data_through"], "verze": r["app_version"]},
+            "princip": full.get("princip"), "karty": cards, "prilezitosti": full.get("prilezitosti", [])[:20],
+            "historie": full.get("historie"), "gdacs": full.get("gdacs"), "vysledky": full.get("vysledky"),
+            "test": {"konfigurace": reg.get("konfigurace"), "pokusu": reg.get("pokusu"),
+                     "vyhodnoceno": lt.get("_vyhodnoceno"),
+                     "empiricke": {k: (lt.get("empiricke") or {}).get(k) for k in ("uz_v_cene_4t", "1t", "4t", "13t", "26t")},
+                     "logicke_rad1": {k: (lt.get("logicke_rad1") or {}).get(k) for k in ("1t", "4t", "13t")},
+                     "logicke_rad2_3": {k: (lt.get("logicke_rad2_3") or {}).get(k) for k in ("1t", "4t", "13t")},
+                     "placebo": lt.get("placebo")}}
+
+
+def write_causal_doc(conn: sqlite3.Connection, web_dir: Path) -> int:
+    doc = build_causal_doc(conn)
+    if doc is None:
+        return 0
+    web_dir.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
+    if len(text.encode()) > DOC_LIMIT:
+        raise ValueError(f"dokument kauzalni má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
+    (web_dir / "stav_kauzalni.json").write_text(text, encoding="utf-8")
+    return len(text.encode())
+
+
 def write_signals_doc(conn: sqlite3.Connection, web_dir: Path) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
     sizes = {}
-    for name, doc in (("signaly", build_signals_doc(conn)), ("zebricek", build_zebricek_doc(conn))):
+    for name, doc in (("signaly", build_signals_doc(conn)), ("zebricek", build_zebricek_doc(conn)),
+                      ("zebricek6m", build_zebricek6m_doc(conn))):
         if doc is None:
             continue
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
@@ -499,6 +561,12 @@ def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[s
     ranking = build_zebricek_doc(conn)
     if ranking is not None:
         docs["zebricek"] = ranking
+    ranking6 = build_zebricek6m_doc(conn)
+    if ranking6 is not None:
+        docs["zebricek6m"] = ranking6
+    causal = build_causal_doc(conn)
+    if causal is not None:
+        docs["kauzalni"] = causal
     for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:

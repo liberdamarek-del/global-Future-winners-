@@ -153,3 +153,25 @@ def test_ranking_rule_from_validation():
     order = [x["t"] for x in sorted(live, key=run.rank_key, reverse=True)]
     # stejná šance na růst → přednost menšímu riziku poklesu; víc poklesu než růstu → na konec
     assert order == ["CALM", "VOLATILE", "LOWER", "DOWN"]
+
+
+def test_six_month_model_labels_splits_and_frozen_neighbours():
+    c = [100.0] * 260 + [100 + 0.4 * i for i in range(1, 127)] + [150.0] * 10
+    lab = panel.fwd_labels(c, 259)
+    assert lab["up40_126"] and not lab["down25_126"] and lab["big50_126"]           # +50 % za půl roku
+    # mezera ~půl roku mezi obdobími, bez POST (výsledky po testu ještě nejsou známé)
+    assert M.split_of(date(2024, 1, 10).toordinal(), 185, False) == "TRAIN"
+    assert M.split_of(date(2024, 3, 1).toordinal(), 185, False) is None
+    assert M.split_of(date(2025, 3, 1).toordinal(), 185, False) is None
+    assert M.split_of(date(2026, 3, 20).toordinal(), 185, False) == "LOCKED_TEST"
+    assert M.split_of(date(2026, 6, 1).toordinal(), 185, False) is None
+    assert set(panel.BASE_FEATURES) <= set(M.features_of("SIGNAL_6M"))
+    assert not set(panel.CAUSAL_FEATURES) & set(M.features_of("SIGNAL_1M"))
+    # model na 1 měsíc má stále stejný otisk (jeho zamčený test už proběhl)
+    assert M.config_hash(list(panel.MODEL_FEATURES), "SIGNAL_1M") == "bbe4e6a6613a4812"
+
+
+def test_base_pattern_features():
+    c = [100.0] * 60 + [80.0 if i % 25 == 0 else 86.0 for i in range(140)]     # 3 měsíce do strany, support 80 USD
+    f = panel.base_features(c, len(c) - 1)
+    assert f["support_tests"] >= 5 and f["range63"] < 0.1 and f["dist_low126"] == pytest.approx(0.075)

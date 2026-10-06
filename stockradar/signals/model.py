@@ -56,7 +56,17 @@ SPECS = {
                    "labels": dict(zip(TARGETS, ("up5", "down5", "beat_sec", "big"))), "ex_sec": "ex_sec"},
     "SIGNAL_1M": {"nazev": "1 měsíc", "h": P.H_1M, "up": P.UP_1M, "down": P.DOWN_1M, "big": P.BIG_1M, "gap": 33,
                   "labels": dict(zip(TARGETS, ("up10_20", "down10_20", "beat_sec_20", "big20_20"))), "ex_sec": "ex_sec_20"},
+    # 6 měsíců: mezera ~půl roku mezi obdobími (cíle na 126 obchodních dní se nesmí překrývat); data po testu ještě
+    # nemají známý výsledek → žádné období POST, kalibrace z validace prvního modelu
+    "SIGNAL_6M": {"nazev": "6 měsíců", "h": P.H_6M, "up": P.UP_6M, "down": P.DOWN_6M, "big": P.BIG_6M, "gap": 185,
+                  "post": False, "features": "6M", "rank": "up",
+                  "labels": dict(zip(TARGETS, ("up40_126", "down25_126", "beat_sec_126", "big50_126"))),
+                  "ex_sec": "ex_sec_126"},
 }
+
+
+def features_of(model_name: str) -> list[str]:
+    return list(P.MODEL_FEATURES_6M if SPECS[model_name].get("features") == "6M" else P.MODEL_FEATURES)
 
 
 class HorizonView:
@@ -79,16 +89,17 @@ def view(panel, model_name: str):
     return panel if model_name == "SIGNAL_14D" else HorizonView(panel, SPECS[model_name])
 
 
-def split_of(day: int, gap: int | None = None) -> str | None:
-    """gap = mezera v kalendářních dnech před začátkem dalšího období (delší horizont → delší mezera)."""
+def split_of(day: int, gap: int | None = None, post: bool = True) -> str | None:
+    """gap = mezera v kalendářních dnech před začátkem dalšího období (delší horizont → delší mezera).
+    post=False: model bez období POST (6 měsíců) — test končí TEST[1], po něm nic."""
     if gap:
         if day <= min(TRAIN_END, VAL[0] - gap):
             return "TRAIN"
         if VAL[0] <= day <= min(VAL[1], TEST[0] - gap):
             return "VALIDATION"
-        if TEST[0] <= day <= min(TEST[1], POST_START - gap):
+        if TEST[0] <= day <= (TEST[1] if not post else min(TEST[1], POST_START - gap)):
             return "LOCKED_TEST"
-        return "POST" if day >= POST_START else None
+        return "POST" if post and day >= POST_START else None
     return _split_14d(day)
 
 
@@ -118,6 +129,8 @@ def config_hash(features: list[str], model_name: str = "SIGNAL_14D") -> str:
            "l2": rocket.L2, "sweeps": rocket.SWEEPS, "universe": [P.MIN_TURNOVER, P.MIN_PRICE], "step": P.STEP_DAYS}
     if model_name != "SIGNAL_14D":            # 14 dní: přesně původní otisk (zamčený test už proběhl)
         cfg.update({"model": model_name, "gap": spec["gap"], "labels": spec["labels"]})
+    if "post" in spec:                        # 6 měsíců (1 měsíc beze změny otisku)
+        cfg.update({"post": spec["post"], "overlap_t": "sqrt(h/5)"})
     return hashlib.sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -141,7 +154,10 @@ def weekly_t(panel: P.SPanel, rows, values) -> float | None:
     if len(m) < 3:
         return None
     sd = statistics.stdev(m)
-    return round(statistics.fmean(m) / (sd / math.sqrt(len(m))), 2) if sd > 0 else None
+    # 6 měsíců: týdenní vzorky s výsledkem na 26 týdnů se překrývají → t konzervativně / sqrt(h/5)
+    # (14 dní a 1 měsíc beze změny — jejich zamčené testy byly vyhodnoceny bez korekce)
+    ov = math.sqrt(panel.main_h / 5) if getattr(panel, "main_h", 10) > 20 else 1.0
+    return round(statistics.fmean(m) / (sd / math.sqrt(len(m))) / ov, 2) if sd > 0 else None
 
 
 def p_from_t(t: float | None) -> float | None:

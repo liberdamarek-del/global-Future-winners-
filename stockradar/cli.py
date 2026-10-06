@@ -235,6 +235,9 @@ def cmd_signals(args) -> int:
             print(f"openinsider: {len(recent)} nákupů od {start}")
         except Exception as exc:
             print(f"openinsider nedostupný: {exc}")
+    if not args.no_download:              # ceny komodit pro kauzální znaky modelu na 6 měsíců (Yahoo, zdarma)
+        from stockradar.causal import data as cdata
+        cdata.download(cconn, log=log)
     from stockradar.sources import xtb
     checker = xtb.Checker(cconn)          # do žebříčku jen akcie z nabídky XTB (rozhodnutí uživatele 2026-10-05)
     res = srun.run(cconn, conn, log=log, with_news=not args.no_news, recent_insiders=recent, workers=args.workers,
@@ -258,6 +261,59 @@ def cmd_signals(args) -> int:
     export_state(conn, state_dir())
     sizes = write_signals_doc(conn, web_dir())
     print(f"Vyhodnoceno dřívějších karet: {len(evaluated)}; web: " + ", ".join(f"{k} {v // 1024} kB" for k, v in sizes.items()))
+    _print_email_today(conn)
+    return 0
+
+
+def cmd_causal(args) -> int:
+    """Kauzální radar: komodity → citlivost oborů → test řetězců (zamčený jednou) → události → karty → web."""
+    from datetime import date as _date
+
+    from stockradar.causal import chains, data as cdata, events, radar
+    from stockradar.causal import store as cstore
+    from stockradar.causal.exposure import build_exposure, build_weekly
+    from stockradar.discovery import cache as dcache, study
+    from stockradar.signals import model as sm
+    from stockradar.site import write_causal_doc
+    from stockradar.sources import xtb
+
+    conn = _open()
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    if not args.no_download:
+        cdata.download(cconn, log=log)
+    data = study.load_data(cconn)
+    comm = cdata.load(cconn)
+    weekly = build_weekly(data, comm, log=log)
+    ex = build_exposure(weekly)
+    periods = {"UCENI": (0, sm.TRAIN_END), "VALIDACE": sm.VAL, "TEST": sm.TEST}
+    st = chains.study(ex, periods, log=log)
+    reg = cstore.record_study(conn, st, periods)
+    today = _date.fromordinal(data.data_end)
+    try:
+        gd = events.gdacs(_date.today())
+    except Exception as exc:
+        log(f"GDACS nedostupný: {exc}")
+        gd = []
+    links = events.link_gdacs(gd)
+    pulses = {} if args.no_news else {c: events.news_pulse(c, _date.today()) for c in comm}
+    secs = [dict(r) for r in cconn.execute("SELECT symbol, name, industry, market_cap_usd FROM securities"
+                                           " WHERE symbol NOT LIKE '%.%'")]
+    checker = xtb.Checker(cconn)
+    res = radar.build(ex, comm, today, gdacs_links=links, pulses=pulses, securities=secs, study=st,
+                      xtb_check=checker.check)
+    res["test_retezcu"] = reg
+    res["gdacs"] = {"udalosti": len(gd), "navazane_komodity": sorted(links)}
+    evaluated = cstore.evaluate(conn, weekly)
+    res["vysledky"] = cstore.scorecard(conn)
+    run_id = cstore.save_run(conn, res)
+    ids = cstore.save_forecasts(conn, run_id, res)
+    export_state(conn, state_dir())
+    size = write_causal_doc(conn, web_dir())
+    t = (reg.get("zamceny_test") or {}).get("empiricke") or {}
+    print(f"Kauzální radar (běh #{run_id}): karet {len(res['karty'])}, příležitostí {len(res['prilezitosti'])}, "
+          f"nových predikcí {len(ids)}, vyhodnoceno {len(evaluated)}; GDACS {len(gd)} výstrah; "
+          f"test řetězců za 13 týdnů {(t.get('13t') or {}).get('prumer')} (t {(t.get('13t') or {}).get('t')}); web {size // 1024} kB")
     _print_email_today(conn)
     return 0
 
@@ -423,6 +479,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_sig.add_argument("--no-news", action="store_true", help="bez titulků (novost a kvalita informací)")
     p_sig.add_argument("--workers", type=int, default=4, help="počet procesů pro učení")
     p_sig.set_defaults(func=cmd_signals)
+    p_cau = sub.add_parser("causal", help="kauzální radar: událost → komodita → obory → firmy (+ test řetězců)")
+    p_cau.add_argument("--no-download", action="store_true", help="bez stažení cen komodit")
+    p_cau.add_argument("--no-news", action="store_true", help="bez zpráv o narušení (Google News)")
+    p_cau.set_defaults(func=cmd_causal)
     p_email = sub.add_parser("email", help="kolikrát a kde byl použit e-mail uživatele")
     p_email.add_argument("--days", type=int, default=14)
     p_email.set_defaults(func=cmd_email)

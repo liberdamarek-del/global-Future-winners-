@@ -135,7 +135,7 @@ def catalysts_for(sym, fund, cache_conn, main_conn, today: int) -> list[dict]:
 
 
 def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool = True, recent_insiders=None,
-        models: tuple[str, ...] = ("SIGNAL_14D", "SIGNAL_1M"), xtb_check=None) -> dict:
+        models: tuple[str, ...] = ("SIGNAL_14D", "SIGNAL_1M", "SIGNAL_6M"), xtb_check=None) -> dict:
     """Jeden panel, víc modelů (14 dní, 1 měsíc). Každý model má vlastní konfiguraci a vlastní zamčený test.
 
     `xtb_check(symbol, name)` (sources.xtb.Checker.check): do žebříčku jen akcie, které XTB nabízí (uživatel 2026-10-05)."""
@@ -149,7 +149,8 @@ def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool =
                   lambda s: data.secs[s].prep.bars if s in data.secs else None, recent_insiders=recent_insiders)
     regime = Regime.from_db(main_conn)
     lg(f"Data: {len(data.secs)} firem, z toho US {len(us)}; insideři ze SEC do {_day(extra.insider_source_end)}")
-    panel = P.build(data, fund, extra, regime, shares=M.share_for, log=lg)
+    causal = build_causal(cache_conn, data, log=lg) if any(M.SPECS[m].get("features") == "6M" for m in models) else None
+    panel = P.build(data, fund, extra, regime, shares=M.share_for, log=lg, causal=causal)
     # dnešní znaky (společné pro všechny modely)
     today = data.data_end
     snap = P.snapshot(data, today)
@@ -160,7 +161,7 @@ def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool =
         s = data.secs[sym]
         if today - s.prep.bars.days[j] > 4:
             continue
-        f = P.sample(data, s, j, snap["rate"][sym], snap, fund, extra, rf)
+        f = P.sample(data, s, j, snap["rate"][sym], snap, fund, extra, rf, causal)
         if f is not None:
             live_f.append((sym, j, f))
     shared = {"data": data, "fund": fund, "extra": extra, "regime": regime, "today": today, "rlabel": rlabel,
@@ -179,13 +180,13 @@ def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news
     spec = M.SPECS[name]
     pv = M.view(panel, name)
     data, fund, regime, today, rlabel = sh["data"], sh["fund"], sh["regime"], sh["today"], sh["rlabel"]
-    feats = list(P.MODEL_FEATURES)
+    feats = M.features_of(name)
     cfg = M.config_hash(feats, name)
     split = {"TRAIN": [], "VALIDATION": [], "LOCKED_TEST": [], "POST": [], "LIVE": []}
     labeled = [k for k in range(len(pv)) if pv.y["up5"][k] >= 0]
     last_labeled = max((pv.day[k] for k in labeled), default=0)
     for k in labeled:
-        s = M.split_of(pv.day[k], spec["gap"])
+        s = M.split_of(pv.day[k], spec["gap"], spec.get("post", True))
         if s:
             split[s].append(k)
     log(f"{name}: " + ", ".join(f"{k} {len(v)} ({M.n_independent(pv, v)} nezávislých)" for k, v in split.items() if v))
@@ -254,37 +255,46 @@ def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news
         x["dec"], x["why"] = C.decide(x["pred"], x["conf"], ctx2.base, sm2, ref_today)
     log(f"{name} dnes ({_day(today)}): {len(live)} akcií, rozhodnutí " +
         str({d: sum(1 for x in live if x["dec"] == d) for d in ("RŮST", "POKLES", "NEVÍM")}))
-    dist = {g: sorted(x["contrib"][g] for x in live) for g in P.FEATURE_GROUPS}
+    dist = {g: sorted(x["contrib"][g] for x in live) for g in C.groups_for(feats)}
     gap_sorted = sorted(x["f"]["gap"] for x in live if C.finite(x["f"].get("gap")))
     # pořadí žebříčku: šance na růst, ale jen u akcií, kde model vidí víc růstu než poklesu (vybráno na VALIDACI
     # 2026-10-05 ze 3 předem daných pravidel podle týdenních TOP 20: nejvyšší šance na růst při riziku poklesu blízko
     # průměru; zamčený test se k výběru nepoužil)
-    by_dir = sorted(live, key=rank_key, reverse=True)
-    top, xtb_info = pick_tradable(by_dir, sh["xtb_check"], lambda x: data.secs[x["sym"]].meta.get("name"), TOP_RANK)
+    rkey, rrule = (rank_key_up, RANK_RULE_UP) if spec.get("rank") == "up" else (rank_key, RANK_RULE)
+    by_dir = sorted(live, key=rkey, reverse=True)
+    name_of = lambda x: data.secs[x["sym"]].meta.get("name")
+    top, xtb_info = pick_tradable(by_dir, sh["xtb_check"], name_of, TOP_RANK)
     log(f"{name}: XTB — {xtb_info}")
+    large = []
+    if spec.get("features") == "6M":        # „další Microsoft“: zvlášť velké firmy (kapitalizace ≥ 10 mld. USD)
+        big = [x for x in by_dir if (x["f"].get("log_mcap") or 0) >= LARGE_LOG_MCAP]
+        large, large_info = pick_tradable(big, sh["xtb_check"], name_of, TOP_RANK)
+        xtb_info["velke_firmy"] = large_info
     worst = sorted(live, key=lambda x: (x["pred"]["dir"], -x["pred"]["down5"]))
-    chosen = top + [x for x in worst if x not in top][:TOP_DOWN]
+    chosen = top + [x for x in large if x not in top]
+    chosen += [x for x in worst if x not in chosen][:TOP_DOWN]
     analogs = C.Analogs(pv, hist + po)
     cards = []
     for pos, x in enumerate(chosen):
         c = build_card(x, data, fund, cache_conn, main_conn, sm2, ctx2, analogs, dist, gap_sorted, rlabel,
                        today, sh["sm_top"], with_news, spec, sh["news"])
         c["poradi"] = pos + 1 if pos < len(top) else None
+        c["poradi_velke"] = large.index(x) + 1 if x in large else None
         c["poradi_celkem"] = x.get("poradi_celkem")
-        c["xtb"] = xtb.badge(x.get("xtb_row")) if pos < len(top) and sh["xtb_check"] else None
+        c["xtb"] = xtb.badge(x.get("xtb_row")) if (x in top or x in large) and sh["xtb_check"] else None
         c["model"] = name
         cards.append(c)
     log(f"{name}: karty {len(cards)}")
     return {
         "vytvoreno": to_iso(utcnow()), "data_do": _day(today), "model": name, "horizont": spec["nazev"],
         "obchodnich_dni": spec["h"], "prah_rust": spec["up"], "prah_pokles": spec["down"], "prah_prudky": spec["big"],
-        "verze_modelu": M.MODEL_VERSION, "konfigurace": cfg, "razeni": RANK_RULE,
+        "verze_modelu": M.MODEL_VERSION, "konfigurace": cfg, "razeni": rrule,
         "protokol": {"train_do": _day(M.TRAIN_END), "validace": [_day(M.VAL[0]), _day(M.VAL[1])],
                      "zamceny_test": [_day(M.TEST[0]), _day(M.TEST[1])], "post": [_day(M.POST_START), _day(last_labeled)],
                      "mezera_dni": spec["gap"] or 21, "pokusu_na_testu": store.locked_attempts(main_conn, name)},
         "vzorky": {k: {"n": len(v), "nezavislych": M.n_independent(pv, v),
                        "tydnu": len({M.week(pv.day[kk]) for kk in v})} for k, v in split.items() if v},
-        "znaky": {g: [{"znak": f, "nazev": P.ALL_FEATURES[f]} for f in fs] for g, fs in P.FEATURE_GROUPS.items()},
+        "znaky": {g: [{"znak": f, "nazev": P.ALL_FEATURES[f]} for f in fs] for g, fs in C.groups_for(feats).items()},
         "meta_model": choice_detail, "kalibrace": {t: sm2.cal[t] for t in sm2.cal}, "pasma": sm2.bands,
         "zaklad": ctx2.base, "validace": val_metrics, "zamceny_test": test_metrics, "post": post_metrics,
         "mispricing_dukaz": gap_ev, "rezim": regime.describe(today),
@@ -308,7 +318,7 @@ def pick_tradable(ordered: list[dict], check, name_of, n: int, max_checks: int =
     """Prvních `n` firem v pořadí modelu, které XTB nabízí jako akcie (bez kontroly = prvních n). Pořadí se nemění,
     jen se přeskočí firmy mimo nabídku; každá vybraná nese své celkové pořadí (`poradi_celkem`)."""
     for pos, x in enumerate(ordered, 1):
-        x["poradi_celkem"] = pos
+        x.setdefault("poradi_celkem", pos)          # u podseznamu (velké firmy) zůstává pořadí v celém modelu
     if check is None:
         return ordered[:n], {"kontrola": False}
     chosen, skipped = [], {"NE": 0, "CFD": 0, "NEOVĚŘENO": 0}
@@ -325,6 +335,14 @@ def pick_tradable(ordered: list[dict], check, name_of, n: int, max_checks: int =
                     "preskoceno": skipped}
 
 
+LARGE_LOG_MCAP = math.log(10e9)
+
+
+def build_causal(cache_conn, data, *, log=print):
+    from stockradar.causal.chains import build_features
+    return build_features(cache_conn, data, log=log)
+
+
 RANK_RULE = "šance na růst; jen akcie, kde model vidí víc růstu než poklesu; při stejné šanci menší riziko poklesu"
 
 
@@ -334,6 +352,17 @@ def rank_key(x: dict) -> tuple:
     riziko poklesu. Řazení podle surového skóre vybíralo nejrozkolísanější akcie a na validaci ověřené nebylo."""
     p = x["pred"]
     return (p["up5"] if p["up5"] > p["down5"] else -1.0, p["dir"])
+
+
+RANK_RULE_UP = ("šance na růst o 40 % (pořadí podle skóre modelu); POZOR: u těchto firem je vyšší i riziko poklesu — "
+                "na validaci TOP 20 týdně: +40 % ve 14 % případů (běžně 6,5 %), −25 % ve 38 % (běžně 21 %)")
+
+
+def rank_key_up(x: dict) -> tuple:
+    """6 měsíců (vybráno na VALIDACI 2026-10-06 z 5 předem daných pravidel): jediné pravidlo, které zvýšilo šanci na
+    +40 % (2,2× základ); žádné pravidlo nezvýšilo šanci bez vyššího rizika pádu → riziko se vždy ukazuje vedle."""
+    p = x["pred"]
+    return (p["up5"], p["raw"]["up5"])
 
 
 def market_warning(ref: dict | None, base: dict) -> str:

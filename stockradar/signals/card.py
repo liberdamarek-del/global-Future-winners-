@@ -156,10 +156,16 @@ class Analogs:
 
 # ------------------------------------------------------------------ skóre složek (0–100 = percentil dnešních akcií)
 
+def groups_for(features) -> dict[str, list[str]]:
+    """Skupiny znaků, které model opravdu používá (6 měsíců má navíc „zakladna“ a „kauzalni“)."""
+    fs = set(features)
+    return {g: [x for x in feats if x in fs] for g, feats in P.FEATURE_GROUPS_6M.items() if any(x in fs for x in feats)}
+
+
 def contributions(sm: M.SignalModel, f: dict) -> dict[str, float]:
     """Příspěvek skupin znaků ke směru (růst − pokles) podle finálního globálního modelu."""
     cu, cd = sm.glob["up5"].contributions(f), sm.glob["down5"].contributions(f)
-    return {g: sum(cu.get(x, 0.0) - cd.get(x, 0.0) for x in feats) for g, feats in P.FEATURE_GROUPS.items()}
+    return {g: sum(cu.get(x, 0.0) - cd.get(x, 0.0) for x in feats) for g, feats in groups_for(sm.features).items()}
 
 
 def percentile(sorted_vals: list[float], v: float) -> int:
