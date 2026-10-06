@@ -80,9 +80,10 @@ def test_events_gdacs_and_news_pulse():
     assert "COCOA" in links and links["COCOA"][0]["vazba"].endswith("(NEOVĚŘENO)")
     assert "GOLD" not in links                                                         # sucho zlato neovlivní
     heads = [{"datum": "2026-10-04", "titulek": f"Cocoa farmers hit by drought story {i}", "zdroj": "Reuters"} for i in range(4)]
-    heads += [{"datum": "2026-09-10", "titulek": "Cocoa prices steady", "zdroj": "Reuters"}]
-    p = events.news_pulse("COCOA", date(2026, 10, 6), fetch=lambda q, a, b: heads, pause=0)
-    assert p["pribehu_7d"] >= 1 and p["pozornost"] >= 1
+    heads += [{"datum": "2026-09-02", "titulek": "Cocoa prices steady", "zdroj": "Reuters"}]
+    fetch = lambda q, a, b: [h for h in heads if a <= date.fromisoformat(h["datum"]) < b]
+    p = events.news_pulse("COCOA", date(2026, 10, 6), fetch=fetch, pause=0)
+    assert p["pribehu_7d"] >= 1 and p["pribehu_pred_mesicem"] == 1 and p["pozornost"] >= 1
 
 
 def test_radar_card_has_chain_priced_ratio_and_scenarios():
@@ -96,7 +97,7 @@ def test_radar_card_has_chain_priced_ratio_and_scenarios():
     card = res["karty"][0]
     assert card["komodita"] == "COPPER" and "cenový šok" in card["spoustec"]
     mm = next(x for x in card["retez"] if x["obor"] == "metal mining")
-    assert mm["smer"] == 1 and mm["dukaz"] in ("EMPIRICKY", "EMPIRICKY_I_LOGIKA") and mm["v_cene"] is not None
+    assert mm["smer"] == 1 and mm["dukaz"] == "EMPIRICKY_I_LOGIKA" and mm["v_cene"] is not None
     assert card["scenare"]["pripadu"] >= 4 and {"BASE", "POZITIVNI", "NEGATIVNI"} <= set(card["scenare"])
     assert res["prilezitosti"] and res["prilezitosti"][0]["firmy"][0]["ticker"] == "FCX"
 
@@ -106,11 +107,12 @@ def test_causal_records_are_append_only_and_evaluated(tmp_path):
     wk = _weekly(n=200)
     res = {"den": date.fromordinal(wk.weeks[150]).isoformat(), "prilezitosti": [
         {"komodita": "COPPER", "obor": "metal mining", "rad": 1, "smer": 1, "horizont_dni": 28, "ocekavany_pohyb": 0.03,
-         "v_cene": 0.2, "dukaz": "EMPIRICKY", "skore": 50.0},
+         "v_cene": 0.2, "dukaz": "EMPIRICKY_I_LOGIKA", "skore": 50.0},
+        {"komodita": "COPPER", "obor": "publishing", "rad": 1, "smer": 1, "horizont_dni": 28, "dukaz": "EMPIRICKY", "skore": 40.0},
         {"komodita": "COPPER", "obor": "restaurants", "rad": 3, "smer": -1, "horizont_dni": 90, "dukaz": "LOGIKA_NEOVERENO",
          "skore": 5.0}]}
     run_id = cstore.save_run(conn, res)
-    assert len(cstore.save_forecasts(conn, run_id, res)) == 1                         # jen s empirickou oporou
+    assert len(cstore.save_forecasts(conn, run_id, res)) == 1                         # jen data I logika
     assert cstore.save_forecasts(conn, run_id, res) == []                              # stejný den znovu nezapíše
     done = cstore.evaluate(conn, wk)
     assert len(done) == 1 and cstore.scorecard(conn)["vyhodnoceno"] == 1

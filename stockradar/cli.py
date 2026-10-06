@@ -300,9 +300,21 @@ def cmd_causal(args) -> int:
     secs = [dict(r) for r in cconn.execute("SELECT symbol, name, industry, market_cap_usd FROM securities"
                                            " WHERE symbol NOT LIKE '%.%'")]
     checker = xtb.Checker(cconn)
+    hist: dict[str, list[int]] = {}
+    seen_days = {_date.today().isoformat()}                 # jeden běh za den, dnešní běhy se do základu nepočítají
+    for r in conn.execute("SELECT run_at, result_json FROM causal_runs ORDER BY id DESC LIMIT 200"):
+        if r[0][:10] in seen_days:
+            continue
+        seen_days.add(r[0][:10])
+        for cid, n in (json.loads(r[1]).get("pulsy") or {}).items():     # počty zpráv u VŠECH komodit, ne jen karet
+            if n is not None:
+                hist.setdefault(cid, []).append(n)
+        if len(seen_days) > 31:
+            break
     res = radar.build(ex, comm, today, gdacs_links=links, pulses=pulses, securities=secs, study=st,
-                      xtb_check=checker.check)
+                      xtb_check=checker.check, pulse_history=hist)
     res["test_retezcu"] = reg
+    res["pulsy"] = {c: p.get("pribehu_7d") for c, p in pulses.items()}
     res["gdacs"] = {"udalosti": len(gd), "navazane_komodity": sorted(links)}
     evaluated = cstore.evaluate(conn, weekly)
     res["vysledky"] = cstore.scorecard(conn)

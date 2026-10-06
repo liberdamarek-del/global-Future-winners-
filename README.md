@@ -35,6 +35,24 @@ Od v0.8.0 jsou v žebříčku **jen akcie, které nabízí XTB** (rozhodnutí u�
 | Cache | `xtb_offer` v `data/market_cache.db`, platnost 30 dní; po 5 chybách sítě se dál nezkouší a firmy zůstanou neověřené (do žebříčku nejdou) |
 | Ledger | beze změny: predikce raket (TOP 10) se zapisují podle modelu bez ohledu na brokera, aby šlo poctivě měřit model |
 
+## Kauzální radar a model na 6 měsíců (v0.9.0)
+
+Svět → událost → komodita → obory → firmy. Výsledky: [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md).
+
+```bash
+python -m stockradar causal              # komodity (Yahoo), test řetězců, GDACS + zprávy, karty radaru, web stav/kauzalni
+python -m stockradar signals             # 14 dní, 1 měsíc a 6 měsíců (+40 % / −25 %, velké firmy zvlášť)
+```
+
+| Krok | Co dělá |
+|---|---|
+| Komodity | 26 futures a ukazatelů zdarma (ropa, plyn, kovy, uran, obilí, kakao, káva, doprava, dolar) |
+| Graf | komodita → výrobní země (NEOVĚŘENO) → obory 1.–3. řádu se směrem a důvodem |
+| Citlivost | beta oboru na komoditu jen z minulých 78 týdnů; prokázaná vazba \|t\| ≥ 2 (bez logiky ≥ 3) |
+| Test | šok komodity → obory za 1–26 týdnů vs náhodné dvojice; učení / validace / zamčený test |
+| Radar | karta: fakta (zdroje) → řetězec → „v ceně?“ → scénáře z historie → firmy (XTB); příležitost jen při shodě dat a logiky |
+| 6 měsíců | SIGNAL_6M: P(+40 %), P(−25 %), řazení podle šance na +40 %, riziko vždy vedle, POKLES mezi vítěze nepatří |
+
 ## Rychlý start
 
 Python 3.11+, bez externích závislostí.

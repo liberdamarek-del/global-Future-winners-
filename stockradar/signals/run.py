@@ -263,11 +263,14 @@ def run_model(name, panel, sh, cache_conn, main_conn, *, log, workers, with_news
     rkey, rrule = (rank_key_up, RANK_RULE_UP) if spec.get("rank") == "up" else (rank_key, RANK_RULE)
     by_dir = sorted(live, key=rkey, reverse=True)
     name_of = lambda x: data.secs[x["sym"]].meta.get("name")
-    top, xtb_info = pick_tradable(by_dir, sh["xtb_check"], name_of, TOP_RANK)
+    # 6 měsíců: do „vítězů“ nepatří akcie, které tentýž model označil POKLES (rozpor; v zamčeném testu POKLES = −25 %
+    # v 52 % případů). Pravidlo zavedeno 2026-10-06 po testu → je to ochrana proti rozporu, ne ověřená výhoda.
+    pool = [x for x in by_dir if x["dec"] != "POKLES"] if spec.get("rank") == "up" else by_dir
+    top, xtb_info = pick_tradable(pool, sh["xtb_check"], name_of, TOP_RANK)
     log(f"{name}: XTB — {xtb_info}")
     large = []
     if spec.get("features") == "6M":        # „další Microsoft“: zvlášť velké firmy (kapitalizace ≥ 10 mld. USD)
-        big = [x for x in by_dir if (x["f"].get("log_mcap") or 0) >= LARGE_LOG_MCAP]
+        big = [x for x in pool if (x["f"].get("log_mcap") or 0) >= LARGE_LOG_MCAP]
         large, large_info = pick_tradable(big, sh["xtb_check"], name_of, TOP_RANK)
         xtb_info["velke_firmy"] = large_info
     worst = sorted(live, key=lambda x: (x["pred"]["dir"], -x["pred"]["down5"]))

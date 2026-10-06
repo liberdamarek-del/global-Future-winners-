@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-05 · **Verze:** v0.8.0 · **Schema DB:** v6 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md)
+**Aktualizováno:** 2026-10-06 · **Verze:** v0.9.0 · **Schema DB:** v7 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -21,6 +21,8 @@
   sektor a země, první = nejsilnější kandidát), detail po rozkliknutí firmy; ostatní analýzy zůstávají sbalené.
 - 2026-10-05 (2): v žebříčku **jen akcie, které nabízí XTB** (broker uživatele nemá např. australské a japonské
   akcie); ověřuje se na xtb.com před zařazením. Ledger se nemění (XTB dál není podmínkou predikcí).
+- 2026-10-06: kauzální radar (svět → událost → komodita → obory → firmy) a „další Microsoft“ = firma s šancí na
+  ~+40 % za 6 měsíců (model SIGNAL_6M). Zpráva [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md).
 
 ## Stav analýz
 
@@ -92,7 +94,19 @@
 | Do 6 měsíců | model raket (celý svět); web: TOP z nabídky XTB, ledger: TOP 10 modelu beze změny | 19 firem (z prvních 151 v pořadí modelu; HBM.TO a HBM = jedna firma): 1. MGNX, 2. KOS, 3. IRWD, 4. Lasertec (6K8.DE), 5. Frontline (FRO.NO); model sám vede PDI.AX, MLX.AX, PNR.AX (XTB je nenabízí) |
 | Pravidlo řazení | vybrané na validaci; při shodě šance menší riziko poklesu | průměrný výnos TOP 20 proti týdnu ≈ 0 → vyšší šance na velký růst, ne jistota |
 
-## HOTOVO (ověřeno testy — 115 testů prošlo 2026-10-05)
+## Kauzální radar a model na 6 měsíců (v0.9.0, 2026-10-06)
+
+| Položka | Stav |
+|---|---|
+| Komodity | 26 z Yahoo (10/2021–10/2026); cukr Yahoo nevrací; GDELT blokován (HTTP 429) |
+| Citlivost | 125 oborů USA × 26 komodit, beta za 78 týdnů jen z minulosti; 456 vazeb s \|t\| ≥ 2 z 3 250 |
+| Test řetězců (`b3e10705103a8221`, zamčený test jednou) | v ceně do 4 týdnů +2,9 % (t 3,8); potom 13 týdnů +0,9 % (t 0,5) → bez zpožděné výhody; logika 2.–3. řádu opačný směr (t −2,4) |
+| Radar | běhy #1–#5: dnes 10 karet (3 cenové šoky: železná ruda, ocel, dolar; 7 GDACS = sledovat), 2 příležitosti (dolar ↑ → těžaři zlata a kovů ↓, v ceně 75–80 %); predikce jen při shodě dat a logiky |
+| SIGNAL_6M (`5703f7e451f2ff54`) | zamčený test: AUC +40 % 0,68, −25 % 0,75; dolní desetina −25 % v 57 % (t −4,0); horní desetina bez výhody |
+| Dnes (data k 2026-10-02) | všechny: KOS, ACDC, PUMP, NESR, DK…; velké: DINO, MPC, VLO, TWLO, QXO…; riziko pádu: LWLG, BW, SUNE, FCUV, HUT…; MSFT 2 457. z 3 673 |
+| Vzorec uživatele (základna u supportu) | 1 412 případů: medián 3 m +1,5 % vs +2,1 % → bez výhody |
+
+## HOTOVO (ověřeno testy — 124 testů prošlo 2026-10-06)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -111,16 +125,17 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `sources/xtb.py` | Nabídka XTB: symbol na domácí burze, pak jméno firmy (CRH → CRH.UK, Lasertec → 6K8.DE); akcie / CFD / NE; cache `xtb_offer` 30 dní; po 5 chybách sítě stop | `tests/unit/test_xtb.py` (6) |
+| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (7) |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
-| `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (12) |
+| `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (14) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 
 ## ROZPRACOVÁNO
 
 | Co | Stav |
 |---|---|
-| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
-| Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` + `update` + `diag` + jedno zlepšení kódu s testem + web |
+| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` + diag + výzkum + web (9 dokumentů), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
+| Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` (14 dní, 1 měsíc, 6 měsíců) + `update` + `causal` + `diag` + jedno zlepšení kódu s testem + web |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |
 

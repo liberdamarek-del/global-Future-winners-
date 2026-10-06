@@ -28,7 +28,7 @@ SEARCH = {"BRENT": "oil", "WTI": "crude oil", "NATGAS": "natural gas", "DIESEL":
           "STEEL": "steel", "PLATINUM": "platinum", "PALLADIUM": "palladium", "URANIUM": "uranium", "CORN": "corn",
           "WHEAT": "wheat", "SOY": "soybean", "COFFEE": "coffee", "COCOA": "cocoa", "SUGAR": "sugar", "COTTON": "cotton",
           "ORANGEJUICE": "orange juice", "CATTLE": "cattle", "HOGS": "hog", "LUMBER": "lumber", "DRYBULK": "shipping",
-          "USD": "dollar"}
+          "USD": "dollar index"}
 
 
 def _get(url: str, timeout: int = 30) -> bytes:
@@ -65,25 +65,27 @@ def link_gdacs(events: list[dict]) -> dict[str, list[dict]]:
 
 
 def news_pulse(cid: str, today: date, *, fetch=dnews.fetch_headlines, pause: float = 1.0) -> dict:
-    """Zprávy o narušení u komodity: nové příběhy za 7 dní vs. průměrný týden předchozích 30 dní."""
+    """Zprávy o narušení u komodity: nové příběhy za posledních 7 dní vs. stejně dlouhé okno o měsíc dřív.
+    Dvě stejně dlouhá okna — RSS vrací jen omezený počet nejnovějších titulků, delší okno by srovnání zkreslilo."""
     term = SEARCH.get(cid)
     if not term:
         return {"stav": "bez hledání"}
     query = f"\"{term}\" ({DISRUPT})" if " " in term else f"{term} ({DISRUPT})"
-    try:
-        heads = fetch(query, today - timedelta(days=37), today + timedelta(days=1))
-    except Exception as exc:
-        return {"stav": "DATA NEDOSTUPNÁ", "duvod": str(exc)[:120]}
-    finally:
-        if pause:
-            time.sleep(pause)
-    sts = snews.stories(heads)
-    cut = today - timedelta(days=7)
-    recent = [s for s in sts if date.fromisoformat(s["poprve"]) > cut]
-    older = [s for s in sts if date.fromisoformat(s["poprve"]) <= cut]
-    base_week = len(older) / (30 / 7) if older else 0.0
-    ratio = (len(recent) / base_week) if base_week > 0 else (float(len(recent)) if recent else 0.0)
+    windows = {"ted": (today - timedelta(days=7), today + timedelta(days=1)),
+               "pred_mesicem": (today - timedelta(days=37), today - timedelta(days=29))}
+    got = {}
+    for key, (a, b) in windows.items():
+        try:
+            # Google News u širokých dotazů časové okno ignoruje → titulky se filtrují podle data samy
+            got[key] = snews.stories([h for h in fetch(query, a, b) if a <= date.fromisoformat(h["datum"]) < b])
+        except Exception as exc:
+            return {"stav": "DATA NEDOSTUPNÁ", "duvod": str(exc)[:120]}
+        finally:
+            if pause:
+                time.sleep(pause)
+    recent, older = got["ted"], got["pred_mesicem"]
+    ratio = len(recent) / len(older) if older else float(len(recent))
     top = sorted(recent, key=lambda s: (-s["kvalita"], -s["kopii"]))[:4]
-    return {"stav": "AUTO (titulky Google News)", "pribehu_7d": len(recent), "pribehu_30d": len(older),
+    return {"stav": "AUTO (titulky Google News)", "pribehu_7d": len(recent), "pribehu_pred_mesicem": len(older),
             "pozornost": round(ratio, 2), "titulky": [{k: s.get(k) for k in ("poprve", "titulek", "nejlepsi_zdroj", "kvalita",
                                                                                "kopii", "url")} for s in top]}

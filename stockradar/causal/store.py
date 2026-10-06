@@ -53,7 +53,7 @@ def save_forecasts(conn, run_id: int, result: dict, *, now=None) -> list[int]:
     made = to_iso(now or utcnow())
     with conn:
         for o in result.get("prilezitosti", []):
-            if o["dukaz"] == "LOGIKA_NEOVERENO" or not o.get("smer"):
+            if o["dukaz"] != "EMPIRICKY_I_LOGIKA" or not o.get("smer"):
                 continue
             cur = conn.execute(
                 "INSERT OR IGNORE INTO causal_forecasts (run_id, made_at, price_date, commodity, industry, chain_order,"

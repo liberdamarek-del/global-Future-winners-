@@ -4,6 +4,42 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-06 · v0.9.0 — Kauzální radar (událost → komodita → obory → firmy) a model na 6 měsíců (+40 %)
+
+Důvod: zadání uživatele 2026-10-06 „GLOBAL CAUSAL IMPACT ENGINE“ a cíl „najít další Microsoft — firmu, která může za půl
+roku vyrůst o ~40 %“. Zpráva: [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md).
+
+| Soubor/modul | Změna |
+|---|---|
+| `causal/commodities.py` | 27 komodit a uzlů (ropa, plyn, kovy, uran, obilí, kakao, káva…), výrobní země (NEOVĚŘENO), řetězce dopadů na obory 1.–3. řádu se směrem a důvodem |
+| `causal/data.py` | Ceny komodit z Yahoo (futures, zdarma) do cache; 26 staženo, cukr Yahoo nevrací |
+| `causal/exposure.py` | Týdenní výnosy oborů nad trhem, citlivost (beta, t) obor × komodita jen z minulých 78 týdnů, šok (z-skóre) |
+| `causal/chains.py` | Historický test šok → obory za 1–26 týdnů, „už v ceně“, logika 1. a 2.–3. řádu, placebo; kauzální vítr jako znak |
+| `causal/events.py` | GDACS (katastrofy) a Google News (zprávy o narušení); GDELT z našeho serveru blokován (HTTP 429) |
+| `causal/radar.py`, `causal/store.py` | Karty událostí: fakta → řetězec → „v ceně?“ → scénáře z historie → firmy (XTB); příležitost jen při shodě dat a logiky; predikce a vyhodnocení (append-only) |
+| `migrations/0007_causal.sql` | `causal_runs`, `causal_forecasts`, `causal_outcomes` |
+| `signals/panel.py`, `model.py`, `run.py`, `card.py` | Model **SIGNAL_6M**: +40 % / −25 % za 126 obchodních dní; znaky „základna“ a kauzální vítr; půlroční mezery; konzervativní t; řazení podle šance na +40 % (validace); velké firmy zvlášť; POKLES se mezi vítěze nedává. Otisky 14D a 1M beze změny |
+| `cli.py` | `causal` (radar + test řetězců); `signals` stahuje ceny komodit a počítá i 6 měsíců |
+| `site.py`, `web/index.html` | Dokumenty `stav/zebricek6m` a `stav/kauzalni`; záložka „Události“; přepínač „Všechny / Velké firmy“; seznam nejvyššího rizika pádu |
+| `tests/unit/test_causal.py`, `test_signals.py` | +9 testů (graf, bez pohledu do budoucnosti, nalezení vloženého zpoždění, události, karta, záznam, 6M cíle a období) |
+
+**Výsledky:**
+
+- **Vzorec uživatele** (velká firma po propadu, do strany u supportu), 1 412 případů: medián za 3 měsíce +1,5 % (všechny
+  velké firmy +2,1 %) → bez výhody. U Microsoftu rozhodly výsledky 30. 7. (+15,5 % za den).
+- **Řetězce komodit** (zamčený test, 53 šoků, 950 vazeb): v ceně do 4 týdnů +2,9 % (t 3,8). Potom za 13 týdnů +0,9 %
+  (t 0,5) → trh započítá rychle. Logika 2.–3. řádu měla opačný směr (t −2,4).
+- **SIGNAL_6M** (zamčený test, 38 579 vzorků):
+  - AUC +40 % 0,68, −25 % 0,75.
+  - Dolní desetina: −25 % v 57 % případů, medián −35 % (t −4,0) → silné varování před pádem.
+  - Horní desetina: bez výhody (+40 % v 9,8 %, základ 13,6 %).
+
+**Chyby nalezené během práce:**
+- Radar v prvních bězích ukazoval náhodné vazby („železná ruda → farmacie“) → příležitost jen při shodě dat a logiky.
+- Samotná výstraha GDACS ve výrobní zemi → jen „sledovat“.
+- Google News ignoroval časové okno → filtr podle data a základ pozornosti z vlastní historie.
+- Na mobilu přebíjely styly atribut `hidden` → opraveno.
+
 ## 2026-10-05 · v0.8.0 — Žebříček jen z akcií, které nabízí XTB
 
 Důvod: uživatel 2026-10-05 — jeho broker (XTB) nenabízí např. australské a japonské akcie. Chce, aby se dostupnost

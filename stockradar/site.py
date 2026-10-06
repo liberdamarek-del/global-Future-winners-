@@ -479,8 +479,10 @@ def build_zebricek6m_doc(conn: sqlite3.Connection) -> dict | None:
     full = json.loads(run["result_json"])
     test = full.get("zamceny_test") or {}
     cards = full.get("karty", [])
+    # POKLES z téhož modelu do vítězů nepatří (rozpor) — přesunou se mezi „nejvyšší riziko pádu“
     pick = lambda key: [_trim_card(c) | {"historie": [h for h in history(conn, c["ticker"]) if h["den"] < c["den_ceny"]][:3]}
-                        for c in sorted((c for c in cards if c.get(key)), key=lambda c: c[key])[:20]]
+                        for c in sorted((c for c in cards if c.get(key) and c.get("final") != "POKLES"),
+                                        key=lambda c: c[key])[:20]]
     return {"model": "SIGNAL_6M", "horizont": full.get("horizont"), "data_do": run["data_through"], "probehlo": run["run_at"],
             "prah_rust": full.get("prah_rust"), "prah_pokles": full.get("prah_pokles"), "akcii": (full.get("dnes") or {}).get("akcii"),
             "trh": "USA (data SEC)", "razeni": full.get("razeni"), "zaklad": full.get("zaklad"), "xtb": full.get("xtb"),
@@ -490,8 +492,8 @@ def build_zebricek6m_doc(conn: sqlite3.Connection) -> dict | None:
                      "horni_desetina": test.get("horni_desetina"), "dolni_desetina": test.get("dolni_desetina"),
                      "stav": test.get("_stav")},
             "firmy": pick("poradi"), "velke": pick("poradi_velke"),
-            "vyhnout": [_trim_card(c) for c in cards if not c.get("poradi") and not c.get("poradi_velke")
-                        and c.get("final") == "POKLES"][:5]}
+            "vyhnout": [{k: c.get(k) for k in ("ticker", "firma", "p_up", "p_down", "duvera", "xtb", "poradi_celkem")}
+                        for c in cards if c.get("final") == "POKLES"][:12]}
 
 
 def build_causal_doc(conn: sqlite3.Connection) -> dict | None:

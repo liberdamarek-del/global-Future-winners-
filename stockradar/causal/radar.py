@@ -20,6 +20,7 @@ from stockradar.causal.chains import _past
 from stockradar.causal.exposure import T_MIN, Exposure, shock
 
 Z_EVENT = 1.5
+T_STRONG = 3.0      # čistě datová vazba bez ekonomické logiky: přísnější práh (3 250 dvojic → ~160 náhodných při |t| ≥ 2)
 HORIZON_BY_ORDER = {1: 30, 2: 90, 3: 90}
 
 
@@ -67,7 +68,9 @@ def firms(securities: list[dict], industry: str, *, n: int = 3, check=None) -> l
 
 
 def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pulses: dict, securities: list[dict],
-          study: dict | None = None, xtb_check=None) -> dict:
+          study: dict | None = None, xtb_check=None, pulse_history: dict | None = None) -> dict:
+    """pulse_history: komodita → počty nových příběhů za 7 dní z předchozích běhů radaru (základ pro „víc zpráv
+    než obvykle“; Google News starší týdny vrací neúplně, proto se základ bere z vlastní historie)."""
     wk = ex.weekly
     w = len(wk.weeks) - 1
     cards, opps = [], []
@@ -80,7 +83,12 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         pulse = pulses.get(cid) or {}
         gd = gdacs_links.get(cid) or []
         price_shock = sh is not None and abs(sh[1]) >= Z_EVENT
-        news_spike = (pulse.get("pribehu_7d") or 0) >= 3 and (pulse.get("pozornost") or 0) >= 2
+        hist = sorted((pulse_history or {}).get(cid, []))
+        base = hist[len(hist) // 2] if len(hist) >= 3 else None
+        recent = pulse.get("pribehu_7d") or 0
+        news_spike = base is not None and recent >= 5 and recent >= 2 * max(base, 1)
+        if pulse:
+            pulse = {**pulse, "zaklad_z_historie": base, "pozornost": round(recent / max(base, 1), 2) if base is not None else None}
         gd_hit = any(e["uroven"] == "Red" for e in gd) or (c["skupina"] == "zemědělství" and any(e["typ"] == "DR" for e in gd))
         if not (price_shock or news_spike or gd_hit):
             continue
@@ -92,7 +100,7 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         for g in wk.ind:
             beta, t = ex.beta[(g, cid)][w]
             logic = CM.chain_for(cid, g)
-            emp = beta == beta and t == t and abs(t) >= T_MIN
+            emp = beta == beta and t == t and abs(t) >= (T_MIN if logic else T_STRONG)
             if not emp and logic is None:
                 continue
             d_emp = int(math.copysign(1, beta)) * sign if emp else None
@@ -116,14 +124,17 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
                     "skutecny_pohyb_4t": round(realized, 4) if realized is not None else None,
                     "v_cene": round(priced, 2) if priced is not None else None,
                     "horizont_dni": HORIZON_BY_ORDER.get(order, 30), "akcii_v_oboru": wk.n_stocks.get(g)}
-            fresh = 1.0 if (news_spike or gd_hit or (sh and abs(sh[1]) >= Z_EVENT)) else 0.5
+            # příležitost jen tam, kde událost potvrzuje cena nebo zprávy; samotná výstraha GDACS = jen sledovat
+            fresh = 1.0 if price_shock else 0.5 if news_spike else 0.0
             unpriced = 1.0 - min(max(priced, 0.0), 1.0) if priced is not None else 0.5
             weight = {"EMPIRICKY_I_LOGIKA": 1.0, "EMPIRICKY": 0.8, "LOGIKA_NEOVERENO": 0.3}[evidence]
             item["skore"] = round(fresh * unpriced * weight * min(abs(expected or 0.0) * 10, 1.0) * 100, 1)
             chain.append(item)
         chain.sort(key=lambda x: (x["rad"], -x["skore"]))
+        # příležitost = vazbu potvrzují DATA i EKONOMICKÁ LOGIKA se stejným směrem (čistě datové vazby mezi 3 250
+        # dvojicemi bývají náhodné, např. „železná ruda → farmacie“; čistá logika je neověřená)
         for it in sorted(chain, key=lambda x: -x["skore"])[:4]:
-            if it["skore"] > 0:
+            if it["skore"] > 0 and it["dukaz"] == "EMPIRICKY_I_LOGIKA":
                 opps.append({"komodita": cid, "nazev_komodity": c["nazev"], **it,
                              "firmy": firms(securities, it["obor"], check=xtb_check)})
         now = cdata.close_at(bars, wk.weeks[w]) if bars else None
@@ -133,6 +144,7 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             "pohyb_1t": round(wk.comm[cid][w], 4) if wk.comm[cid][w] == wk.comm[cid][w] else None,
             "pohyb_4t": round(r4, 4) if r4 is not None else None, "z": round(sh[1], 2) if sh else None,
             "spoustec": [x for x, on in (("cenový šok", price_shock), ("zprávy", news_spike), ("GDACS", gd_hit)) if on],
+            "stav": "PŘÍLEŽITOST" if (price_shock or news_spike) else "SLEDOVAT (výstraha bez potvrzení cenou nebo zprávami)",
             "zaklad_smeru": basis, "vyrobci": c["vyrobci"], "vyrobci_stav": CM.NEOVERENO, "uzly": c["uzly"],
             "udalosti": gd[:4], "zpravy": pulse,
             "retez": chain[:14], "scenare": scenarios(ex, cid, w, sign),

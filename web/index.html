@@ -135,6 +135,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
 .rank .metric { text-align: right; font-family: var(--f-num); font-variant-numeric: tabular-nums; }
 .rank .metric b { font-size: 1.15rem; }
 .rank .badge { text-align: right; }
+[hidden] { display: none !important; }
 .subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .stab { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 6px 14px; font: 600 0.85rem/1.2 var(--f-body); cursor: pointer; }
 .stab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); }
@@ -157,6 +158,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
   .rank .pos-n { grid-area: n; } .rank .who { grid-area: who; } .rank .badge { grid-area: badge; }
   .rank .m1 { grid-area: m1; text-align: left; } .rank .m2 { grid-area: m2; }
   .rank .m1 .sub { display: inline; margin-left: 8px; }
+  .rank .evrow summary { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who who" "m1 m2"; }
   .htab { font-size: 0.92rem; padding: 10px 4px; }
 }
 .mail { display: grid; gap: 6px; border-left: 4px solid var(--warn); padding: 8px 12px; background: var(--warn-bg); border-radius: 6px; color: var(--ink); }
@@ -506,7 +508,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     $("zeb-foot").textContent = `POZOR: model u těchto firem vidí vyšší šanci na +40 %, ale i vyšší riziko poklesu — na validaci TOP 20 dosáhlo +40 % ve 14 % případů (běžná akcie 6,5 %) a −25 % ve 38 % (běžná 21 %). Hodí se spíš jako koš více firem než jedna sázka. Zamčený test: AUC růst ${fmt(t.auc_rust, 2)}, pokles ${fmt(t.auc_pokles, 2)}; nejslabší desetina modelu klesla o 25 % v ${pct(dd.down5)} případů (horní desetina ${pct(hd.down5)}).${avoid ? " Nejvyšší riziko pádu: " + avoid + "." : ""} Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Ne doporučení k nákupu.`;
   }
   const ARROW = (d) => d > 0 ? `<span class="arrow pos">↑</span>` : `<span class="arrow neg">↓</span>`;
-  const EVID = {"EMPIRICKY_I_LOGIKA": "data i logika", "EMPIRICKY": "data", "LOGIKA_NEOVERENO": "jen logika (NEOVĚŘENO)"};
+  const EVID = {"EMPIRICKY_I_LOGIKA": "data i logika", "EMPIRICKY": "jen data, bez logiky (NEOVĚŘENO)", "LOGIKA_NEOVERENO": "jen logika (NEOVĚŘENO)"};
   function evCard(k) {
     if (!k) return "";
     const sc = k.scenare || {}, z = k.zpravy || {};

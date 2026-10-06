@@ -30,12 +30,17 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 - 2026-10-05 (2): **v žebříčku jen akcie, které nabízí XTB** — broker uživatele nenabízí např. australské a japonské
   akcie. Ověřuje se na xtb.com (`stockradar/sources/xtb.py`, cache 30 dní) PŘED zařazením; jen skutečná akcie (ne CFD).
   Ledger a modely se nemění (měří se model, ne broker); XTB dál NENÍ podmínkou predikcí v ledgeru.
+- 2026-10-06: **kauzální radar** (SVĚT → UDÁLOST → KOMODITA → OBORY → FIRMY, 1.–4. řád, „je to v ceně?“, scénáře,
+  důkazní řetězec) a cíl **„další Microsoft“ = firma s šancí na ~+40 % za 6 měsíců** (model SIGNAL_6M, záložka
+  „Do 6 měsíců“ s přepínačem Velké firmy). Zpráva: `docs/CAUSAL_2026-10-06.md`. Poctivě: model spolehlivě varuje před
+  pádem, vítěze bez vyššího rizika vybrat neumí — u každé firmy vždy šance i riziko.
 
 ## Denní úloha (rutina, po–pá večer)
 
 1. `git pull origin ccr-07430f55-or3jhd`, pak `python -m stockradar init` a `python -m stockradar update`
    (ceny z Yahoo, vyhodnocení predikcí +7/+14/+30/+90/+180/+365 dní včetně raket, učení modelu, nové predikce,
-   export `state/`, data pro web). Pak `python -m stockradar diag`: každou CHYBU oprav (kód + test), VAROVÁNÍ vyřeš,
+   export `state/`, data pro web), pak `python -m stockradar causal` (komodity, GDACS, zprávy → kauzální radar,
+   vyhodnocení kauzálních predikcí). Pak `python -m stockradar diag`: každou CHYBU oprav (kód + test), VAROVÁNÍ vyřeš,
    pokud jde (např. katalyzátor po termínu → ověř a `set_catalyst_status`).
 2. Krátký výzkum (WebSearch): novinky u firem s katalyzátorem do 45 dní; nové energetické dohody Google,
    Microsoft, Amazon, Meta; nová IPO v řetězci. Zapisuj JEN ověřené se zdrojem (URL) a datem:
@@ -43,7 +48,8 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
    proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
-   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek) s `if_version` (URL v `web/dashboard.json`).
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek, zebricek6m, kauzalni)
+   s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
@@ -61,8 +67,9 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   sady), Sněmovna, Senát, 13D/13G, buybacky → test, SMART MONEY SCORE, 10 signálů ověřených ve Form 4 do ledgeru
   (strategie SMART_MONEY, WATCH 6 m) + dokument `stav/smartmoney` pro web (pak `update` a zápis 5 dokumentů `stav/*`).
   Verdikt VYSOKÁ jen při typu nákupu s výhodou potvrzenou v učení i testu (t ≥ 2). Zpráva: `docs/SMART_MONEY_*.md`.
-- **Signály na 14 dní a 1 měsíc (každou sobotu po smart money):** `python -m stockradar signals` — dva modely
-  (SIGNAL_14D: ±5 % za 10 obchodních dní; SIGNAL_1M: ±10 % za 20 dní), každý s vlastním zamčeným testem; žebříček TOP 20
+- **Signály na 14 dní, 1 měsíc a 6 měsíců (každou sobotu po smart money):** `python -m stockradar signals` — tři modely
+  (SIGNAL_14D: ±5 % za 10 obchodních dní; SIGNAL_1M: ±10 % za 20 dní; SIGNAL_6M: +40 % / −25 % za 126 dní, řazení podle
+  šance na +40 %, velké firmy zvlášť, POKLES mezi vítěze nepatří), každý s vlastním zamčeným testem; žebříček TOP 20
   řazený podle šance na růst jen u akcií, kde model vidí víc růstu než poklesu (pravidlo vybrané na validaci). Karta pravděpodobností
   (P(+5 %), P(−5 %), P(lépe než obor), P(prudký pohyb), očekávaný pohyb, důvěra, RŮST / POKLES / NEVÍM), tržní režim
   na úrovni celého trhu, analogie, novost a kvalita zpráv, mechanismy „událost → dodavatelé“. Protokol TRAIN /
