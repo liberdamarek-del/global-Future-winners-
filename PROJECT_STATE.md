@@ -120,7 +120,7 @@
 | Centrum (běh #2) | 151 firem, 307 důkazů: příležitost 103 (téměř vše neověřené), riziko 28, rozpor 7 (DINO, MPC, VLO, DK, ASM, HBM, LAC), nevím 13 |
 | Ruční výzkum | #1–#8: G7 uvolňuje až 100 mil. barelů ropy a nafty → tlak na marže rafinérií (DINO, MPC, VLO, PSX, PBF, DK, CVI, PARR), platí do 2027-02-03 |
 | Zpětná vazba | 0 vyhodnocených, 236 čeká; první vyhodnocení 2026-10-09; živé výsledky přebijí testy od 30 případů v 6 týdnech |
-| Zdroje BLOKOVÁNO | cukr (Yahoo), GDELT (HTTP 429) |
+| Zdroje BLOKOVÁNO | GDELT (HTTP 429); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 
 ## HOTOVO (ověřeno testy — 134 testů prošlo 2026-10-07)
 
@@ -164,7 +164,6 @@
 | Co | Proč | Co je potřeba |
 |---|---|---|
 | GDELT (světové zprávy) | HTTP 429 ze sdílené adresy serveru | jiný server nebo jiný bezplatný zdroj; zatím Google News RSS |
-| Cukr (SB=F) | Yahoo nevrací data | jiný bezplatný zdroj ceny cukru |
 | Tržní kapitalizace mimo USA a data výsledků z Yahoo | `quote`/`quoteSummary` vyžadují crumb, odsud HTTP 401/429 | US firmy: kapitalizace ze SEC (akcie × cena); ostatní odhad z obratu |
 
 ## NEOVĚŘENO
