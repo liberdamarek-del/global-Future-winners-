@@ -7,7 +7,8 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 ## Na začátku každé session — nejdřív stav, pak práce
 
 1. Přečti `PROJECT_STATE.md` (zdroj pravdy) a podle potřeby `ROADMAP.md`, `CHANGELOG.md`.
-2. Spusť `python -m stockradar init && python -m stockradar status` a `python -m stockradar ledger`.
+2. Spusť `python -m stockradar init && python -m stockradar status`, `python -m stockradar ledger` a
+   `python -m stockradar system` (moduly, zdroje, spolehlivost rolí, deník běhů — co je ověřené, co selhalo).
 3. Pokud stav nejde načíst, řekni to uživateli otevřeně. Nikdy si nevymýšlej předchozí výsledky.
 
 ## Rozhodnutí uživatele (2026-10-02, doplněno 2026-10-03)
@@ -34,21 +35,31 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   důkazní řetězec) a cíl **„další Microsoft“ = firma s šancí na ~+40 % za 6 měsíců** (model SIGNAL_6M, záložka
   „Do 6 měsíců“ s přepínačem Velké firmy). Zpráva: `docs/CAUSAL_2026-10-06.md`. Poctivě: model spolehlivě varuje před
   pádem, vítěze bez vyššího rizika vybrat neumí — u každé firmy vždy šance i riziko.
+- 2026-10-07: systém = **propojená síť specializovaných částí** (centrum `stockradar/hub/`): každý modul předává důkazy
+  (entita, role, směr, horizont, zdroj, stav), spolehlivost role se počítá ze zamčených testů a živých výsledků,
+  pohled na firmu hledá rozpory, poučení a stará data; deník běhů `system_runs`, paměť centra `hub_runs`, ruční výzkum
+  `research_evidence`. Stavy HOTOVO/OVĚŘENO, ROZPRACOVÁNO, BLOKOVÁNO, NEOVĚŘENO, CHYBA. Neopakovat výpočty bez důvodu.
+  Postup u každé změny: POZOROVAT → POCHOPIT → PROPOJIT → ANALYZOVAT → NAVRHNOUT → IMPLEMENTOVAT → OTESTOVAT →
+  VYHODNOTIT. Zpráva `docs/ARCHITEKTURA_2026-10-07.md`.
 
 ## Denní úloha (rutina, po–pá večer)
 
 1. `git pull origin ccr-07430f55-or3jhd`, pak `python -m stockradar init` a `python -m stockradar update`
    (ceny z Yahoo, vyhodnocení predikcí +7/+14/+30/+90/+180/+365 dní včetně raket, učení modelu, nové predikce,
    export `state/`, data pro web), pak `python -m stockradar causal` (komodity, GDACS, zprávy → kauzální radar,
-   vyhodnocení kauzálních predikcí). Pak `python -m stockradar diag`: každou CHYBU oprav (kód + test), VAROVÁNÍ vyřeš,
-   pokud jde (např. katalyzátor po termínu → ověř a `set_catalyst_status`).
+   vyhodnocení kauzálních predikcí). Centrum (`hub`) se po obou obnoví samo. Pak `python -m stockradar diag`: každou
+   CHYBU oprav (kód + test), VAROVÁNÍ vyřeš, pokud jde (např. katalyzátor po termínu → ověř a `set_catalyst_status`).
+   Podívej se na rozpory centra (`python -m stockradar hub`) a ověř je výzkumem.
 2. Krátký výzkum (WebSearch): novinky u firem s katalyzátorem do 45 dní; nové energetické dohody Google,
    Microsoft, Amazon, Meta; nová IPO v řetězci. Zapisuj JEN ověřené se zdrojem (URL) a datem:
    `stockradar.universe.add_relationship`, `add_tracked_company`, `stockradar.catalysts.add_catalyst`,
    proběhlé katalyzátory `set_catalyst_status(..., "OCCURRED")`. Odhad termínu = okno (ESTIMATED/UNCERTAIN).
+   Ostatní ověřené zprávy (riziko / příležitost firmy nebo oboru) jako trvalý důkaz:
+   `python -m stockradar research --entita VLO,MPC --druh riziko --smer -1 --horizont 120 --datum RRRR-MM-DD
+   --zdroj "…" --url https://… --text "FAKT: … ÚSUDEK (neověřeno): …"`.
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
-   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek, zebricek6m, kauzalni)
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek, zebricek6m, kauzalni, prehled)
    s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
@@ -77,6 +88,7 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   jen jednou (`model_evaluations`) — NIKDY ho nepouštěj znovu změnou dat ani prahů; nová konfigurace = nový pokus,
   počet pokusů je vidět na webu. Karty jdou do `signal_forecasts` (append-only), vyhodnotí se po 10 obchodních dnech.
   Znaky celého trhu (VIX, sazby, S&P 500) nepatří do modelu akcií — jen do `regime.market_view` (nezávislé dvoutýdny).
+  Bez nových cen akcií se `signals` přeskočí (deník: PŘESKOČENO); `--force` jen po změně kódu modelu.
 - **Zlepšování (každou sobotu po objevování):** podívej se na `diag`, vyhodnocené predikce v ledgeru a test modelu
   raket; vyber jedno konkrétní zlepšení z plánu v `docs/AUDIT_2026-10-03.md` (kapitola 3) nebo z nových chyb,
   implementuj ho s testem, `python -m pytest`, zapiš do CHANGELOG a PROJECT_STATE, commit + push. Výsledek modelu
@@ -98,7 +110,9 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
 
 ## Pravidla vývoje
 
-- Před novým modulem zkontroluj, zda podobná funkce už neexistuje (§64).
+- Před novým modulem zkontroluj, zda podobná funkce už neexistuje (§64). Nový modul zapoj do centra: sběrač v
+  `hub/evidence.py`, role a její test v `hub/feedback.py`, záznam v `hub/registry.py` (příkaz, kadence, vstupy) a
+  příkaz do `cli.JOURNALED`. Žádná slepá část.
 - Schéma se mění jen novou migrací `stockradar/migrations/NNNN_*.sql`; existující migrace nepřepisuj.
 - Po změně: `python -m pytest`, aktualizuj `PROJECT_STATE.md` a `CHANGELOG.md`, zvyš `__version__`.
 - Moduly ve stavu HOTOVO nepřepisuj bez důvodu, testu a záznamu v CHANGELOG (§65).

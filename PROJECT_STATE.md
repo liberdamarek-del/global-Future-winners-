@@ -1,13 +1,13 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-06 · **Verze:** v0.9.0 · **Schema DB:** v7 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md)
+**Aktualizováno:** 2026-10-07 · **Verze:** v0.10.0 · **Schema DB:** v8 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
 
 ---
 
-## Rozhodnutí uživatele (2026-10-02, 2026-10-03, 2026-10-05)
+## Rozhodnutí uživatele (2026-10-02 … 2026-10-07)
 
 - Pouze **bezplatné** zdroje dat.
 - **XTB není povinná podmínka** (stav XTB se jen informativně zapisuje).
@@ -23,6 +23,10 @@
   akcie); ověřuje se na xtb.com před zařazením. Ledger se nemění (XTB dál není podmínkou predikcí).
 - 2026-10-06: kauzální radar (svět → událost → komodita → obory → firmy) a „další Microsoft“ = firma s šancí na
   ~+40 % za 6 měsíců (model SIGNAL_6M). Zpráva [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md).
+- 2026-10-07: systém = **propojená síť specializovaných částí** (předávají si kontext, kontrolují se, učí se ze zpětné
+  vazby), paměť běhů a výsledků, žádné opakované výpočty bez důvodu, stavy HOTOVO/OVĚŘENO, ROZPRACOVÁNO, BLOKOVÁNO,
+  NEOVĚŘENO, CHYBA; postup POZOROVAT → POCHOPIT → PROPOJIT → ANALYZOVAT → NAVRHNOUT → IMPLEMENTOVAT → OTESTOVAT →
+  VYHODNOTIT. Zpráva [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md).
 
 ## Stav analýz
 
@@ -106,7 +110,19 @@
 | Dnes (data k 2026-10-02) | všechny: KOS, ACDC, PUMP, NESR, DK…; velké: DINO, MPC, VLO, TWLO, QXO…; riziko pádu: LWLG, BW, SUNE, FCUV, HUT…; MSFT 2 457. z 3 673 |
 | Vzorec uživatele (základna u supportu) | 1 412 případů: medián 3 m +1,5 % vs +2,1 % → bez výhody |
 
-## HOTOVO (ověřeno testy — 124 testů prošlo 2026-10-06)
+## Propojený systém (v0.10.0, 2026-10-07) — `python -m stockradar system`
+
+| Položka | Stav |
+|---|---|
+| Moduly (registr) | HOTOVO/OVĚŘENO 2 (signály, smart money), HOTOVO 3 (ceny, XTB, centrum), NEOVĚŘENO 4 (energie, objevování, kauzální radar, ruční výzkum), ROZPRACOVÁNO 1 (vyhodnocení predikcí) |
+| Ověřené role mimo vzorek | varování 1 měsíc (t 3,7), varování 6 měsíců (t 4,0), aktivní nákup insiderů (t 2,7 proti podobným akciím) |
+| Neověřené role | výběry 14 d / 1 m / 6 m, rakety 6 m, kauzální příležitosti, energetika TOP 5, ruční výzkum |
+| Centrum (běh #2) | 151 firem, 307 důkazů: příležitost 103 (téměř vše neověřené), riziko 28, rozpor 7 (DINO, MPC, VLO, DK, ASM, HBM, LAC), nevím 13 |
+| Ruční výzkum | #1–#8: G7 uvolňuje až 100 mil. barelů ropy a nafty → tlak na marže rafinérií (DINO, MPC, VLO, PSX, PBF, DK, CVI, PARR), platí do 2027-02-03 |
+| Zpětná vazba | 0 vyhodnocených, 236 čeká; první vyhodnocení 2026-10-09; živé výsledky přebijí testy od 30 případů v 6 týdnech |
+| Zdroje BLOKOVÁNO | cukr (Yahoo), GDELT (HTTP 429) |
+
+## HOTOVO (ověřeno testy — 134 testů prošlo 2026-10-07)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -128,13 +144,17 @@
 | `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (7) |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
 | `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (14) |
+| `hub/*`, `migrations/0008` | Centrum důkazů, spolehlivost rolí, pohled na firmu s rozpory a poučeními, registr modulů a zdrojů, deník běhů, ruční výzkum | `tests/unit/test_hub.py` (10) |
+| `causal/memo.py` | Paměť výpočtů (týdenní řady, citlivosti) podle otisku dat; `signals` bez nových dat se přeskočí | `test_hub.py`, ostrý běh (56 s → 0,5 s, shodný výsledek) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 
 ## ROZPRACOVÁNO
 
 | Co | Stav |
 |---|---|
-| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` + diag + výzkum + web (9 dokumentů), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
+| Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` (centrum se obnoví samo) + diag + výzkum (`research`) + web (10 dokumentů včetně `stav/prehled`), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
+| Živá zpětná vazba | Role se zatím hodnotí jen z testů; první živé výsledky 2026-10-09, spolehlivé po ~30 případech v 6 týdnech |
+| Vyhodnocení ručního výzkumu | Výzkum se ukládá a propojuje, ale zatím se neměří proti cenám (role VÝZKUM = NEOVĚŘENO) |
 | Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` (14 dní, 1 měsíc, 6 měsíců) + `update` + `causal` + `diag` + jedno zlepšení kódu s testem + web |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |
@@ -143,6 +163,8 @@
 
 | Co | Proč | Co je potřeba |
 |---|---|---|
+| GDELT (světové zprávy) | HTTP 429 ze sdílené adresy serveru | jiný server nebo jiný bezplatný zdroj; zatím Google News RSS |
+| Cukr (SB=F) | Yahoo nevrací data | jiný bezplatný zdroj ceny cukru |
 | Tržní kapitalizace mimo USA a data výsledků z Yahoo | `quote`/`quoteSummary` vyžadují crumb, odsud HTTP 401/429 | US firmy: kapitalizace ze SEC (akcie × cena); ostatní odhad z obratu |
 
 ## NEOVĚŘENO
@@ -155,6 +177,8 @@
 | Faktor „Katalyzátor do 45 dní“ | Jen 3 historická data — váha je skoro celá apriorní. |
 | Růst `state/` | `model_runs` ~16 kB denně; při ~6 MB/rok zvážit kompresi nebo týdenní agregaci. |
 | Identita firem §31 | Odvozeno z tickerů. |
+| Váhy důvěry v centru | Průhledné pravidlo (t / 4, neověřené 0,1, stará data polovina), ne naučený model. |
+| Obor firmy pro kauzální radar | Ze seznamu Nasdaq; občas nepřesný (HF Sinclair = „natural gas distribution“), proto se výzkum rafinérií zapsal po firmách. |
 
 ## DEPRECATED
 
@@ -167,8 +191,10 @@
 
 ## Jak se pracuje se stavem
 
-1. `python -m stockradar init` — pracovní DB z `state/` (DB ani cache cen nejsou v gitu).
+1. `python -m stockradar init` — pracovní DB z `state/` (DB ani cache cen nejsou v gitu); `python -m stockradar system`
+   ukáže stav všech modulů, zdrojů, spolehlivost rolí a deník běhů.
 2. `python -m stockradar update` — denní běh (stáhne ceny, při prázdné cache 5 let historie); pak `diag`.
-3. Výzkum přes Python API (`universe.add_relationship`, `add_tracked_company`, `catalysts.add_catalyst`).
+3. Výzkum přes Python API (`universe.add_relationship`, `add_tracked_company`, `catalysts.add_catalyst`); zprávy, které
+   nejsou dohoda ani katalyzátor, přes `python -m stockradar research --entita … --url …` (fakt a úsudek odděleně).
 4. `python -m stockradar status` nesmí hlásit neexportované změny; commit `state/`.
 5. Web: zapsat `data/web/stav_*.json` do db dokumentů artifactu (viz `CLAUDE.md`, Denní úloha).

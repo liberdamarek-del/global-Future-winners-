@@ -53,6 +53,26 @@ python -m stockradar signals             # 14 dní, 1 měsíc a 6 měsíců (+40
 | Radar | karta: fakta (zdroje) → řetězec → „v ceně?“ → scénáře z historie → firmy (XTB); příležitost jen při shodě dat a logiky |
 | 6 měsíců | SIGNAL_6M: P(+40 %), P(−25 %), řazení podle šance na +40 %, riziko vždy vedle, POKLES mezi vítěze nepatří |
 
+## Propojený systém: centrum, zpětná vazba, registr (v0.10.0)
+
+Moduly nejsou slepé: každý předává důkazy do centra, které je váží spolehlivostí z testů a živých výsledků a hledá
+rozpory. Zpráva: [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md).
+
+```bash
+python -m stockradar system              # moduly, zdroje, spolehlivost rolí, deník běhů (HOTOVO/OVĚŘENO … CHYBA)
+python -m stockradar hub --firma VLO     # pohled na firmu ze všech modulů: postoj, důkazy, rozpory, poučení, kontroly
+python -m stockradar research --entita VLO --druh riziko --smer -1 --horizont 120 --datum 2026-10-06 \
+    --zdroj "…" --url https://… --text "FAKT: … ÚSUDEK: …"   # ruční výzkum jako trvalý důkaz
+```
+
+| Část | Co dělá |
+|---|---|
+| Důkazy (`hub/evidence.py`) | signály, rakety, smart money, kauzální radar, energetika, ledger, katalyzátory, výzkum, XTB v jednom jazyce |
+| Zpětná vazba (`hub/feedback.py`) | spolehlivost 14 rolí: OVĚŘENO (t ≥ 2), NEOVĚŘENO, CHYBA (t ≤ −2); živé výsledky mají přednost |
+| Pohled na firmu (`hub/integrate.py`) | PŘÍLEŽITOST / RIZIKO / ROZPOR / NEVÍM, váhy, stará data, poučení z chyb, pořadí ve všech modelech |
+| Registr a deník (`hub/registry.py`) | stav modulů a zdrojů, deník každého běhu (`system_runs`), ochrana proti zbytečnému přepočtu |
+| Paměť výpočtů (`causal/memo.py`) | týdenní řady a citlivosti se při stejných datech nepočítají znovu (56 s → 0,5 s) |
+
 ## Rychlý start
 
 Python 3.11+, bez externích závislostí.

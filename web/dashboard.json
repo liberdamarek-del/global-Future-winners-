@@ -11,7 +11,8 @@
     "stav/signaly": "data/web/stav_signaly.json",
     "stav/zebricek": "data/web/stav_zebricek.json",
     "stav/zebricek6m": "data/web/stav_zebricek6m.json",
-    "stav/kauzalni": "data/web/stav_kauzalni.json"
+    "stav/kauzalni": "data/web/stav_kauzalni.json",
+    "stav/prehled": "data/web/stav_prehled.json"
   },
   "pravidla_db": "čtou všichni s přístupem (view), zapisuje jen vlastník/editor (admin)"
 }

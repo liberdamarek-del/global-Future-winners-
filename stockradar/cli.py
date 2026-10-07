@@ -41,6 +41,34 @@ def _fmt_num(value) -> str | None:
     return f"{value:g}"
 
 
+def _note(args, **kw) -> None:
+    """Souhrn běhu do deníku (`system_runs`) — co příkaz udělal."""
+    j = getattr(args, "journal", None)
+    if isinstance(j, dict):
+        j.update(kw)
+
+
+def _refresh_hub(args, conn, cconn=None) -> None:
+    """Po každém příkazu, který mění výstupy modulů: centrum důkazů → paměť (hub_runs) + web (stav/prehled).
+    Selhání centra neshodí hlavní příkaz (jeho práce je hotová), ale zapíše se do deníku a ukáže v `system`."""
+    from stockradar.hub import integrate
+    from stockradar.site import write_prehled_doc
+    try:
+        if cconn is None:
+            from stockradar.discovery import cache as dcache
+            cconn = dcache.connect()
+        res = integrate.refresh(conn, cconn)
+        size = write_prehled_doc(res, web_dir())
+        export_state(conn, state_dir())
+        n = res["pocty"]
+        print(f"Centrum: {n['firem']} firem (příležitost {n['PŘÍLEŽITOST']}, riziko {n['RIZIKO']}, rozpor {n['ROZPOR']}),"
+              f" záznam {res['beh']['stav']} #{res['beh']['id']}, web {size // 1024} kB")
+        _note(args, centrum=res["beh"]["stav"], centrum_beh=res["beh"]["id"])
+    except Exception as exc:
+        print(f"Centrum: CHYBA — {exc}")
+        _note(args, centrum=f"CHYBA: {exc}"[:300])
+
+
 def _open(create: bool = True):
     path = db_path()
     is_new = not path.exists()
@@ -117,6 +145,9 @@ def cmd_update(args) -> int:
     for w in result["warnings"]:
         print(f"  ! {w}")
     print(f"Data pro web: {web_dir()}")
+    _note(args, den_dat=result.get("data_day"), beh=result["run_id"], varovani=len(result["warnings"]),
+          kroky={k: str(v)[:60] for k, v in result["steps"].items()})
+    _refresh_hub(args, conn)
     _print_email_today(conn)
     return 0 if result["run_id"] else 1
 
@@ -177,6 +208,8 @@ def cmd_discover(args) -> int:
     print(f"Do ledgeru zapsáno {len(created)} kandidátů (týden/3 měsíce) a {len(rockets)} predikcí raket na 6 měsíců.")
     for n in notes + rnotes:
         print(f"  ! {n}")
+    _note(args, beh=run_id, firem=st["firem_s_daty"], rakety=st["rakety"], do_ledgeru=len(created) + len(rockets))
+    _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
     print("Data pro web se obnoví při příštím `update`.")
     return 0
@@ -209,6 +242,8 @@ def cmd_smart_money(args) -> int:
     print(f"Běh smart money #{run_id}: {len(result['aktualni']['top'])} signálů, do ledgeru {len(created)}")
     for n in notes:
         print(f"  ! {n}")
+    _note(args, beh=run_id, signalu=len(result["aktualni"]["top"]), do_ledgeru=len(created))
+    _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
     return 0
 
@@ -225,6 +260,13 @@ def cmd_signals(args) -> int:
     conn = _open()
     cconn = dcache.connect()
     log = lambda m: print(f"  {m}", flush=True)
+    if not args.force:                    # neopakovat výpočet bez důvodu (stejná data, stejná verze, žádný nový vstup)
+        from stockradar.hub.registry import signals_unchanged
+        why = signals_unchanged(conn, cconn, srun.MODELS)
+        if why:
+            print(f"Signály PŘESKOČENY: {why}. Přepočet vynutíš přepínačem --force.")
+            _note(args, preskoceno=why)
+            return 0
     recent = None
     if not args.no_download:
         try:   # čtvrtletní sady SEC končí s odstupem → čerstvé nákupy insiderů z openinsider (sekundární přehled Form 4)
@@ -247,12 +289,14 @@ def cmd_signals(args) -> int:
     print(f"XTB: {xsum['dotazu']} dotazů na xtb.com, {xsum['z_cache']} z cache, chyb {xsum['chyb']}"
           + (" — XTB NEDOSTUPNÉ, část firem neověřena" if xsum["nedostupne"] else ""))
     evaluated = sstore.evaluate_forecasts(conn, data)
+    runs = {}
     for name, r in res["modely"].items():
         r["vysledky_karet"] = sstore.scorecard(conn, r["obchodnich_dni"])
         r["nove_vyhodnoceno"] = len(evaluated)
         r = srun.clean(r)
         run_id = sstore.save_run(conn, r, name, r["konfigurace"])
         ids = sstore.save_forecasts(conn, run_id, r["karty"])
+        runs[name] = run_id
         d = r["dnes"]["rozhodnuti"]
         t = r["zamceny_test"]
         print(f"{name} (běh #{run_id}): {len(ids)} nových karet; dnes RŮST {d['RŮST']}, POKLES {d['POKLES']},"
@@ -261,6 +305,8 @@ def cmd_signals(args) -> int:
     export_state(conn, state_dir())
     sizes = write_signals_doc(conn, web_dir())
     print(f"Vyhodnoceno dřívějších karet: {len(evaluated)}; web: " + ", ".join(f"{k} {v // 1024} kB" for k, v in sizes.items()))
+    _note(args, behy=runs, vyhodnoceno=len(evaluated), xtb_dotazu=xsum["dotazu"])
+    _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
     return 0
 
@@ -269,10 +315,9 @@ def cmd_causal(args) -> int:
     """Kauzální radar: komodity → citlivost oborů → test řetězců (zamčený jednou) → události → karty → web."""
     from datetime import date as _date
 
-    from stockradar.causal import chains, data as cdata, events, radar
+    from stockradar.causal import chains, data as cdata, events, memo, radar
     from stockradar.causal import store as cstore
-    from stockradar.causal.exposure import build_exposure, build_weekly
-    from stockradar.discovery import cache as dcache, study
+    from stockradar.discovery import cache as dcache
     from stockradar.signals import model as sm
     from stockradar.site import write_causal_doc
     from stockradar.sources import xtb
@@ -282,19 +327,19 @@ def cmd_causal(args) -> int:
     log = lambda m: print(f"  {m}", flush=True)
     if not args.no_download:
         cdata.download(cconn, log=log)
-    data = study.load_data(cconn)
     comm = cdata.load(cconn)
-    weekly = build_weekly(data, comm, log=log)
-    ex = build_exposure(weekly)
+    ex, data_end, from_memo = memo.load_or_build(cconn, log=log)     # ceny akcií se mění týdně → většinou z paměti
+    weekly = ex.weekly
     periods = {"UCENI": (0, sm.TRAIN_END), "VALIDACE": sm.VAL, "TEST": sm.TEST}
     st = chains.study(ex, periods, log=log)
     reg = cstore.record_study(conn, st, periods)
-    today = _date.fromordinal(data.data_end)
+    today = _date.fromordinal(data_end)
+    gd_error = None
     try:
         gd = events.gdacs(_date.today())
     except Exception as exc:
         log(f"GDACS nedostupný: {exc}")
-        gd = []
+        gd, gd_error = [], str(exc)[:160]
     links = events.link_gdacs(gd)
     pulses = {} if args.no_news else {c: events.news_pulse(c, _date.today()) for c in comm}
     secs = [dict(r) for r in cconn.execute("SELECT symbol, name, industry, market_cap_usd FROM securities"
@@ -315,7 +360,7 @@ def cmd_causal(args) -> int:
                       xtb_check=checker.check, pulse_history=hist)
     res["test_retezcu"] = reg
     res["pulsy"] = {c: p.get("pribehu_7d") for c, p in pulses.items()}
-    res["gdacs"] = {"udalosti": len(gd), "navazane_komodity": sorted(links)}
+    res["gdacs"] = {"udalosti": len(gd), "navazane_komodity": sorted(links)} | ({"chyba": gd_error} if gd_error else {})
     evaluated = cstore.evaluate(conn, weekly)
     res["vysledky"] = cstore.scorecard(conn)
     run_id = cstore.save_run(conn, res)
@@ -326,7 +371,105 @@ def cmd_causal(args) -> int:
     print(f"Kauzální radar (běh #{run_id}): karet {len(res['karty'])}, příležitostí {len(res['prilezitosti'])}, "
           f"nových predikcí {len(ids)}, vyhodnoceno {len(evaluated)}; GDACS {len(gd)} výstrah; "
           f"test řetězců za 13 týdnů {(t.get('13t') or {}).get('prumer')} (t {(t.get('13t') or {}).get('t')}); web {size // 1024} kB")
+    _note(args, beh=run_id, karet=len(res["karty"]), prilezitosti=len(res["prilezitosti"]), predikci=len(ids),
+          vyhodnoceno=len(evaluated), rady_z_pameti=from_memo, gdacs=gd_error or len(gd))
+    _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
+    return 0
+
+
+def cmd_hub(args) -> int:
+    """Centrum: důkazy ze všech modulů → spolehlivost rolí → pohled na firmu, rozpory, kontroly → paměť + web."""
+    conn = _open(create=False)
+    _refresh_hub(args, conn)
+    from stockradar.hub import integrate
+    last = integrate.last_run(conn)
+    if last:
+        summ = last[1]
+        for c in summ.get("kontroly", []):
+            print(f"  [{c['uroven']}] {c['text']}")
+        for z in (summ.get("zmeny") or [])[:15]:
+            print(f"  změna: {z['ticker']} {z['z']} → {z['na']}")
+    if args.firma:
+        from stockradar.discovery import cache as dcache
+        res = integrate.build(conn, dcache.connect(), utcnow().date())
+        for tic in [t.strip().upper() for t in args.firma.split(",")]:
+            d = next((x for x in res["firmy"] if x["ticker"] == tic), None)
+            if d is None:
+                print(f"\n{tic}: žádný modul o firmě nic neříká")
+                continue
+            print(f"\n{tic} {d['nazev'] or ''} — {d['souhrn']}")
+            for line in d["retez"]:
+                print(f"   · {line}")
+            for r in d["rozpory"]:
+                print(f"   ROZPOR: {r}")
+            for l in d["pouceni"]:
+                print(f"   POUČENÍ {l['klic']}: {l['bod']}")
+            for k in d["kontrola"]:
+                print(f"   KONTROLA: {k}")
+            if d["poradi"]:
+                print("   Pořadí v modelech: " + ", ".join(f"{m} {p}" for m, p in d["poradi"].items()))
+    return 0
+
+
+def cmd_system(args) -> int:
+    """Celý systém na jedné obrazovce: moduly a jejich stavy, zdroje, spolehlivost rolí, deník, poslední centrum."""
+    from stockradar.discovery import cache as dcache
+    from stockradar.hub import feedback, integrate, registry
+
+    conn = _open(create=False)
+    cconn = dcache.connect()
+    rel = feedback.reliability(conn)
+    ov = registry.overview(conn, cconn, rel)
+    print(f"SYSTÉM v{__version__} (schema v{schema_version(conn)}) — " + ", ".join(f"{k} {v}" for k, v in ov["pocty"].items()))
+    print()
+    print(_table(["Modul", "Stav", "Příkaz", "Poslední výstup", "Proč"],
+                 [[m["nazev"][:44], m["stav"], m["prikaz"][:26], (m.get("posledni") or "–")[:16], m["duvod"][:90]]
+                  for m in ov["moduly"]]))
+    print()
+    print(_table(["Zdroj", "Stav", "Detail"], [[z["zdroj"], z["stav"], z["detail"][:100]] for z in ov["zdroje"]]))
+    print()
+    print(_table(["Role modulu", "Stav", "Váha", "t", "Důkaz", "Živě (n/týdnů)"],
+                 [[r["nazev"][:46], r["stav"], r["vaha"], r["t"], r["typ"][:38], f"{r['zive']['n']}/{r['zive']['tydnu']}"]
+                  for r in rel.values()]))
+    print()
+    last = integrate.last_run(conn)
+    if last:
+        s = last[1]
+        print(f"CENTRUM (běh #{last[0]}, {s['den']}): " + ", ".join(f"{k} {v}" for k, v in s["pocty"].items()))
+        for c in s.get("kontroly", []):
+            print(f"  [{c['uroven']}] {c['text']}")
+    else:
+        print("CENTRUM: zatím neběželo (python -m stockradar hub)")
+    print()
+    print("DENÍK (posledních 10 běhů)")
+    rows = [[j["id"], j["prikaz"], j["zacatek"][:16], j["trvani_s"], j["stav"], (j["chyba"] or json.dumps(j["souhrn"], ensure_ascii=False))[:80]]
+            for j in ov["denik"][:10]]
+    print(_table(["#", "Příkaz", "Začátek (UTC)", "s", "Stav", "Souhrn / chyba"], rows) if rows else "(prázdný — deník se plní od v0.10.0)")
+    return 0
+
+
+def cmd_research(args) -> int:
+    """Ruční výzkum jako trvalý důkaz (se zdrojem a platností). Bez --entita jen vypíše platné záznamy."""
+    from stockradar.hub.evidence import add_research
+
+    conn = _open(create=False)
+    if args.entita:
+        ids = [add_research(conn, entity_type=args.typ, entity=e.strip(), kind=args.druh, direction=args.smer,
+                            horizon_days=args.horizont, summary=args.text, source=args.zdroj, source_url=args.url,
+                            published_on=args.datum, valid_until=args.platnost,
+                            status="NEOVĚŘENO" if args.neovereno else "OVĚŘENO")
+               for e in args.entita.split(",") if e.strip()]
+        export_state(conn, state_dir())
+        print(f"Zapsáno {len(ids)} záznamů výzkumu: #{', #'.join(map(str, ids))}")
+        _note(args, zapsano=ids)
+        _refresh_hub(args, conn)
+        return 0
+    today = utcnow().date().isoformat()
+    rows = [[r["id"], r["entity_type"], r["entity"], r["kind"], r["direction"], r["published_on"], r["valid_until"], r["status"],
+             r["summary"][:70]] for r in conn.execute("SELECT * FROM research_evidence WHERE valid_until >= ? ORDER BY id", (today,))]
+    print(_table(["#", "Typ", "Entita", "Druh", "Směr", "Zveřejněno", "Platí do", "Stav", "Shrnutí"], rows) if rows
+          else "Žádný platný ruční výzkum.")
     return 0
 
 
@@ -354,6 +497,8 @@ def cmd_diag(args) -> int:
     else:
         print(_table(["Úroveň", "Kontrola", "Detail"], [[c["uroven"], c["kontrola"], c["detail"]] for c in checks]))
         print(f"\nCelkově: {worst(checks)}")
+    _note(args, celkove=worst(checks), chyby=[c["kontrola"] for c in checks if c["uroven"] == "CHYBA"],
+          varovani=[c["kontrola"] for c in checks if c["uroven"] == "VAROVÁNÍ"])
     return 1 if worst(checks) == "CHYBA" else 0
 
 
@@ -486,15 +631,33 @@ def build_parser() -> argparse.ArgumentParser:
     p_sm = sub.add_parser("smart-money", help="nákupy insiderů, politiků, velké podíly a buybacky: test + signály")
     p_sm.add_argument("--no-download", action="store_true", help="nestahovat nová data (jen analýza)")
     p_sm.set_defaults(func=cmd_smart_money)
-    p_sig = sub.add_parser("signals", help="signály na 14 dní: P(+5 %), P(−5 %), důvěra, NEVÍM; přísný test")
+    p_sig = sub.add_parser("signals", help="signály na 14 dní, 1 měsíc a 6 měsíců: P(+5 %%), P(−5 %%), důvěra, NEVÍM; přísný test")
     p_sig.add_argument("--no-download", action="store_true", help="bez stažení čerstvých nákupů insiderů")
     p_sig.add_argument("--no-news", action="store_true", help="bez titulků (novost a kvalita informací)")
     p_sig.add_argument("--workers", type=int, default=4, help="počet procesů pro učení")
+    p_sig.add_argument("--force", action="store_true", help="přepočítat i bez nových dat (jinak se běh přeskočí)")
     p_sig.set_defaults(func=cmd_signals)
     p_cau = sub.add_parser("causal", help="kauzální radar: událost → komodita → obory → firmy (+ test řetězců)")
     p_cau.add_argument("--no-download", action="store_true", help="bez stažení cen komodit")
     p_cau.add_argument("--no-news", action="store_true", help="bez zpráv o narušení (Google News)")
     p_cau.set_defaults(func=cmd_causal)
+    p_hub = sub.add_parser("hub", help="centrum: důkazy ze všech modulů, spolehlivost, pohled na firmu, rozpory, kontroly")
+    p_hub.add_argument("--firma", default=None, help="vypsat důkazní řetězec firem (např. VLO,MSFT)")
+    p_hub.set_defaults(func=cmd_hub)
+    sub.add_parser("system", help="stav celého systému: moduly, zdroje, spolehlivost, deník").set_defaults(func=cmd_system)
+    p_res = sub.add_parser("research", help="ruční výzkum se zdrojem jako trvalý důkaz (bez --entita jen výpis)")
+    p_res.add_argument("--entita", default=None, help="ticker(y) oddělené čárkou, nebo obor / komodita")
+    p_res.add_argument("--typ", default="firma", choices=["firma", "obor", "komodita", "trh"])
+    p_res.add_argument("--druh", default="kontext", choices=["prilezitost", "riziko", "katalyzator", "kontext"])
+    p_res.add_argument("--smer", type=int, default=0, choices=[-1, 0, 1])
+    p_res.add_argument("--horizont", type=int, default=90, help="dní")
+    p_res.add_argument("--text", default="", help="shrnutí: fakt se zdrojem; úsudek označ jako úsudek")
+    p_res.add_argument("--zdroj", default="", help="název zdroje")
+    p_res.add_argument("--url", default="", help="https:// adresa zdroje")
+    p_res.add_argument("--datum", default=None, help="den zveřejnění YYYY-MM-DD")
+    p_res.add_argument("--platnost", default=None, help="platí do YYYY-MM-DD (jinak datum + horizont)")
+    p_res.add_argument("--neovereno", action="store_true", help="zdroj je sekundární / fakt není potvrzen")
+    p_res.set_defaults(func=cmd_research)
     p_email = sub.add_parser("email", help="kolikrát a kde byl použit e-mail uživatele")
     p_email.add_argument("--days", type=int, default=14)
     p_email.set_defaults(func=cmd_email)
@@ -507,9 +670,39 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# Příkazy, které se zapisují do deníku (`system_runs`): mění data nebo kontrolují systém. Čistě čtecí příkazy
+# (status, ledger, system, email…) a obnova ze state/ se nezapisují — deník nemá měnit stav jen tím, že se díváme.
+JOURNALED = {"update", "discover", "smart-money", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
+             "seed-lessons"}
+
+
+def _journal(args, started, status: str, error: str | None = None) -> None:
+    if not db_path().exists():
+        return
+    try:
+        from stockradar.hub.registry import record_run
+        conn = open_db(db_path())
+        params = {k: v for k, v in vars(args).items() if k not in ("func", "journal", "command")}
+        record_run(conn, args.command, params, started, status, getattr(args, "journal", {}), error)
+        export_state(conn, state_dir())
+    except Exception as exc:          # deník nesmí shodit hotovou práci
+        print(f"Deník: zápis selhal ({exc})", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    return args.func(args)
+    if args.command not in JOURNALED or (args.command == "research" and not args.entita):
+        return args.func(args)
+    started = utcnow()
+    args.journal = {}
+    try:
+        rc = args.func(args)
+    except BaseException as exc:
+        _journal(args, started, "CHYBA", f"{type(exc).__name__}: {exc}")
+        raise
+    status = "PŘESKOČENO" if args.journal.get("preskoceno") else "OK" if rc == 0 else "CHYBA"
+    _journal(args, started, status, None if rc == 0 else f"návratový kód {rc}")
+    return rc
 
 
 if __name__ == "__main__":

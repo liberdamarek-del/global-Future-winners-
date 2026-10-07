@@ -161,6 +161,13 @@ details.fold[open] > summary { margin-bottom: 10px; }
   .rank .evrow summary { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who who" "m1 m2"; }
   .htab { font-size: 0.92rem; padding: 10px 4px; }
 }
+.hub { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 12px; display: grid; gap: 8px; background: var(--bg); }
+.hub.x { border-left-color: var(--warn); } .hub.r { border-left-color: var(--miss); }
+.hub .hubhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.hub ul.facts li .chip { font-size: 0.7rem; padding: 0 7px; margin-left: 4px; }
+.hub details > summary, .rank .hub details > summary { display: block; padding: 0; font-weight: 500; font-size: 0.84rem; color: var(--muted); background: none; }
+.hub details > summary::before { content: "▸ "; } .hub details[open] > summary::before { content: "▾ "; }
+.systab td { vertical-align: top; } .systab td.st { white-space: nowrap; }
 .mail { display: grid; gap: 6px; border-left: 4px solid var(--warn); padding: 8px 12px; background: var(--warn-bg); border-radius: 6px; color: var(--ink); }
 </style>
 
@@ -174,6 +181,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
       <div class="status" id="status"><span>Načítám data…</span></div>
     </div>
     <div id="warnings"></div>
+    <div id="sysnote"></div>
   </header>
 
   <section class="panel" id="zebricek" aria-labelledby="h-zeb">
@@ -200,7 +208,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     <div class="moregrid">
     <nav class="jump" aria-label="Sekce">
       <a href="#signaly">Testy signálů</a><a href="#rakety">Rakety</a><a href="#smart">Smart money</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
-      <a href="#model">Jak se model učí</a><a href="#sektory">Vítězové a sektory</a><a href="#zdroje">Zdroje a e-mail</a>
+      <a href="#model">Jak se model učí</a><a href="#sektory">Vítězové a sektory</a><a href="#system">Stav systému</a><a href="#zdroje">Zdroje a e-mail</a>
     </nav>
 
   <section class="panel" id="signaly" aria-labelledby="h-sig">
@@ -306,6 +314,19 @@ details.fold[open] > summary { margin-bottom: 10px; }
     <p class="small muted" id="ipo-note"></p>
   </section>
 
+  <section class="panel" id="system" aria-labelledby="h-sys">
+    <header><h2 id="h-sys">Stav systému a propojení modulů</h2><span class="small muted" id="sys-run">Co je ověřené, co ne, co selhalo</span></header>
+    <div id="sys-sum"><div class="empty">Objeví se po prvním běhu centra (python -m stockradar hub).</div></div>
+    <details class="fold" open><summary>Čemu lze věřit: spolehlivost jednotlivých rolí</summary><div class="tablewrap"><table class="systab">
+      <thead><tr><th>Role modulu a co se měřilo</th><th>Stav</th><th class="r">t</th></tr></thead><tbody id="sys-rel"></tbody></table></div></details>
+    <details class="fold"><summary>Moduly a jejich stav</summary><div class="tablewrap"><table class="systab">
+      <thead><tr><th>Modul a proč</th><th>Stav</th><th>Poslední výstup</th></tr></thead><tbody id="sys-mod"></tbody></table></div></details>
+    <details class="fold"><summary>Kontroly napříč moduly a změny</summary><div id="sys-checks" style="display:grid;gap:10px"></div></details>
+    <details class="fold"><summary>Zdroje dat a deník běhů</summary><div style="display:grid;gap:14px">
+      <div class="tablewrap"><table class="systab"><thead><tr><th>Zdroj</th><th>Stav</th><th>Detail</th></tr></thead><tbody id="sys-src"></tbody></table></div>
+      <div class="tablewrap"><table class="systab"><thead><tr><th>Kdy</th><th>Příkaz</th><th class="r">s</th><th>Stav</th><th>Chyba</th></tr></thead><tbody id="sys-log"></tbody></table></div></div></details>
+  </section>
+
   <section class="panel" id="zdroje" aria-labelledby="h-src">
     <header><h2 id="h-src">Zdroje a e-mail</h2></header>
     <div class="mail" id="mail"><b>Použití e-mailu</b><span class="small">Načítám…</span></div>
@@ -390,15 +411,66 @@ details.fold[open] > summary { margin-bottom: 10px; }
   const DEC = {"RŮST": "ok", "POKLES": "err", "NEVÍM": ""};
   const bar = (v, cls) => `<div class="meter" role="img" aria-label="${fmt(v, 0)} ze 100"><i style="width:${Math.max(0, Math.min(100, v || 0))}%;${cls ? "background:var(--" + cls + ")" : ""}"></i></div>`;
   const thr = (v) => (v > 0 ? "+" : "−") + fmt(Math.abs(v) * 100, 0) + " %";
-  let Z = null, Z6 = null, K = null, H = "h14", SUB = "all";
+  let Z = null, Z6 = null, K = null, HP = null, H = "h14", SUB = "all";
   try { H = localStorage.getItem("gfw_h") || "h14"; } catch (e) {}
+
+  // ---------------------------------------------------------------- propojený pohled (centrum důkazů)
+  const MOD = {SIGNAL_14D: "Signály 14 dní", SIGNAL_1M: "Signály 1 měsíc", SIGNAL_6M: "Model 6 měsíců", RAKETY_6M: "Rakety 6 m",
+    SMART_MONEY: "Smart money", KAUZALNI: "Kauzální radar", ENERGIE: "Energetický radar", LEDGER: "Ledger", KATALYZATORY: "Katalyzátor",
+    VYZKUM: "Výzkum", XTB: "XTB"};
+  const STANCE = {"PŘÍLEŽITOST": "ok", "RIZIKO": "err", "ROZPOR": "warn", "NEVÍM": ""};
+  const STATE = {"HOTOVO/OVĚŘENO": "ok", "HOTOVO": "ok", "OVĚŘENO": "ok", "OK": "ok", "NEOVĚŘENO": "", "ROZPRACOVÁNO": "acc", "PŘESKOČENO": "", "BLOKOVÁNO": "warn", "CHYBA": "err", "AUTO": ""};
+  const chipS = (st) => `<span class="chip ${STATE[st] ?? ""}">${esc(st || "–")}</span>`;
+  function hubBlock(tic) {
+    const f = HP && HP.firmy && HP.firmy[tic];
+    if (!f) return HP ? `<div class="hub"><span class="small muted">Propojený pohled: o této firmě zatím žádný další modul nic neříká.</span></div>` : "";
+    const ver = f.p === "PŘÍLEŽITOST" ? f.o[0] : f.p === "RIZIKO" ? f.o[1] : f.o[0] || f.o[1];
+    const cls = f.p === "ROZPOR" ? "x" : f.p === "RIZIKO" ? "r" : "";
+    const ev = (f.d || []).map((x) => {
+      const [m, dir, text, rel, w, t, link, day, stale, ind] = x;
+      const arrow = dir > 0 ? `<span class="arrow pos">↑</span> ` : dir < 0 ? `<span class="arrow neg">↓</span> ` : "";
+      const tag = dir !== 0 ? `${chipS(rel)}<span class="small muted"> váha ${fmt(w, 2)}${nil(t) ? "" : ", t " + fmt(t, 1)}</span>` : `<span class="small muted">${esc(rel || "")}</span>`;
+      return `<li>${arrow}<b>${esc(MOD[m] || m)}${ind ? " (obor)" : ""}:</b> ${esc(text)} ${tag}${stale ? ` <span class="chip warn">stará data</span>` : ""}${link ? ` <a href="${url(link)}" target="_blank" rel="noopener">zdroj</a>` : ""}</li>`;
+    }).join("");
+    const les = (f.l || []).map((k) => { const l = (HP.pouceni || {})[k] || []; return `<li><b>${esc(l[0] || k)}:</b> ${esc(l[1] || "")}</li>`; }).join("");
+    const rank = Object.entries(f.x || {}).map(([m, p]) => `${esc(MOD[m] || m)} ${esc(p)}`).join(" · ");
+    return `<div class="hub ${cls}"><div class="hubhead"><span class="label">Propojený pohled ze všech modulů</span>
+        <span class="chip ${STANCE[f.p] ?? ""}">${esc(f.p)}${ver ? "" : " · neověřené"}</span><span class="small muted">${esc(f.s)}</span></div>
+      <ul class="facts">${ev}</ul>
+      ${(f.r || []).length ? `<div class="notice small"><b>Rozpor mezi moduly:</b> ${f.r.map(esc).join("; ")}</div>` : ""}
+      ${(f.k || []).length ? `<ul class="facts small muted">${f.k.map((k) => `<li>Kontrola: ${esc(k)}</li>`).join("")}</ul>` : ""}
+      ${les ? `<details><summary>Poučení z minulých případů (${fmt((f.l || []).length, 0)})</summary><ul class="facts">${les}</ul></details>` : ""}
+      ${rank ? `<span class="small muted">Pořadí v modelech: ${rank}</span>` : ""}</div>`;
+  }
+
+  function renderSystem() {
+    if (!HP) return;
+    const sy = HP.system || {}, n = HP.pocty || {}, ver = (HP.spolehlivost || []).filter((r) => r.stav === "OVĚŘENO");
+    const bad = (sy.moduly || []).filter((m) => m.stav === "CHYBA");
+    $("sysnote").innerHTML = bad.length ? `<div class="notice">Systém: ${bad.map((m) => `${esc(m.nazev)} — ${esc(m.duvod)}`).join("; ")}</div>` : "";
+    $("sys-run").textContent = `Centrum ${den(HP.den)} · verze ${HP.verze}${HP.beh ? " · záznam " + HP.beh.stav : ""}`;
+    $("sys-sum").innerHTML = `<div class="verdict"><span>Moduly: ${Object.entries(sy.pocty || {}).map(([k, v]) => `${chipS(k)} ${fmt(v, 0)}`).join(" ")}</span>
+      <span>Ověřené mimo vzorek: <b>${ver.length ? ver.map((r) => esc(r.nazev)).join(", ") : "nic"}</b>. Ostatní výstupy jsou jen informace — výhoda zatím není prokázaná.</span>
+      <span class="small muted">Propojeno ${fmt(n.firem, 0)} firem z ${fmt(n.dukazu, 0)} důkazů: příležitost ${fmt(n["PŘÍLEŽITOST"], 0)}, riziko ${fmt(n.RIZIKO, 0)}, rozpor ${fmt(n.ROZPOR, 0)}, nevím ${fmt(n["NEVÍM"], 0)}. ${esc(HP.princip || "")}</span></div>`;
+    $("sys-rel").innerHTML = (HP.spolehlivost || []).map((r) => `<tr><td><b>${esc(r.nazev)}</b><div class="small">${esc(r.typ)}${r.zive && r.zive.n ? ` · živě ${fmt(r.zive.n, 0)} predikcí` : ""}</div>
+      <div class="small muted">${esc(r.metrika)}</div></td><td class="st">${chipS(r.stav)}</td><td class="r num">${nil(r.t) ? "–" : fmt(r.t, 1)}</td></tr>`).join("");
+    $("sys-mod").innerHTML = (sy.moduly || []).map((m) => `<tr><td><b>${esc(m.nazev)}</b><div class="small">${esc(m.duvod)}</div><div class="small muted">příkaz: ${esc(m.prikaz)}</div></td>
+      <td class="st">${chipS(m.stav)}</td><td class="small num">${m.posledni ? esc(praha(m.posledni)) : "–"}</td></tr>`).join("");
+    const LVL = {CHYBA: "err", "VAROVÁNÍ": "warn", INFO: ""};
+    const ch = (HP.kontroly || []).map((c) => `<li><span class="chip ${LVL[c.uroven] ?? ""}">${esc(c.uroven)}</span> ${esc(c.text)}</li>`).join("");
+    const zm = (HP.zmeny || []).slice(0, 20).map((z) => `<li><b>${esc(z.ticker)}</b>: ${esc(z.z)} → ${esc(z.na)}</li>`).join("");
+    $("sys-checks").innerHTML = `<ul class="facts">${ch || "<li>Bez nálezů.</li>"}</ul>${zm ? `<div><span class="label">Změny postoje od minulého běhu</span><ul class="facts">${zm}</ul></div>` : ""}`;
+    $("sys-src").innerHTML = (sy.zdroje || []).map((z) => `<tr><td>${esc(z.zdroj)}</td><td class="st">${chipS(z.stav)}</td><td class="small">${esc(z.detail)}</td></tr>`).join("");
+    $("sys-log").innerHTML = (sy.denik || []).map((j) => `<tr><td class="small num">${esc(praha(j.zacatek))}</td><td>${esc(j.prikaz)}</td><td class="r num">${fmt(j.trvani_s, 0)}</td>
+      <td class="st">${chipS(j.stav)}</td><td class="small">${esc(j.chyba || "")}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">Deník se plní od verze 0.10.0.</td></tr>`;
+  }
 
   function cardDetail(c, z) {
     const sk = c.skore || {}, an = (c.analogie || {}).horizonty || {}, inf = c.informace || {};
     const main = an[String(c.obchodnich_dni || 10)] || {}, a60 = an["60"] || {};
     const comp = [["Fundament", sk.fundament], ["Technika", sk.technika], ["Kapitálový tok", sk.kapitalovy_tok], ["Katalyzátor", sk.katalyzator], ["Mispricing", c.mispricing], ["Smart money", c.smart_money ? c.smart_money.skore : null]];
     const pr = c.prekvapeni || {}, rs = c.relativni_sila || {};
-    return `<div class="odds"><div><span class="label">Růst ${thr(c.prah_rust || 0.05)} (${esc(z.horizont)})</span><b class="pos">${pct(c.p_up)}</b></div>
+    return `${hubBlock(c.ticker)}<div class="odds"><div><span class="label">Růst ${thr(c.prah_rust || 0.05)} (${esc(z.horizont)})</span><b class="pos">${pct(c.p_up)}</b></div>
         <div><span class="label">Pokles ${thr(c.prah_pokles || -0.05)}</span><b class="neg">${pct(c.p_down)}</b></div><div><span class="label">Mezi tím</span><b>${pct(c.p_flat)}</b></div></div>
       <div class="two-col"><dl class="kv"><dt>Očekávaný pohyb</dt><dd class="${cls(c.ocekavany_pohyb)}">${pct(c.ocekavany_pohyb, 1)}</dd>
           <dt>Rozpětí (20.–80. percentil)</dt><dd>${pct(c.pohyb_q20, 0)} až ${pct(c.pohyb_q80, 0)}</dd>
@@ -426,7 +498,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
   }
   function rocketDetail(r) {
     const lg = r.ledger;
-    return `<div class="odds"><div><span class="label">Raketa +50 % (model)</span><b class="pos">${pct(r.p_raketa)}</b></div>
+    return `${hubBlock(r.ticker)}<div class="odds"><div><span class="label">Raketa +50 % (model)</span><b class="pos">${pct(r.p_raketa)}</b></div>
         <div><span class="label">Propad −33 % (model)</span><b class="neg">${pct(r.p_propad)}</b></div><div><span class="label">Běžná akcie</span><b>${pct(r.zakladni_cetnost)}</b></div></div>
       <dl class="kv"><dt>V testu horní ${r.skupina === "top1" ? "1" : r.skupina === "top5" ? "5" : "10"} %: raketa / propad</dt><dd>${pct(r.hist_rakety)} / ${pct(r.hist_propady)}</dd>
         <dt>Výnos 6 m v testu: medián / horní pětina</dt><dd>${pct(r.hist_median, 1)} / ${pct(r.hist_q80, 0)}</dd>
@@ -823,6 +895,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     db.doc("stav/zebricek").onSnapshot((s) => { if (s.exists) { Z = s.data(); renderRanking(); } }, fail);
     db.doc("stav/zebricek6m").onSnapshot((s) => { if (s.exists) { Z6 = s.data(); renderRanking(); } }, fail);
     db.doc("stav/kauzalni").onSnapshot((s) => { if (s.exists) { K = s.data(); renderRanking(); } }, fail);
+    db.doc("stav/prehled").onSnapshot((s) => { if (s.exists) { HP = s.data(); renderSystem(); renderRanking(); } }, fail);
   })();
 })();
 </script>

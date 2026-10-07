@@ -134,8 +134,11 @@ def catalysts_for(sym, fund, cache_conn, main_conn, today: int) -> list[dict]:
     return out
 
 
+MODELS = ("SIGNAL_14D", "SIGNAL_1M", "SIGNAL_6M")
+
+
 def run(cache_conn, main_conn, *, log=print, workers: int = 4, with_news: bool = True, recent_insiders=None,
-        models: tuple[str, ...] = ("SIGNAL_14D", "SIGNAL_1M", "SIGNAL_6M"), xtb_check=None) -> dict:
+        models: tuple[str, ...] = MODELS, xtb_check=None) -> dict:
     """Jeden panel, víc modelů (14 dní, 1 měsíc). Každý model má vlastní konfiguraci a vlastní zamčený test.
 
     `xtb_check(symbol, name)` (sources.xtb.Checker.check): do žebříčku jen akcie, které XTB nabízí (uživatel 2026-10-05)."""

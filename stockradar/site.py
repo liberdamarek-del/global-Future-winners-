@@ -547,6 +547,43 @@ def write_signals_doc(conn: sqlite3.Connection, web_dir: Path) -> dict[str, int]
     return sizes
 
 
+def build_prehled_doc(res: dict, limit: int = DOC_LIMIT) -> dict:
+    """Dokument stav/prehled — propojený pohled centra (hub.integrate.refresh): spolehlivost rolí, stav modulů a zdrojů,
+    deník běhů, kontroly a pohled na každou firmu (zkrácené klíče kvůli limitu dokumentu).
+    Firma: p postoj, s souhrn, v [pro, proti], o [ověřeno pro, ověřeno proti], d důkazy [modul, směr, text,
+    spolehlivost, váha, t, url, den dat, zastaralé, oborový], r rozpory, k kontroly, l klíče poučení (texty v „pouceni“),
+    x pořadí v modelech."""
+    firms, lessons = {}, {}
+    for d in res["firmy"]:
+        firms[d["ticker"]] = {
+            "n": d["nazev"], "p": d["postoj"], "s": d["souhrn"], "v": [d["pro"], d["proti"]],
+            "o": [d["overeno_pro"], d["overeno_proti"]],
+            "d": [[x["modul"], x["smer"], x["text"][:360], x["spolehlivost"] or x["stav"], x["vaha"], x["t"], x["url"],
+                   x["data_do"], x["zastarale"], x["obor"]] for x in d["dukazy"]],
+            "r": d["rozpory"], "k": d["kontrola"], "l": [l["klic"] for l in d["pouceni"]], "x": d["poradi"]}
+        for l in d["pouceni"]:
+            lessons.setdefault(l["klic"], [l["nazev"], l["bod"][:220], (l.get("oprava") or "")[:220]])
+    sysv = res.get("system") or {}
+    doc = {"vytvoreno": res["vytvoreno"], "den": res["den"], "verze": res["verze"], "princip": res["princip"],
+           "beh": res.get("beh"), "pocty": res["pocty"], "kontroly": res["kontroly"], "zmeny": res["zmeny"][:40],
+           "spolehlivost": [{k: r.get(k) for k in ("role", "nazev", "modul", "smer", "stav", "vaha", "t", "n", "typ", "metrika", "zive")}
+                            for r in res["spolehlivost"]],
+           "system": {"moduly": sysv.get("moduly", []), "zdroje": sysv.get("zdroje", []), "pocty": sysv.get("pocty", {}),
+                      "denik": [{k: j[k] for k in ("id", "prikaz", "zacatek", "trvani_s", "stav", "chyba")} for j in sysv.get("denik", [])[:12]]},
+           "pouceni": lessons, "firmy": firms}
+    while len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode()) > limit and doc["firmy"]:
+        doc["firmy"].popitem()                        # firmy jsou seřazené podle síly důkazů → ubírá se od nejslabších
+        doc["zkraceno"] = True
+    return doc
+
+
+def write_prehled_doc(res: dict, web_dir: Path) -> int:
+    web_dir.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(build_prehled_doc(res), ensure_ascii=False, separators=(",", ":"))
+    (web_dir / "stav_prehled.json").write_text(text, encoding="utf-8")
+    return len(text.encode())
+
+
 def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
     sizes = {}

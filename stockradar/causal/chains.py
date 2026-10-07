@@ -182,11 +182,11 @@ class CausalFeatures:
 
 
 def build_features(cache_conn, data, *, log=print) -> CausalFeatures | None:
-    """Ceny komodit z cache → týdenní řady → citlivosti → poskytovatel znaků (None, když komodity chybí)."""
-    from stockradar.causal import data as cdata
-    from stockradar.causal.exposure import build_exposure, build_weekly
-    comm = cdata.load(cache_conn)
-    if len(comm) < 5:
+    """Ceny komodit z cache → týdenní řady → citlivosti → poskytovatel znaků (None, když komodity chybí).
+    Řady a citlivosti sdílí s příkazem `causal` přes paměť výpočtů (memo) — při stejných datech se nepočítají znovu."""
+    from stockradar.causal import data as cdata, memo
+    if len(cdata.load(cache_conn)) < 5:
         log("Kauzální znaky: chybí ceny komodit (spusť `python -m stockradar causal --download`)")
         return None
-    return CausalFeatures(build_exposure(build_weekly(data, comm, log=log)))
+    ex, _, _ = memo.load_or_build(cache_conn, data=data, log=log)
+    return CausalFeatures(ex)

@@ -104,7 +104,22 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
         add("CHYBA" if size > DOC_LIMIT else "VAROVÁNÍ" if size > 0.85 * DOC_LIMIT else "OK", f"Web {f.name}",
             f"{size // 1024} kB z limitu {DOC_LIMIT // 1024} kB")
 
-    # 7) použití e-mailu (pro uživatele)
+    # 7) centrum a registr modulů (v0.10.0): propojený pohled musí být novější než výstupy modulů; selhané běhy z deníku
+    from stockradar.hub import feedback, registry
+    hub_last = conn.execute("SELECT MAX(run_at) FROM hub_runs").fetchone()[0]
+    newest = max((conn.execute(f"SELECT MAX(run_at) FROM {t}").fetchone()[0] or "", t) for t in
+                 ("model_runs", "discovery_runs", "smart_money_runs", "signal_runs", "causal_runs"))
+    add("VAROVÁNÍ" if not hub_last or hub_last < newest[0] else "OK", "Centrum důkazů (propojený pohled)",
+        "zatím neběželo → python -m stockradar hub" if not hub_last else
+        f"starší než výstup {newest[1]} ({newest[0]}) → python -m stockradar hub" if hub_last < newest[0] else f"poslední běh {hub_last}")
+    mods = registry.modules_status(conn, cache_conn, feedback.reliability(conn), now)
+    failed = [m for m in mods if m["stav"] == "CHYBA" and m["duvod"].startswith("poslední běh")]
+    other = [m for m in mods if m["stav"] == "CHYBA" and m not in failed]
+    add("CHYBA" if failed else "VAROVÁNÍ" if other else "OK", "Stav modulů (registr)",
+        "; ".join(f"{m['nazev']}: {m['duvod']}" for m in failed + other) or
+        ", ".join(f"{k} {sum(1 for m in mods if m['stav'] == k)}" for k in registry.SUMMARY_KEYS if any(m["stav"] == k for m in mods)))
+
+    # 8) použití e-mailu (pro uživatele)
     summ = usage_summary(conn, days=7)
     days = ", ".join(f"{d['den']}: {d['celkem']}× ({', '.join(f'{h} {n}×' for h, n in d['servery'].items())})"
                      for d in summ["dny"]) or "za 7 dní nepoužit"

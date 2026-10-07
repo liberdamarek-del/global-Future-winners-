@@ -4,6 +4,36 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-07 · v0.10.0 — Propojený systém: centrum důkazů, zpětná vazba, pohled na firmu, registr a deník
+
+Důvod: zadání uživatele 2026-10-07 — systém má fungovat jako propojená síť specializovaných částí, které si předávají
+kontext, kontrolují se a učí se ze zpětné vazby; udržovat paměť (co, proč, výsledek, chyby, co je ověřené), neopakovat
+výpočty bez důvodu, stavy HOTOVO/OVĚŘENO, ROZPRACOVÁNO, BLOKOVÁNO, NEOVĚŘENO, CHYBA. Zpráva:
+[docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md).
+
+| Soubor/modul | Změna |
+|---|---|
+| `migrations/0008_hub.sql` | `research_evidence` (ruční výzkum se zdrojem a platností), `system_runs` (deník běhů), `hub_runs` (paměť centra); vše append-only |
+| `hub/evidence.py` (nový) | Výstupy všech modulů v jednom jazyce (entita, modul, role, směr, horizont, zdroj, den dat, stav); `add_research` |
+| `hub/feedback.py` (nový) | Spolehlivost 14 rolí ze zamčených testů a živých výsledků ze tří knih; stav OVĚŘENO / NEOVĚŘENO / CHYBA, váha 0–1; `signal_role` jediné místo pro roli karty |
+| `hub/integrate.py` (nový) | Pohled na firmu: PŘÍLEŽITOST / RIZIKO / ROZPOR / NEVÍM, váhy podle spolehlivosti a čerstvosti, rozpory, poučení (`LESSON_RULES`), pořadí ve všech modelech, kontroly, změny postoje; zápis do paměti jen při změně vstupů |
+| `hub/registry.py` (nový) | Registr 10 modulů a 9 zdrojů se stavy, deník běhů, ochrana proti přepočtu signálů |
+| `causal/memo.py` (nový), `causal/chains.py` | Týdenní řady a citlivosti podle otisku dat, sdílené `causal` i `signals` (56 s → 0,5 s, výsledek shodný) |
+| `cli.py` | Deník všech příkazů, které mění data (i při chybě); centrum se obnoví samo po `update`, `discover`, `smart-money`, `signals`, `causal`, `research`; nové `hub [--firma]`, `system`, `research`; `signals --force`; opraven pád `--help` (znak % v nápovědě) |
+| `diag.py` | Kontrola čerstvosti centra a stavu modulů (selhaný běh v deníku = CHYBA) |
+| `site.py`, `web/index.html`, `web/dashboard.json` | Dokument `stav/prehled`; v detailu firmy „Propojený pohled ze všech modulů“; sekce „Stav systému a propojení modulů“; upozornění při selhání modulu |
+| `tests/unit/test_hub.py` (nový) | 10 testů: role, spolehlivost ze zamčeného testu, výzkum (validace, append-only, platnost), rozpor + poučení + kontroly, čerstvost a verdikt modulu, paměť jen při změně, deník a stavy modulů, otisk výpočtů, ochrana proti přepočtu |
+
+**Výsledek prvního běhu (data k 2026-10-02):** 151 firem, 307 důkazů. Ověřené mimo vzorek jsou jen 3 role: varování
+na 1 měsíc (t 3,7) a 6 měsíců (t 4,0) a aktivní nákup insiderů (t 2,7). Výběry do žebříčků ověřené nejsou. Rozpor u 7 firem:
+rafinerie DINO, MPC, VLO, DK (žebříček ↑ × výzkum G7 ↓) a těžaři ASM, HBM, LAC (výběr ↑ × silný dolar ↓).
+Zapsán ruční výzkum #1–#8 (G7 uvolňuje až 100 mil. barelů ropy a nafty → tlak na marže rafinérií, zdroj StockTitan
+2026-10-06). Zpětná vazba z živých predikcí: zatím 0 vyhodnocených, 236 čeká, první 2026-10-09.
+
+**Chyby nalezené celkovou kontrolou:** pád `--help`; centrum na čisté instalaci (chybějící tabulka `xtb_offer`);
+rozpor „ověřená role“ × verdikt smart money NÍZKÁ; opakovaná poučení zvětšovala dokument webu; vnořené rozbalení na webu
+přebíralo styl řádku žebříčku; široké tabulky na mobilu. Vše opraveno.
+
 ## 2026-10-06 · v0.9.0 — Kauzální radar (událost → komodita → obory → firmy) a model na 6 měsíců (+40 %)
 
 Důvod: zadání uživatele 2026-10-06 „GLOBAL CAUSAL IMPACT ENGINE“ a cíl „najít další Microsoft — firmu, která může za půl
