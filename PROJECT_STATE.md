@@ -155,6 +155,7 @@
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` (centrum se obnoví samo) + diag + výzkum (`research`) + web (10 dokumentů včetně `stav/prehled`), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
 | Živá zpětná vazba | Role se zatím hodnotí jen z testů; první živé výsledky 2026-10-09, spolehlivé po ~30 případech v 6 týdnech |
 | Vyhodnocení ručního výzkumu | Výzkum se ukládá a propojuje, ale zatím se neměří proti cenám (role VÝZKUM = NEOVĚŘENO) |
+| Kauzální radar mezi sobotami | Šok komodity se počítá na týdenní mřížce, která končí posledním dnem cen akcií (sobotní stažení) → denní pohyby komodit po tomto dni radar uvidí až po dalším `discover --download`; karty se proto přes týden opakují (zjištěno 2026-10-08, kandidát na týdenní zlepšení: šok z denních cen komodit, citlivost dál z týdenních řad) |
 | Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `system` + `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` (14 dní, 1 měsíc, 6 měsíců; bez nových cen přeskočí) + `update` + `causal` + `diag` + `hub` + jedno zlepšení kódu s testem + web (10 dokumentů) |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |
