@@ -6,7 +6,7 @@ Každý krok má stav (DONE / CHYBA / PŘESKOČENO); chyba jednoho kroku nezasta
 
 import json
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from stockradar import __version__, config
@@ -28,9 +28,21 @@ MAIN_PICK_P_BEAT = 0.55
 STALE_DAYS = 4
 
 
+try:
+    from zoneinfo import ZoneInfo
+    _NEW_YORK = ZoneInfo("America/New_York")
+except Exception:                      # bez databáze časových pásem → pevných 21:00 UTC (zimní čas, konzervativní)
+    _NEW_YORK = None
+
+
 def bar_close_time(day: str) -> datetime:
-    """Konzervativní čas závěrky (21:00 UTC) — dřív se pozorování nepoužije."""
-    return parse_iso(f"{day}T21:00:00Z")
+    """Od kdy je denní závěr použitelný: závěrka burzy v New Yorku 16:00 místního času + 15 min rezerva
+    (letní čas 20:15 UTC, zimní 21:15 UTC). Dřív se pozorování nepoužije. Dřív platilo pevných 21:00 UTC, takže
+    večerní rutina (20:47 UTC v létě) dnešní závěr nikdy neviděla a každé vyhodnocení se zpozdilo o obchodní den."""
+    if _NEW_YORK is None:
+        return parse_iso(f"{day}T21:00:00Z")
+    d = datetime.fromisoformat(day)
+    return datetime(d.year, d.month, d.day, 16, 15, tzinfo=_NEW_YORK).astimezone(timezone.utc)
 
 
 def first_bar_after(series: m.Series, due: datetime, now: datetime) -> int | None:

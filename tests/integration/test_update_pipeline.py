@@ -94,3 +94,15 @@ def test_update_survives_partial_price_failures(conn, tmp_path):
     assert r["steps"]["Ceny (Yahoo)"].startswith("DONE")
     assert any("GFUZ" in w for w in r["warnings"])
     assert r["run_id"] is not None
+
+
+def test_bar_close_time_follows_new_york_daylight_saving():
+    """Závěr je použitelný 15 min po závěrce v New Yorku (letní i zimní čas); večerní rutina ve 20:47 UTC v létě
+    už dnešní závěr vidí (dřív pevných 21:00 UTC → vyhodnocení se zpozdilo o obchodní den)."""
+    from types import SimpleNamespace
+    assert update.bar_close_time("2026-10-09") == datetime(2026, 10, 9, 20, 15, tzinfo=timezone.utc)
+    assert update.bar_close_time("2026-12-09") == datetime(2026, 12, 9, 21, 15, tzinfo=timezone.utc)
+    series = SimpleNamespace(dates=["2026-10-08", "2026-10-09"])
+    due = datetime(2026, 10, 9, 13, 3, tzinfo=timezone.utc)
+    assert update.first_bar_after(series, due, datetime(2026, 10, 9, 20, 48, tzinfo=timezone.utc)) == 1
+    assert update.first_bar_after(series, due, datetime(2026, 10, 9, 19, 30, tzinfo=timezone.utc)) is None
