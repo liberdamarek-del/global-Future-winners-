@@ -8,6 +8,11 @@ Bez pohledu do budoucnosti: částka transakce je známá v den akce; vstup až 
 pokračování, ne samotná reakce na oznámení); tržní hodnota z akcií známých k danému dni. Párování příjemce zakázky
 s firmou jen přes přesnou shodu normalizovaného jména (dceřiné firmy s jiným jménem se ztratí — přesnost před úplností).
 Omezení: ceny jen dnes obchodovaných firem (zkreslení přeživších), měřeno proti kontrole ze stejného oboru.
+
+Upřesnění PŘED vyhodnocením kroku 2 (2026-10-11, výsledky ještě neviděny): příjemce z cíleného stažení se přijme jen
+při přesné shodě celého normalizovaného jména, nebo když klíč firmy má DVĚ slova a jméno příjemce jimi začíná
+(dceřiné firmy „Kratos Defense & Rocket Support“); jednoslovný klíč jen přesně („Alamo Group“ ≠ „Alamo City
+Engineering“). Jedna událost na firmu a měsíc (největší zakázka) — shluky zakázek nenafukují počet případů.
 """
 
 import json
@@ -59,6 +64,17 @@ def firm_key(name: str) -> str | None:
     return " ".join(words[:2])
 
 
+def strict_match(security_name: str, recipient: str) -> bool:
+    """Přísná shoda příjemce zakázky s firmou (viz upřesnění v záhlaví)."""
+    full, rec = norm(security_name), norm(recipient)
+    if not rec:
+        return False
+    if rec == full:
+        return True
+    key = firm_key(security_name)
+    return bool(key) and len(key.split()) == 2 and (rec + " ").startswith(key + " ")
+
+
 def target_firms(cache_conn, symbols: set[str]) -> list[tuple[str, str, object]]:
     """Menší americké firmy (20 mil.–5 mld. USD) z oborů, kde jsou vládní zakázky běžné."""
     out = []
@@ -74,15 +90,22 @@ def target_firms(cache_conn, symbols: set[str]) -> list[tuple[str, str, object]]
 def events(cache_conn, market, fund: Fundamentals) -> tuple[list[E.Event], dict]:
     us = {s for s in market.data.secs if "." not in s}
     idx = name_index(cache_conn, us)
-    stats = {"transakci": 0, "novych_zakazek": 0, "sparovano": 0, "bez_hodnoty_firmy": 0}
-    out = []
+    stats = {"transakci": 0, "novych_zakazek": 0, "sparovano": 0, "odmitnuto_volna_shoda": 0, "bez_hodnoty_firmy": 0,
+             "slouceno_v_mesici": 0}
+    names = {sym: name for sym, name in cache_conn.execute("SELECT symbol, name FROM securities")}
+    best: dict[tuple[str, str], E.Event] = {}
     rows = [(idx.get(norm(r[2])), *r) for r in cache_conn.execute(
         "SELECT award_id, mod, recipient, action_date, amount, agency, description FROM gov_tx")]
     try:                                       # cílené stažení menších firem (symbol přiřazen při stažení)
-        rows += [tuple(r) for r in cache_conn.execute(
+        firm_rows = [tuple(r) for r in cache_conn.execute(
             "SELECT symbol, award_id, mod, recipient, action_date, amount, agency, description FROM gov_tx_firm")]
     except Exception:
-        pass
+        firm_rows = []
+    for r in firm_rows:
+        if strict_match(names.get(r[0]) or "", r[3]):
+            rows.append(r)
+        else:
+            stats["odmitnuto_volna_shoda"] += 1
     seen = set()
     for sym, award, mod, rec, day, amount, agency, desc in rows:
         stats["transakci"] += 1
@@ -104,9 +127,15 @@ def events(cache_conn, market, fund: Fundamentals) -> tuple[list[E.Event], dict]
             stats["bez_hodnoty_firmy"] += 1
             continue
         ratio = amount / pow(2.718281828459045, lm)
-        out.append(E.Event(sym, d + 7, d, "ZAKAZKA", {"pomer": ratio, "castka": amount, "prijemce": rec, "urad": agency,
-                                                     "zakazka": award, "popis": desc}))
-    return out, stats
+        ev = E.Event(sym, d + 7, d, "ZAKAZKA", {"pomer": ratio, "castka": amount, "prijemce": rec, "urad": agency,
+                                               "zakazka": award, "popis": desc})
+        k = (sym, day[:7])
+        if k in best:
+            stats["slouceno_v_mesici"] += 1
+            if best[k].meta["pomer"] >= ratio:
+                continue
+        best[k] = ev
+    return list(best.values()), stats
 
 
 def run(cache_conn, main_conn, *, log=print) -> dict:
