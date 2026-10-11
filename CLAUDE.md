@@ -42,6 +42,9 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   Postup u každé změny: POZOROVAT → POCHOPIT → PROPOJIT → ANALYZOVAT → NAVRHNOUT → IMPLEMENTOVAT → OTESTOVAT →
   VYHODNOTIT. Zpráva `docs/ARCHITEKTURA_2026-10-07.md`.
 
+- 2026-10-11: **web ukazuje v každé sekci nejvýš 10 firem** (`site.WEB_TOP`; žebříčky 14 dní / 1 měsíc / 6 měsíců,
+  rakety, smart money, události); modely, ledger a centrum dál pracují s TOP 20 (měření se nemění). Výsledky predikcí
+  a celý řetězec: prvních 10 + „Zobrazit všech“.
 - 2026-10-11: **autonomní režim** — Claude samostatně zkoumá, vytváří hypotézy (předem), experimentuje (validace →
   zamčený test jednou), zapisuje úspěchy i neúspěchy do `docs/VYZKUM.md` a poučení do `lessons`, pravidelně hlásí
   zjištění. Neobchází blokace webů, nepíše do veřejných diskusí, nevydává se za člověka; o schválení žádá jen u

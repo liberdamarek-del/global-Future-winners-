@@ -4,6 +4,16 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-11 · v0.12.1 — Web: nejvýš 10 firem v každé sekci
+
+Důvod: rozhodnutí uživatele 2026-10-11 („zkrať každou sekci aspoň o pět firem, minimum je 10“). Zvoleno 10: model
+v horním pásmu firmy přesně nerozliší a výběr („vyber“) zatím není ověřený — kratší seznam je přehlednější.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `site.py` (`WEB_TOP = 10`) | Žebříčky 14 dní, 1 měsíc, 6 měsíců (všechny i velké firmy), rakety v žebříčku, „nejvyšší riziko pádu“, události, signály smart money, politici a obchody Pelosi: 20 / 12 → 10. Modely, ledger, centrum a vyhodnocení dál pracují s TOP 20 (měření se nemění) | `test_site_limits.py` |
+| `web/index.html` | Karty raket: 10 nejnovějších běžících (20 → 10); výsledky predikcí a celý energetický řetězec: prvních 10 + tlačítko „Zobrazit všech“ (historie zůstává veřejná); změny postoje 20 → 10 | vykreslení v prohlížeči s daty: všechny sekce ≤ 10, tlačítko 10 → 46 |
+
 ## 2026-10-11 · v0.12.0 — Nový modul: nejsilnější sázky fondů (SEC 13F, výzkum E4)
 
 Důvod: autonomní výzkum nového bezplatného typu informace ([docs/VYZKUM.md](docs/VYZKUM.md), E4). Hypotéza a protokol

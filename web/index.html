@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one decision first — a horizon switch (14 days / 1 month / 6 months) over a ranked TOP 20; each row
+/* Layout: one decision first — a horizon switch (14 days / 1 month / 6 months) over a ranked TOP 10 (user decision 2026-10-11: max 10 firms per section); each row
    expands into the full card. Everything else (tests, rockets, smart money, scorecard, energy chain, sources) lives
    folded under „Další analýzy“, read top-down: signal tests → 6-month rocket calls → smart-money signals → their scorecard → AI→power chain → how the models learn → winners & sector waves → sources & e-mail log.
    Detail lives in folded <details>, so the first screen shows only the calls and their odds. */
@@ -221,7 +221,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     <header><h2 id="h-rk">Rakety na 6 měsíců</h2><span class="small muted">Cíl: cena aspoň +50 % do 6 měsíců. Výsledek se zapíše sám.</span></header>
     <div id="rk-test"><div class="empty">Test modelu se objeví po týdenním globálním hledání.</div></div>
     <div class="cards" id="rk-cards"><div class="empty">Predikce raket se objeví po týdenním globálním hledání (sobota).</div></div>
-    <p class="small muted">Šance = jak často akcie se stejně vysokým skóre opravdu vyrostly o +50 % v období, které model při učení neviděl. Propad = jak často spadly o třetinu. Nejde o doporučení k nákupu.</p>
+    <p class="small muted">Ukazuje se 10 nejnovějších běžících predikcí raket; všechny jsou ve Výsledcích predikcí. Šance = jak často akcie se stejně vysokým skóre opravdu vyrostly o +50 % v období, které model při učení neviděl. Propad = jak často spadly o třetinu. Nejde o doporučení k nákupu.</p>
   </section>
 
   <section class="panel" id="smart" aria-labelledby="h-sm">
@@ -246,6 +246,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
       <thead><tr><th>Datum</th><th>Firma</th><th>Predikce</th><th class="r">Cena</th><th class="r">Teď</th><th class="r">Max. dosud</th><th class="r">+7 d</th><th class="r">+30 d</th><th class="r">+3 m</th><th class="r">+6 m</th><th>Stav</th></tr></thead>
       <tbody id="pred-rows"><tr><td colspan="11" class="muted">Data se načítají…</td></tr></tbody>
     </table></div>
+    <div class="seg" id="pred-more"></div>
     <p class="small muted">Raketa: HIT = cena aspoň jednou dosáhla +50 % do 6 měsíců, MISS = nedosáhla, „čeká“ = 6 měsíců ještě neuplynulo. Energie a smart money: HIT = akcie porazila S&amp;P 500 (smart money se rozhoduje po 6 měsících).</p>
   </section>
 
@@ -280,6 +281,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
         <thead><tr><th class="r">#</th><th>Ticker</th><th>Firma</th><th>Článek</th><th class="r">Skóre</th><th class="r">Šance vs S&amp;P</th><th class="r">20 dní</th><th class="r">120 dní</th></tr></thead>
         <tbody id="radar-rows"></tbody>
       </table></div>
+      <div class="seg" id="radar-more"></div>
     </details>
   </section>
 
@@ -360,6 +362,17 @@ details.fold[open] > summary { margin-bottom: 10px; }
   const RANK = {raketa: "jen šance na raketu", asymetrie: "raketa minus propad", pomer: "poměr raketa / propad", vydrzi: "raketa, která vydrží", vydrzi_asym: "vydrží minus propad"};
 
   let A = null, P = null, R = null, D = null, S = null, G = null, filt = "";
+  // Každá sekce ukazuje nejvýš 10 firem (rozhodnutí uživatele 2026-10-11); delší záznamy (výsledky, celý řetězec) jdou rozbalit.
+  const TOP = 10, MORE = {}, MORE_RENDER = {};
+  const cut = (list, key) => (MORE[key] ? list : list.slice(0, TOP));
+  MORE_RENDER.pred = () => renderPreds(); MORE_RENDER.radar = () => renderEnergy();
+  const moreBtn = (key, total) => total > TOP ? `<button type="button" class="tab" data-more="${key}">${MORE[key] ? "Zobrazit jen prvních " + TOP : "Zobrazit všech " + total}</button>` : "";
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-more]");
+    if (!b) return;
+    MORE[b.dataset.more] = !MORE[b.dataset.more];
+    (MORE_RENDER[b.dataset.more] || (() => {}))();
+  });
   try { filt = localStorage.getItem("gfw_filter") || ""; } catch (e) {}
 
   function renderTop() {
@@ -389,7 +402,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     const list = live.length ? live : ((rk && rk.kandidati) || []).map((c) => ({ticker: c.ticker, nazev: c.nazev, obor: c.obor, cena: c.cena, mena: c.mena,
       datum: null, p_beat: c.hist_rakety * 100, p_propad: c.hist_propady * 100, zakladni: c.zakladni_cetnost * 100, cil: 50, aktualne: null}));
     if (!list.length) return;
-    $("rk-cards").innerHTML = list.map((p) => {
+    $("rk-cards").innerHTML = list.slice(0, TOP).map((p) => {
       const c = cand[p.ticker] || {}, a = p.aktualne || {};
       const reached = nil(a.max_dosud) ? 0 : Math.max(0, Math.min(100, a.max_dosud / (p.cil || 50) * 100));
       return `<article class="card">
@@ -458,7 +471,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
       <td class="st">${chipS(m.stav)}</td><td class="small num">${m.posledni ? esc(praha(m.posledni)) : "–"}</td></tr>`).join("");
     const LVL = {CHYBA: "err", "VAROVÁNÍ": "warn", INFO: ""};
     const ch = (HP.kontroly || []).map((c) => `<li><span class="chip ${LVL[c.uroven] ?? ""}">${esc(c.uroven)}</span> ${esc(c.text)}</li>`).join("");
-    const zm = (HP.zmeny || []).slice(0, 20).map((z) => `<li><b>${esc(z.ticker)}</b>: ${esc(z.z)} → ${esc(z.na)}</li>`).join("");
+    const zm = (HP.zmeny || []).slice(0, TOP).map((z) => `<li><b>${esc(z.ticker)}</b>: ${esc(z.z)} → ${esc(z.na)}</li>`).join("");
     $("sys-checks").innerHTML = `<ul class="facts">${ch || "<li>Bez nálezů.</li>"}</ul>${zm ? `<div><span class="label">Změny postoje od minulého běhu</span><ul class="facts">${zm}</ul></div>` : ""}`;
     $("sys-src").innerHTML = (sy.zdroje || []).map((z) => `<tr><td>${esc(z.zdroj)}</td><td class="st">${chipS(z.stav)}</td><td class="small">${esc(z.detail)}</td></tr>`).join("");
     $("sys-log").innerHTML = (sy.denik || []).map((j) => `<tr><td class="small num">${esc(praha(j.zacatek))}</td><td>${esc(j.prikaz)}</td><td class="r num">${fmt(j.trvani_s, 0)}</td>
@@ -577,7 +590,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     }).join("") : `<li class="empty">Pro tento výběr zatím nejsou kandidáti.</li>`;
     const hd = t.horni_desetina || {}, dd = t.dolni_desetina || {};
     const avoid = (Z6.vyhnout || []).map((c) => c.ticker).join(", ");
-    $("zeb-foot").textContent = `POZOR: model u těchto firem vidí vyšší šanci na +40 %, ale i vyšší riziko poklesu — na validaci TOP 20 dosáhlo +40 % ve 14 % případů (běžná akcie 6,5 %) a −25 % ve 38 % (běžná 21 %). Hodí se spíš jako koš více firem než jedna sázka. Zamčený test: AUC růst ${fmt(t.auc_rust, 2)}, pokles ${fmt(t.auc_pokles, 2)}; nejslabší desetina modelu klesla o 25 % v ${pct(dd.down5)} případů (horní desetina ${pct(hd.down5)}).${avoid ? " Nejvyšší riziko pádu: " + avoid + "." : ""} Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Ne doporučení k nákupu.`;
+    $("zeb-foot").textContent = `POZOR: model u těchto firem vidí vyšší šanci na +40 %, ale i vyšší riziko poklesu — na validaci dosáhlo 20 nejlépe hodnocených firem +40 % ve 14 % případů (běžná akcie 6,5 %) a −25 % ve 38 % (běžná 21 %). Hodí se spíš jako koš více firem než jedna sázka. Zamčený test: AUC růst ${fmt(t.auc_rust, 2)}, pokles ${fmt(t.auc_pokles, 2)}; nejslabší desetina modelu klesla o 25 % v ${pct(dd.down5)} případů (horní desetina ${pct(hd.down5)}).${avoid ? " Nejvyšší riziko pádu: " + avoid + "." : ""} Potenciál = horní pětina výsledků ve 40 nejpodobnějších historických situacích. Ne doporučení k nákupu.`;
   }
   const ARROW = (d) => d > 0 ? `<span class="arrow pos">↑</span>` : `<span class="arrow neg">↓</span>`;
   const EVID = {"EMPIRICKY_I_LOGIKA": "data i logika", "EMPIRICKY": "jen data, bez logiky (NEOVĚŘENO)", "LOGIKA_NEOVERENO": "jen logika (NEOVĚŘENO)"};
@@ -746,7 +759,8 @@ details.fold[open] > summary { margin-bottom: 10px; }
     $("accuracy").innerHTML = stat("Rakety rozhodnuté", `${fmt(rk.zasahu, 0)} z ${fmt(rk.rozhodnuto, 0)}`, `${fmt(rk.bezi, 0)} ještě běží · čekali jsme ${rk.ocekavano === null || rk.ocekavano === undefined ? "–" : pct(rk.ocekavano)}`) +
       acc.map((a) => stat(`Energie po ${a.dni} dnech`, a.vyhodnoceno ? `${fmt(a.uspesnych, 0)} z ${fmt(a.vyhodnoceno, 0)}` : "–", a.vyhodnoceno ? `porazilo S&P · průměr ${sgn(a.prumer_nad_spy)}` : "zatím nevyhodnoceno")).join("");
     document.querySelectorAll("[data-f]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.f === filt)));
-    const list = (P.predikce || []).filter((p) => !filt || p.typ === filt);
+    const all = (P.predikce || []).filter((p) => !filt || p.typ === filt), list = cut(all, "pred");
+    $("pred-more").innerHTML = moreBtn("pred", all.length);
     $("pred-rows").innerHTML = list.length ? list.map((p) => {
       const v = p.vysledky || {}, a = p.aktualne || {};
       const what = p.typ === "raketa" ? `<span class="chip warn">raketa</span> +${fmt(p.cil, 0)} % do 6 m · šance ${pc(p.p_beat, 0)}` :
@@ -782,7 +796,8 @@ details.fold[open] > summary { margin-bottom: 10px; }
       <td><span class="chip ${k.jistota === "VERIFIED" ? "ok" : "warn"}">${esc(k.jistota)}</span></td>
       <td><b>${esc(k.ticker || "")}</b> <span class="small muted">${esc(k.firma)}</span></td><td class="small">${esc(k.popis)}</td>
       <td class="small"><a href="${url(k.url)}" target="_blank" rel="noopener">${esc(k.zdroj)}</a></td></tr>`).join("") || `<tr><td colspan="5" class="muted">Žádné otevřené katalyzátory.</td></tr>`;
-    $("radar-rows").innerHTML = (A.vsechny || []).map((r) => `<tr><td class="r num">${esc(r.poradi)}</td><td><b>${esc(r.ticker)}</b></td><td>${esc(r.nazev)}</td>
+    $("radar-more").innerHTML = moreBtn("radar", (A.vsechny || []).length);
+    $("radar-rows").innerHTML = cut(A.vsechny || [], "radar").map((r) => `<tr><td class="r num">${esc(r.poradi)}</td><td><b>${esc(r.ticker)}</b></td><td>${esc(r.nazev)}</td>
       <td class="small">${esc((r.retezec || [])[0] || "")}</td><td class="r num"><b>${fmt(r.skore, 0)}</b></td><td class="r num">${pct(r.p_beat)}</td>
       <td class="r num ${cls(r.zmena_20d)}">${sgn(r.zmena_20d)}</td><td class="r num ${cls(r.zmena_120d)}">${sgn(r.zmena_120d)}</td></tr>`).join("");
     const md = A.model || {}, o = md.mimo_vzorek || {};

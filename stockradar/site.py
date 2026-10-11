@@ -15,6 +15,9 @@ from stockradar.timeutil import to_iso, utcnow
 # db dokument má na serveru limit 256 KiB; server ho ukládá ~1,4–1,5× větší než náš kompaktní JSON
 # (změřeno 2026-10-02: 155 720 B → 218 076 B). Proto hlídáme 170 KiB kompaktního textu.
 DOC_LIMIT = 170 * 1024
+# Rozhodnutí uživatele 2026-10-11: každá sekce webu ukazuje nejvýš 10 firem (dřív TOP 20). Modely, ledger, centrum a
+# vyhodnocení dál pracují s TOP 20 — zkracuje se jen to, co se zobrazuje (měření zůstává srovnatelné).
+WEB_TOP = 10
 
 FREE_SOURCES = [
     {"nazev": "Yahoo Finance chart API", "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY",
@@ -328,7 +331,7 @@ def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
             "cena_posledni", "cena_aktualni", "den_ceny", "pohyb_od_zverejneni", "skore", "fundament", "buyback",
             "katalyzator", "historie_nakupujiciho", "korelace_vs_pricina", "hlavni_riziko", "verdikt", "verdikt_proc")
     top = [{k: s.get(k) for k in keep} | {"form4": [o.get("url") for o in s.get("overeni", [])][:3]}
-           for s in (full.get("aktualni") or {}).get("top", [])]
+           for s in (full.get("aktualni") or {}).get("top", [])[:WEB_TOP]]
     pel = [p for p in full.get("pelosi", []) if p.get("trida") == "AKTIVNÍ NÁKUP" and p.get("vstup")]
     return {
         "beh": {"id": run["id"], "probehlo": run["run_at"], "data_do": run["data_through"], "verze": run["app_version"]},
@@ -339,9 +342,9 @@ def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
                                if r["situace"] in ("vše", "po propadu 30 %+")],
         "po_letech": full.get("insider_po_letech"),
         "vs_qqq": full.get("vs_qqq"),
-        "pelosi": pel[-12:], "pelosi_pocet": len(full.get("pelosi", [])),
+        "pelosi": pel[-WEB_TOP:], "pelosi_pocet": len(full.get("pelosi", [])),
         "politici_osoby": [p for p in full.get("politici_osoby", []) if p.get("n")][:8],
-        "politici_aktualni": (full.get("politici_aktualni") or [])[:12],
+        "politici_aktualni": (full.get("politici_aktualni") or [])[:WEB_TOP],
         "skore": (full.get("skore") or {}).get("test_kvintily"),
         "top": top, "kandidatu": (full.get("aktualni") or {}).get("kandidatu"),
         "nakupu": (full.get("aktualni") or {}).get("pocet_nakupu"),
@@ -424,7 +427,7 @@ def _ledger_rocket(conn, ticker: str) -> dict | None:
 
 
 def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
-    """Dokument stav/zebricek — hlavní obrazovka: TOP 20 pro 14 dní, 1 měsíc a 6 měsíců + detail každé firmy."""
+    """Dokument stav/zebricek — hlavní obrazovka: TOP 10 (WEB_TOP) pro 14 dní, 1 měsíc a 6 měsíců + detail každé firmy."""
     from stockradar.signals.store import history
     out = {}
     for name, key in SIGNAL_MODELS:
@@ -445,7 +448,7 @@ def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
             "test": {"auc_rust": (test.get("up5") or {}).get("auc"), "auc_pokles": (test.get("down5") or {}).get("auc"),
                      "horni_desetina": test.get("horni_desetina"), "rust": dec.get("RŮST"), "stav": test.get("_stav")},
             "firmy": [_trim_card(c) | {"historie": [h for h in history(conn, c["ticker"]) if h["den"] < c["den_ceny"]][:4]}
-                      for c in rows[:20]],
+                      for c in rows[:WEB_TOP]],
         }
     disc = conn.execute("SELECT * FROM discovery_runs ORDER BY id DESC LIMIT 1").fetchone()
     if disc is not None:
@@ -455,7 +458,7 @@ def build_zebricek_doc(conn: sqlite3.Connection) -> dict | None:
         firmy = []
         xtb_list = rk.get("kandidati_xtb")       # od v0.8.0: jen akcie z nabídky XTB
         from stockradar.sources.xtb import unique_listing
-        for i, c in enumerate(unique_listing(xtb_list if xtb_list is not None else rk.get("kandidati", []))[:20]):
+        for i, c in enumerate(unique_listing(xtb_list if xtb_list is not None else rk.get("kandidati", []))[:WEB_TOP]):
             firmy.append({k: c.get(k) for k in ("ticker", "nazev", "zeme", "obor", "faze", "cena", "mena", "den", "p_raketa",
                                                 "p_propad", "percentil", "skupina", "hist_rakety", "hist_propady",
                                                 "hist_median", "hist_q20", "hist_q80", "zakladni_cetnost", "proc", "proti",
@@ -483,7 +486,7 @@ def build_zebricek6m_doc(conn: sqlite3.Connection) -> dict | None:
     # POKLES z téhož modelu do vítězů nepatří (rozpor) — přesunou se mezi „nejvyšší riziko pádu“
     pick = lambda key: [_trim_card(c) | {"historie": [h for h in history(conn, c["ticker"]) if h["den"] < c["den_ceny"]][:3]}
                         for c in sorted((c for c in cards if c.get(key) and c.get("final") != "POKLES"),
-                                        key=lambda c: c[key])[:20]]
+                                        key=lambda c: c[key])[:WEB_TOP]]
     return {"model": "SIGNAL_6M", "horizont": full.get("horizont"), "data_do": run["data_through"], "probehlo": run["run_at"],
             "prah_rust": full.get("prah_rust"), "prah_pokles": full.get("prah_pokles"), "akcii": (full.get("dnes") or {}).get("akcii"),
             "trh": "USA (data SEC)", "razeni": full.get("razeni"), "zaklad": full.get("zaklad"), "xtb": full.get("xtb"),
@@ -494,7 +497,7 @@ def build_zebricek6m_doc(conn: sqlite3.Connection) -> dict | None:
                      "stav": test.get("_stav")},
             "firmy": pick("poradi"), "velke": pick("poradi_velke"),
             "vyhnout": [{k: c.get(k) for k in ("ticker", "firma", "p_up", "p_down", "duvera", "xtb", "poradi_celkem")}
-                        for c in cards if c.get("final") == "POKLES"][:12]}
+                        for c in cards if c.get("final") == "POKLES"][:WEB_TOP]}
 
 
 def build_causal_doc(conn: sqlite3.Connection) -> dict | None:
@@ -511,7 +514,7 @@ def build_causal_doc(conn: sqlite3.Connection) -> dict | None:
     reg = full.get("test_retezcu") or {}
     lt = reg.get("zamceny_test") or {}
     return {"beh": {"id": r["id"], "probehlo": r["run_at"], "data_do": r["data_through"], "verze": r["app_version"]},
-            "princip": full.get("princip"), "karty": cards, "prilezitosti": full.get("prilezitosti", [])[:20],
+            "princip": full.get("princip"), "karty": cards, "prilezitosti": full.get("prilezitosti", [])[:WEB_TOP],
             "historie": full.get("historie"), "gdacs": full.get("gdacs"), "vysledky": full.get("vysledky"),
             "test": {"konfigurace": reg.get("konfigurace"), "pokusu": reg.get("pokusu"),
                      "vyhodnoceno": lt.get("_vyhodnoceno"),

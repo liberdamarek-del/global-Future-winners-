@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-11 · **Verze:** v0.12.0 · **Schema DB:** v9 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-11 · **Verze:** v0.12.1 · **Schema DB:** v9 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -23,6 +23,7 @@
   akcie); ověřuje se na xtb.com před zařazením. Ledger se nemění (XTB dál není podmínkou predikcí).
 - 2026-10-06: kauzální radar (svět → událost → komodita → obory → firmy) a „další Microsoft“ = firma s šancí na
   ~+40 % za 6 měsíců (model SIGNAL_6M). Zpráva [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md).
+- 2026-10-11: **web ukazuje v každé sekci nejvýš 10 firem** (dřív TOP 20); modely, ledger a centrum dál pracují s TOP 20. Dlouhé záznamy (výsledky predikcí, celý řetězec) prvních 10 + „Zobrazit všech“.
 - 2026-10-11: **autonomní režim** — samostatně zkoumat, vytvářet hypotézy, experimentovat, učit se z výsledků a pravidelně hlásit zjištění; deník [docs/VYZKUM.md](docs/VYZKUM.md). Hranice: bez obcházení blokací, bez psaní do veřejných diskusí, zamčené testy jen jednou.
 - 2026-10-07: systém = **propojená síť specializovaných částí** (předávají si kontext, kontrolují se, učí se ze zpětné
   vazby), paměť běhů a výsledků, žádné opakované výpočty bez důvodu, stavy HOTOVO/OVĚŘENO, ROZPRACOVÁNO, BLOKOVÁNO,
@@ -124,7 +125,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 151 testů prošlo 2026-10-11)
+## HOTOVO (ověřeno testy — 152 testů prošlo 2026-10-11)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -135,7 +136,7 @@
 | `universe.py` | Výzkum: uzly řetězce, firmy, dohody, katalyzátory se zdroji; API pro denní výzkum | `test_universe.py` |
 | `model.py` | 9 faktorů, učení vah z historie (IC, bez look-ahead), kalibrace, test mimo vzorek, verze modelu | `test_model.py` |
 | `update.py` | Denní běh: ceny → vyhodnocení → učení → skóre → predikce → snapshot → export → web | `test_update_pipeline.py` |
-| `site.py` | Data pro web (7 dokumentů `stav/*` včetně `zebricek`, limit 170 kB kvůli serveru) | `test_update_pipeline.py`, `test_discovery_pipeline.py` |
+| `site.py` | Data pro web (10 dokumentů `stav/*` včetně `zebricek`, limit 170 kB kvůli serveru; v každé sekci nejvýš 10 firem — `WEB_TOP`) | `test_update_pipeline.py`, `test_discovery_pipeline.py` |
 | `web/index.html` | Webový přehled (artifact s db): hlavní stránka = žebříček se záložkami, ostatní v „Další analýzy“ | syntax check; vykreslení desktop/mobil (Playwright); čtení dat ověřeno na úrovni `view` |
 | `cli.py` | + `update`, `discover`, `sources`, `email`, `diag` | `tests/end_to_end/test_cli.py` |
 | `contact.py`, `migrations/0004` | E-mail jen pro SEC, evidence každého použití (nemazatelná) | `tests/unit/test_sources.py` |
