@@ -340,17 +340,22 @@ def rank_key(name: str, pu: float, pdn: float, ph: float | None) -> float:
     return ph - pdn
 
 
-def choose_ranking(ev: dict) -> str:
-    """Předem daná pravidla: řazení s největším rozdílem (rakety − propady) v horním 1 %, při shodě vyšší medián."""
+def choose_ranking(folds: list[dict]) -> str:
+    """Předem daná pravidla, vybraná na VALIDAČNÍCH pololetích (walk-forward před obdobím testu), ne na testu:
+    řazení s největším průměrným rozdílem (rakety − propady) v horním 1 %, při shodě vyšší medián. Do 2026-10-11 se
+    vybíralo přímo na testu (5 variant) → test nebyl nezávislý."""
     def key(name):
-        t = ev[name]["top1"]
-        return (round(t["rakety"] - t["propady"], 3), t["median"])
-    return max((r for r in RANKINGS if r in ev), key=key)
+        tops = [f["razeni"][name]["top1"] for f in folds if name in f.get("razeni", {}) and f["razeni"][name]["top1"].get("n")]
+        if not tops:
+            return (-9.0, -9.0)
+        return (round(statistics.fmean(t["rakety"] - t["propady"] for t in tops), 3), statistics.fmean(t["median"] for t in tops))
+    options = [r for r in RANKINGS if any(r in f.get("razeni", {}) for f in folds)]
+    return max(options, key=key) if options else "asymetrie"
 
 
-def walk_forward(panel: Panel, labeled: list[int], features: list[str], ranking: str, *, log=print) -> list[dict]:
-    """Drží výhoda i v jiných obdobích? Pro každé pololetí z WALK_FORWARD: učení jen na starších datech, test
-    předem zvoleného řazení (žádný výběr podle výsledku), horní 1 % a 5 % proti všem akciím."""
+def walk_forward(panel: Panel, labeled: list[int], features: list[str], *, log=print) -> list[dict]:
+    """Pololetí z WALK_FORWARD: učení jen na starších datech, horní 1 % a 5 % každého řazení proti všem akciím.
+    Pololetí končící před TEST_START jsou VALIDACE (slouží k výběru řazení); test se k výběru nepoužívá."""
     out = []
     for train_end, test_start, test_end in WALK_FORWARD:
         a, b, c = train_end.toordinal(), test_start.toordinal(), test_end.toordinal()
@@ -358,17 +363,26 @@ def walk_forward(panel: Panel, labeled: list[int], features: list[str], ranking:
         te = [k for k in labeled if b <= panel.day[k] <= c]
         if len(tr) < MIN_FOLD_TRAIN or len(te) < MIN_FOLD_TEST:
             continue
-        up, down = train(panel, tr, "up", features), train(panel, tr, "down", features)
-        hold = train(panel, tr, "hold", features) if ranking.startswith("vydrzi") else None
+        up, down, hold = train(panel, tr, "up", features), train(panel, tr, "down", features), train(panel, tr, "hold", features)
         ev = evaluate(panel, te, up, down, hold)
-        row = {"uceni_do": train_end.isoformat(), "test": f"{test_start.isoformat()}..{test_end.isoformat()}",
-               "vzorku": len(te), "zaklad": ev["zaklad"], "top1": ev[ranking]["top1"], "top5": ev[ranking]["top5"],
-               "auc_raketa": ev["auc_raketa"]}
-        row["vyhoda"] = bool(row["top1"]["rakety"] > row["zaklad"]["rakety"]
-                             and row["top1"]["rakety"] > row["top1"]["propady"])
+        out.append({"uceni_do": train_end.isoformat(), "test": f"{test_start.isoformat()}..{test_end.isoformat()}",
+                    "validace": test_end < TEST_START, "vzorku": len(te), "zaklad": ev["zaklad"],
+                    "auc_raketa": ev["auc_raketa"], "razeni": {r: ev[r] for r in RANKINGS if r in ev}})
+    return out
+
+
+def stability_rows(folds: list[dict], ranking: str, *, log=print) -> list[dict]:
+    """Zpětně kompatibilní souhrn pro web a ledger: horní 1 % a 5 % zvoleného řazení v každém pololetí."""
+    out = []
+    for f in folds:
+        top = f["razeni"].get(ranking) or {}
+        row = {"uceni_do": f["uceni_do"], "test": f["test"], "validace": f["validace"], "vzorku": f["vzorku"],
+               "zaklad": f["zaklad"], "top1": top.get("top1", {}), "top5": top.get("top5", {}), "auc_raketa": f["auc_raketa"]}
+        row["vyhoda"] = bool(row["top1"].get("rakety", 0) > row["zaklad"]["rakety"]
+                             and row["top1"].get("rakety", 0) > row["top1"].get("propady", 1))
         out.append(row)
-        log(f"Stabilita {row['test']}: raketa {row['top1']['rakety']} vs {row['zaklad']['rakety']}, "
-            f"propad {row['top1']['propady']}")
+        log(f"Stabilita {row['test']}: raketa {row['top1'].get('rakety')} vs {row['zaklad']['rakety']}, "
+            f"propad {row['top1'].get('propady')}")
     return out
 
 
@@ -393,10 +407,12 @@ def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: 
     ev = evaluate(panel, te, up, down, hold)
     up_p, down_p = train(panel, tr, "up", PRICE_ONLY), train(panel, tr, "down", PRICE_ONLY)
     ev_price = evaluate(panel, te, up_p, down_p)
-    ranking = choose_ranking(ev)
+    folds = walk_forward(panel, labeled, feats, log=log)
+    ranking = choose_ranking([f for f in folds if f["validace"]])          # výběr na validaci, ne na testu
     edge = directional_edge(ev, ranking)
-    stability = walk_forward(panel, labeled, feats, ranking, log=log)
-    log(f"Test: AUC {ev['auc_raketa']} (jen cena {ev_price['auc_raketa']}), řazení {ranking}, směrová výhoda {edge}")
+    stability = stability_rows(folds, ranking, log=log)
+    log(f"Test: AUC {ev['auc_raketa']} (jen cena {ev_price['auc_raketa']}), řazení {ranking} (vybráno na validaci), "
+        f"směrová výhoda {edge}")
 
     # finální model: všechny dny se známým výsledkem (víc dat, novější režim trhu)
     final_up, final_down = train(panel, labeled, "up", feats), train(panel, labeled, "down", feats)
@@ -409,7 +425,8 @@ def run(cache_conn, data: study.Data, heat: study.Heat, events: dict, *, top_n: 
         "trenink": f"{study.day_str(min(panel.day[k] for k in tr))}..{TRAIN_END.isoformat()}" if tr else None,
         "test_obdobi": f"{TEST_START.isoformat()}..{study.day_str(max(panel.day[k] for k in te))}" if te else None,
         "vzorku": {"panel": len(panel), "trenink": len(tr), "test": len(te)},
-        "test": ev, "test_jen_cena": ev_price, "razeni": ranking, "smerova_vyhoda": edge, "stabilita": stability,
+        "test": ev, "test_jen_cena": ev_price, "razeni": ranking, "razeni_vybrano": "na validačních pololetích před testem",
+        "smerova_vyhoda": edge, "stabilita": stability,
         "vahy": sorted(({"znak": f, "nazev": ALL_FEATURES[f], "koef": round(w, 3)} for f, w in zip(final_up.features, final_up.w)),
                        key=lambda r: abs(r["koef"]), reverse=True),
         "kandidati": candidates,                 # pořadí modelu bez ohledu na brokera (ledger bere TOP 10)

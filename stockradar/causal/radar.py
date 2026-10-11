@@ -17,7 +17,7 @@ from datetime import date
 from stockradar.causal import commodities as CM
 from stockradar.causal import data as cdata
 from stockradar.causal.chains import _past
-from stockradar.causal.exposure import T_MIN, Exposure, shock
+from stockradar.causal.exposure import T_MIN, Exposure, daily_shock, shock
 
 Z_EVENT = 1.5
 T_STRONG = 3.0      # čistě datová vazba bez ekonomické logiky: přísnější práh (3 250 dvojic → ~160 náhodných při |t| ≥ 2)
@@ -68,9 +68,11 @@ def firms(securities: list[dict], industry: str, *, n: int = 3, check=None) -> l
 
 
 def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pulses: dict, securities: list[dict],
-          study: dict | None = None, xtb_check=None, pulse_history: dict | None = None) -> dict:
+          study: dict | None = None, xtb_check=None, pulse_history: dict | None = None, as_of: date | None = None) -> dict:
     """pulse_history: komodita → počty nových příběhů za 7 dní z předchozích běhů radaru (základ pro „víc zpráv
-    než obvykle“; Google News starší týdny vrací neúplně, proto se základ bere z vlastní historie)."""
+    než obvykle“; Google News starší týdny vrací neúplně, proto se základ bere z vlastní historie).
+    as_of: den běhu — šok komodity se pak počítá z denních cen až k tomuto dni (ne jen k poslednímu dni cen akcií);
+    citlivost oborů a jejich skutečný pohyb („v ceně“) zůstávají k poslednímu dni cen akcií (`today`)."""
     wk = ex.weekly
     w = len(wk.weeks) - 1
     cards, opps = [], []
@@ -80,6 +82,11 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             continue
         bars = commodities.get(cid)
         sh = shock(wk, cid, w)
+        sh_day = wk.weeks[w]
+        if as_of is not None and bars is not None:
+            d = daily_shock(bars, as_of.toordinal())
+            if d is not None:
+                sh, sh_day = (d[0], d[1]), d[2]
         pulse = pulses.get(cid) or {}
         gd = gdacs_links.get(cid) or []
         price_shock = sh is not None and abs(sh[1]) >= Z_EVENT
@@ -137,12 +144,14 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             if it["skore"] > 0 and it["dukaz"] == "EMPIRICKY_I_LOGIKA":
                 opps.append({"komodita": cid, "nazev_komodity": c["nazev"], **it,
                              "firmy": firms(securities, it["obor"], check=xtb_check)})
-        now = cdata.close_at(bars, wk.weeks[w]) if bars else None
+        now = cdata.close_at(bars, sh_day) if bars else None
         cards.append({
             "komodita": cid, "nazev": c["nazev"], "symbol": c["symbol"], "skupina": c["skupina"],
-            "cena": round(now, 4) if now else None, "den": date.fromordinal(wk.weeks[w]).isoformat(),
+            "cena": round(now, 4) if now else None, "den": date.fromordinal(sh_day).isoformat(),
             "pohyb_1t": round(wk.comm[cid][w], 4) if wk.comm[cid][w] == wk.comm[cid][w] else None,
             "pohyb_4t": round(r4, 4) if r4 is not None else None, "z": round(sh[1], 2) if sh else None,
+            "sok_k_datu": date.fromordinal(sh_day).isoformat(),
+            "obory_k_datu": date.fromordinal(wk.weeks[w]).isoformat(),
             "spoustec": [x for x, on in (("cenový šok", price_shock), ("zprávy", news_spike), ("GDACS", gd_hit)) if on],
             "stav": "PŘÍLEŽITOST" if (price_shock or news_spike) else "SLEDOVAT (výstraha bez potvrzení cenou nebo zprávami)",
             "zaklad_smeru": basis, "vyrobci": c["vyrobci"], "vyrobci_stav": CM.NEOVERENO, "uzly": c["uzly"],

@@ -42,6 +42,11 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   Postup u každé změny: POZOROVAT → POCHOPIT → PROPOJIT → ANALYZOVAT → NAVRHNOUT → IMPLEMENTOVAT → OTESTOVAT →
   VYHODNOTIT. Zpráva `docs/ARCHITEKTURA_2026-10-07.md`.
 
+- 2026-10-11: **autonomní režim** — Claude samostatně zkoumá, vytváří hypotézy (předem), experimentuje (validace →
+  zamčený test jednou), zapisuje úspěchy i neúspěchy do `docs/VYZKUM.md` a poučení do `lessons`, pravidelně hlásí
+  zjištění. Neobchází blokace webů, nepíše do veřejných diskusí, nevydává se za člověka; o schválení žádá jen u
+  nevratných kroků, peněz nebo nových oprávnění.
+
 ## Denní úloha (rutina, po–pá večer)
 
 1. `git pull origin ccr-07430f55-or3jhd`, pak `python -m stockradar init` a `python -m stockradar update`

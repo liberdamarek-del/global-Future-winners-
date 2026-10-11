@@ -358,7 +358,7 @@ def cmd_causal(args) -> int:
         if len(seen_days) > 31:
             break
     res = radar.build(ex, comm, today, gdacs_links=links, pulses=pulses, securities=secs, study=st,
-                      xtb_check=checker.check, pulse_history=hist)
+                      xtb_check=checker.check, pulse_history=hist, as_of=_date.today())
     res["test_retezcu"] = reg
     res["pulsy"] = {c: p.get("pribehu_7d") for c, p in pulses.items()}
     res["gdacs"] = {"udalosti": len(gd), "navazane_komodity": sorted(links)} | ({"chyba": gd_error} if gd_error else {})

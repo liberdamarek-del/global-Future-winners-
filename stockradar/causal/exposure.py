@@ -167,3 +167,23 @@ def shock(weekly: Weekly, cid: str, w: int, weeks_back: int = 4, sd_weeks: int =
         return None
     sd = statistics.pstdev(hist)
     return (r, r / sd) if sd > 0 else None
+
+
+def daily_shock(bars, as_of: int, days_back: int = 28, hist_weeks: int = 52, max_stale: int = 5) -> tuple[float, float, int] | None:
+    """Šok komodity z DENNÍCH cen k poslednímu obchodnímu dni ≤ as_of: (výnos za `days_back` dní, z-skóre vůči
+    stejně dlouhým výnosům za posledních `hist_weeks` týdnů, den posledního závěru). Týdenní mřížka končí posledním dnem
+    cen akcií (sobotní stažení), takže bez tohoto by radar pohyby komodit během týdne neviděl (zjištěno 2026-10-08)."""
+    import bisect
+    i = bisect.bisect_right(bars.days, as_of) - 1
+    if i < 0 or as_of - bars.days[i] > max_stale:
+        return None
+    day = bars.days[i]
+    r = cdata.ret(bars, day, days_back)
+    if r is None:
+        return None
+    hist = [h for h in (cdata.ret(bars, day - 7 * k, days_back) for k in range(days_back // 7, days_back // 7 + hist_weeks))
+            if h is not None]
+    if len(hist) < 20:
+        return None
+    sd = statistics.pstdev(hist)
+    return (r, r / sd, day) if sd > 0 else None

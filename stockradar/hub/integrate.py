@@ -31,6 +31,7 @@ LESSON_RULES = {
     "OVERENI-RAKETY-2026-10-03": {"role": {"RAKETY_6M:vyber"}},
     "CHYBA-DAT-REVERSE-SPLIT": {"role": {"RAKETY_6M:vyber"}},
     "SM-ESPP-FLIP-WIX": {"role": {"SMART_MONEY:nakup"}},
+    "POUCENI-KOMBINACE-INSIDER-6M": {"role": {"SMART_MONEY:nakup"}},
     "MECH-KLINICKA-DATA": {"katalyzator": {"CLINICAL_DATA"}, "studie": True},
     "MECH-KRYPTO-TREASURY": {"slova": ("sharplink", "bitcoin", "ethereum", "crypto", "blockchain", "digital asset")},
     "RARE": {"katalyzator_do": CATALYST_SOON_DAYS},

@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-11 · **Verze:** v0.10.1 · **Schema DB:** v8 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md)
+**Aktualizováno:** 2026-10-11 · **Verze:** v0.11.0 · **Schema DB:** v8 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -23,6 +23,7 @@
   akcie); ověřuje se na xtb.com před zařazením. Ledger se nemění (XTB dál není podmínkou predikcí).
 - 2026-10-06: kauzální radar (svět → událost → komodita → obory → firmy) a „další Microsoft“ = firma s šancí na
   ~+40 % za 6 měsíců (model SIGNAL_6M). Zpráva [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md).
+- 2026-10-11: **autonomní režim** — samostatně zkoumat, vytvářet hypotézy, experimentovat, učit se z výsledků a pravidelně hlásit zjištění; deník [docs/VYZKUM.md](docs/VYZKUM.md). Hranice: bez obcházení blokací, bez psaní do veřejných diskusí, zamčené testy jen jednou.
 - 2026-10-07: systém = **propojená síť specializovaných částí** (předávají si kontext, kontrolují se, učí se ze zpětné
   vazby), paměť běhů a výsledků, žádné opakované výpočty bez důvodu, stavy HOTOVO/OVĚŘENO, ROZPRACOVÁNO, BLOKOVÁNO,
   NEOVĚŘENO, CHYBA; postup POZOROVAT → POCHOPIT → PROPOJIT → ANALYZOVAT → NAVRHNOUT → IMPLEMENTOVAT → OTESTOVAT →
@@ -123,7 +124,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 136 testů prošlo 2026-10-11)
+## HOTOVO (ověřeno testy — 138 testů prošlo 2026-10-11)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -156,7 +157,7 @@
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` (centrum se obnoví samo) + diag + výzkum (`research`) + web (10 dokumentů včetně `stav/prehled`), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
 | Živá zpětná vazba | Role se zatím hodnotí jen z testů; první živé výsledky 2026-10-09, spolehlivé po ~30 případech v 6 týdnech |
 | Vyhodnocení ručního výzkumu | Výzkum se ukládá a propojuje, ale zatím se neměří proti cenám (role VÝZKUM = NEOVĚŘENO) |
-| Kauzální radar mezi sobotami | Šok komodity se počítá na týdenní mřížce, která končí posledním dnem cen akcií (sobotní stažení) → denní pohyby komodit po tomto dni radar uvidí až po dalším `discover --download`; karty se proto přes týden opakují (zjištěno 2026-10-08, kandidát na týdenní zlepšení: šok z denních cen komodit, citlivost dál z týdenních řad) |
+| Kauzální radar mezi sobotami | VYŘEŠENO 2026-10-11 (v0.11.0): šok komodity z denních cen k dni běhu |
 | Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `system` + `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` (14 dní, 1 měsíc, 6 měsíců; bez nových cen přeskočí) + `update` + `causal` + `diag` + `hub` + jedno zlepšení kódu s testem + web (10 dokumentů) |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |

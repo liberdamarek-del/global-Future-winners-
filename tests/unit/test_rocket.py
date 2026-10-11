@@ -81,3 +81,15 @@ def test_rocket_predictions_are_evaluated_against_target(conn):
     done = evaluate_predictions(conn, u, NOW + timedelta(days=200))
     res = {(d["prediction_id"], d["days"]): d["result"] for d in done}
     assert res[(slow, 180)] == "MISS" and res[(hit, 180)] == "HIT"
+
+
+def test_ranking_is_chosen_on_validation_folds_not_on_test():
+    """Řazení se vybírá jen z validačních pololetí; výsledek testu výběr neovlivní (oprava 2026-10-11)."""
+    from stockradar.discovery import rocket as R
+
+    def fold(ast, raketa):
+        top = lambda r, p, m: {"top1": {"n": 100, "rakety": r, "propady": p, "median": m}}
+        return {"validace": True, "razeni": {"asymetrie": top(*ast), "raketa": top(*raketa)}}
+    folds = [fold((0.25, 0.10, 0.02), (0.30, 0.30, -0.05)), fold((0.22, 0.12, 0.01), (0.28, 0.25, -0.02))]
+    assert R.choose_ranking(folds) == "asymetrie"            # větší rozdíl rakety − propady na validaci
+    assert R.choose_ranking([]) == "asymetrie"               # bez validace výchozí pravidlo

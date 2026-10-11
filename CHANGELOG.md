@@ -4,6 +4,18 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-11 · v0.11.0 — Autonomní výzkum: experiment spojení rolí, nezávislý test raket, radar z denních cen
+
+Důvod: zadání uživatele 2026-10-11 (autonomní režim: hypotézy, experimenty, učení z výsledků). Deník:
+[docs/VYZKUM.md](docs/VYZKUM.md).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `signals/combo.py` (nový) | Experiment E1: nákup insiderů × varování SIGNAL_6M, předem daná pravidla, výběr na validaci, zamčený test jednou (INSIDER_X_6M). Výsledek: filtr snižuje riziko −25 % (6 % proti 14 %), ale i šanci na +40 % (5 % proti 12 %); výnos bez výhody | ostrý běh, `model_evaluations` |
+| `discovery/rocket.py` | Pravidlo řazení raket se vybírá na validačních pololetích před testem (dřív z 5 variant přímo na testu → test nebyl nezávislý); walk-forward hodnotí všechna řazení | `test_rocket.py::test_ranking_is_chosen_on_validation_folds_not_on_test` |
+| `causal/exposure.py`, `causal/radar.py`, `cli.py` | Šok komodity z denních cen k dni běhu (`daily_shock`), ne jen k poslednímu dni cen akcií; karta nese `sok_k_datu` a `obory_k_datu` | `test_causal.py::test_daily_shock_sees_moves_after_last_stock_day` |
+| `lessons` (#18), `hub/integrate.py` | Poučení POUCENI-KOMBINACE-INSIDER-6M se v centru ukazuje u signálů smart money | ostrý běh `hub --firma ACDC` |
+
 ## 2026-10-11 · v0.10.1 — Včasné vyhodnocení predikcí, výpadek xtb.com, menší dokument žebříčku
 
 Důvod: chyby nalezené v denních a týdenních bězích 2026-10-09 až 2026-10-11 (zlepšení týdne).

@@ -119,3 +119,22 @@ def test_causal_records_are_append_only_and_evaluated(tmp_path):
     with pytest.raises(sqlite3.DatabaseError):
         conn.execute("UPDATE causal_forecasts SET direction = -1")
     assert len(cstore.config_hash()) == 16
+
+
+def test_daily_shock_sees_moves_after_last_stock_day():
+    """Týdenní mřížka končí posledním dnem cen akcií; skok komodity v dalších dnech musí radar vidět z denních cen."""
+    from stockradar.causal.exposure import daily_shock
+    from stockradar.discovery.cache import Bars
+    rng = random.Random(5)
+    start = date(2025, 1, 1).toordinal()
+    days = list(range(start, start + 600))
+    closes, p = [], 100.0
+    for i in range(600):
+        p *= 1 + rng.gauss(0, 0.01) + (0.03 if i >= 592 else 0.0)          # posledních 8 dní prudký růst
+        closes.append(p)
+    bars = Bars("HG=F", "USD", days, closes, [1.0] * 600)
+    before = daily_shock(bars, days[589])                                 # „poslední den cen akcií“
+    after = daily_shock(bars, days[-1])                                   # den běhu radaru
+    assert after is not None and after[1] > 2.5 and after[2] == days[-1]
+    assert before is None or abs(before[1]) < 2.0
+    assert daily_shock(bars, days[-1] + 30) is None                        # stará data (> 5 dní) se nepoužijí
