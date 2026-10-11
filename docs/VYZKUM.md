@@ -86,6 +86,26 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
   „objev“ → u každého nového zdroje nejdřív kontrola párování. Zapsáno `POUCENI-ZAKAZKY-SHODA-JMEN`. Zakázky se do
   modelu ani centra nezapojují; jednotlivou velkou zakázku lze brát jen jako ručně ověřený katalyzátor.
 
+## E4 · 2026-10-11 · „Nejsilnější sázka“ fondů (SEC 13F) → výnos za 6 měsíců (nový typ informace)
+
+- **Předloha:** Cohen, Polk & Silli (2010), „Best Ideas“ — pozice, kterou správce drží nejvíc nad běžnou vahou, měla
+  v USA vyšší výnos než trh. Ověřuje se, zda to platí i v letech 2021–2026 a hlavně u menších firem.
+- **Hypotéza (předem, před stažením dat):** akcie, která je „nejsilnější sázkou“ aspoň jednoho rozloženého správce,
+  má za 6 měsíců vyšší výnos než kontrolní skupina (5 akcií ze stejného oboru s podobným obratem).
+- **Protokol (pevný):**
+  - data: SEC Form 13F Data Sets (zdarma, www.sec.gov, e-mail evidován), období zpráv 2021-03-31 … 2026-03-31;
+  - správci: původní 13F-HR (bez dodatků) podané do 45 dní po konci čtvrtletí; 20–500 akciových pozic (bez opcí);
+  - váha pozice w = hodnota / součet hodnot správce; běžná váha W = průměr w přes všechny takové správce v témže
+    čtvrtletí (nezávisí na jednotkách, které SEC v roce 2023 změnila z tisíců na dolary);
+  - nejsilnější sázka = mezi 20 největšími pozicemi správce ta s největším (w − W), jen akcie z našeho vesmíru
+    (CUSIP → symbol ze souborů SEC Fails-to-Deliver; ETF a fondy vypadnou);
+  - vstup = první závěr po 46. dni od konce čtvrtletí (všechny použité zprávy už jsou veřejné); jedna událost na
+    akcii a čtvrtletí;
+  - skupiny: G1 ≥ 1 správce (hlavní), G2 ≥ 3 správci, G3 = G1 u firem < 2 mld. USD;
+  - POTVRZENO jen při t ≥ 2 (přes kalendářní měsíce) a stejném znaménku v obou polovinách (do 2023 / od 2024);
+    vedle toho podíl +40 % a −25 % za 6 m.
+- **Před výnosy:** kontrola párování CUSIP → symbol na jménech (poučení E3).
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |
