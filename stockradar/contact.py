@@ -9,6 +9,7 @@ stránkách si ho použil“. Proto:
 """
 
 import gzip
+import http.client
 import os
 import sqlite3
 import threading
@@ -114,7 +115,8 @@ def http_get(url: str, purpose: str, *, timeout: int = 60, retries: int = 3) -> 
             if exc.code == 404:
                 raise
             time.sleep((10 if exc.code in (403, 429) else 2) * (attempt + 1))
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as exc:
+            # HTTPException zahrnuje i IncompleteRead (přenos velkého souboru přerušený uprostřed)
             last = exc
             time.sleep(2 * (attempt + 1))
     raise RuntimeError(f"{url}: {last}")

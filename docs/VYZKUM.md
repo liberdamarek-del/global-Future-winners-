@@ -105,6 +105,17 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
   - POTVRZENO jen při t ≥ 2 (přes kalendářní měsíce) a stejném znaménku v obou polovinách (do 2023 / od 2024);
     vedle toho podíl +40 % a −25 % za 6 m.
 - **Před výnosy:** kontrola párování CUSIP → symbol na jménech (poučení E3).
+- **Kontrola párování (2026-10-11, jen jména, výnosy ještě neviděny):** 22 čtvrtletí, 3 118–6 254 správců za
+  čtvrtletí; 30 567 CUSIP ze 23 souborů Fails-to-Deliver. Nalezeno a opraveno:
+  1. náš seznam firem obsahuje i uzavřené fondy (Nuveen, PIMCO, BlackRock…) → vyřazeno 281 fondů podle jména;
+  2. ticker přidělený znovu (Barnes Group „B“ → Barrick „B“ 2025; ceny jsou podle dnešního tickeru) → u tickeru
+     platí jen nejnovější CUSIP, starší jen u stejné firmy (stejné první slovo);
+  3. chyby správců: u ETF nebo jiné firmy uvedou cizí CUSIP („SPDR S&P 500“ s CUSIP Sherwin-Williams, „ALPHABET
+     INC-C“ s CUSIP Global Net Lease) → taková pozice by vypadala jako nejsilnější sázka. Pozice se přijme jen když
+     jméno z 13F odpovídá našemu jménu, popisu z FTD nebo jménu, které pro CUSIP v čtvrtletí používají ≥ 2 správci
+     (odmítnuto 1,7 % pozic).
+  Po opravách: 20 696 událostí, shoda prvního slova jména 95,7 %, náhodný vzorek 40 bez chyby; zbylé neshody jsou
+  převážně přejmenování (J2 → Ziff Davis, MicroStrategy → Strategy, Square → Block).
 
 ## Zvážené, ale odložené hypotézy
 

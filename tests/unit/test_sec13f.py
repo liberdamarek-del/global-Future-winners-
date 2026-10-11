@@ -49,6 +49,9 @@ def test_zip_links_and_ftd_parsing():
 def test_best_idea_is_largest_active_weight_among_mapped_stocks():
     import sqlite3
     from stockradar.discovery import bestideas as B
+    assert B.is_fund("Nuveen Municipal Credit Income Fund ") and not B.is_fund("W.W. Grainger Inc. Common Stock")
+    assert B.is_fund("BlackRock Income Trust Inc.", "Finance Companies")
+    assert not B.is_fund("Office Properties Income Trust", "Equity Real Estate Investment Trusts (REITs)")
     assert B.symbol_for("BFB", {"BF-B"}) == "BF-B" and B.symbol_for("MSFT", {"MSFT"}) == "MSFT" and B.symbol_for("ZZZ", set()) is None
     conn = sqlite3.connect(":memory:")
     conn.executescript(F.SCHEMA)
@@ -65,3 +68,44 @@ def test_best_idea_is_largest_active_weight_among_mapped_stocks():
     ideas = B.best_ideas(conn, cmap)
     # A: MSFT 0.10 − 0.06 = 0.04, SMOL 0.06 − 0.01 = 0.05 → SMOL; B: MSFT 0.20 − 0.06 = 0.14 → MSFT
     assert ideas[("2025-06-30", "SMOL")]["spravcu"] == 1 and ideas[("2025-06-30", "MSFT")]["spravcu"] == 1
+
+
+def test_reused_ticker_keeps_only_latest_issuer():
+    import sqlite3
+    from stockradar.discovery import bestideas as B
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(F.SCHEMA)
+    conn.executemany("INSERT INTO cusip_map VALUES (?, ?, ?, ?)", [
+        ("067806109", "B", "BARNES GROUP INC", "2024-12"), ("067901108", "B", "BARRICK MINING CORP", "2026-09"),
+        ("852234103", "XYZ", "BLOCK INC CL A", "2026-09"),                         # Square → Block: stejný CUSIP
+        ("29667T102", "ENOV", "ENOVIS CORP COM NEW", "2026-09"), ("29667T999", "ENOV", "ENOVIS CORP", "2023-03")])
+    cmap = B.cusip_symbols(conn, {"B", "XYZ", "ENOV"})
+    assert "067806109" not in cmap and cmap["067901108"][0] == "B"     # starý Barnes se na Barrick nepřiřadí
+    assert cmap["852234103"][0] == "XYZ" and cmap["29667T999"][0] == "ENOV"
+
+
+def test_position_name_must_agree_to_catch_wrong_cusip_in_13f():
+    from stockradar.discovery.bestideas import names_agree
+    assert not names_agree("SPDR S&P 500", ["Sherwin-Williams Company (The)", "SHERWIN-WILLIAMS CO", "sherwin williams"])
+    assert not names_agree("Trinity Capital Inc.", ["Prospect Capital Corporation", "PROSPECT CAPITAL CORP"])  # obecné „capital“
+    assert names_agree("BK OF AMERICA CORP", ["Bank of America Corporation"])                                 # zkratka
+    assert names_agree("S.W. AIRL CO", ["Southwest Airlines Company", "SOUTHWEST AIRLINES CO"])
+    assert names_agree("COLFAX CORP", ["Enovis Corporation", "ENOVIS CORPORATION COM NEW", "colfax"])           # přejmenování
+    assert not names_agree("nan", ["CarMax Inc", "CARMAX, INC."])
+
+
+def test_single_manager_error_cannot_confirm_itself():
+    import sqlite3
+    from stockradar.discovery import bestideas as B
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(F.SCHEMA)
+    conn.executemany("INSERT INTO f13_mgr VALUES (?, ?, ?, ?, ?)", [("A", 1, "2025-06-30", "2025-08-01", 30)])
+    # správce A uvedl Alphabet s CUSIP firmy Global Net Lease → pozice se odmítne, nejsilnější sázka je jiná akcie
+    conn.executemany("INSERT INTO f13_top VALUES (?, ?, ?, ?, ?)", [("A", 0, "379378201", "ALPHABET INC-C", 0.2),
+                                                                   ("A", 1, "OKLO00001", "OKLO INC", 0.05)])
+    conn.executemany("INSERT INTO f13_cons VALUES (?, ?, ?, ?)", [("2025-06-30", "379378201", 0.001, 1), ("2025-06-30", "OKLO00001", 0.01, 3)])
+    conn.execute("INSERT INTO f13_period VALUES ('2025-06-30', 10)")
+    cmap = {"379378201": ("GNL", "GLOBAL NET LEASE INC COM NEW"), "OKLO00001": ("OKLO", "OKLO INC")}
+    stats = {}
+    ideas = B.best_ideas(conn, cmap, {"GNL": "Global Net Lease Inc.", "OKLO": "Oklo Inc."}, stats)
+    assert list(ideas) == [("2025-06-30", "OKLO")] and stats == {"odmitnuto_jmeno": 1, "prijato": 1}

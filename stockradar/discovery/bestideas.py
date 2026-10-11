@@ -7,11 +7,14 @@ Protokol je zapsaný PŘEDEM v docs/VYZKUM.md (E4) a tady se jen provádí:
   * vstup = první závěr po 46. dni od konce čtvrtletí; jedna událost na akcii a čtvrtletí,
   * skupiny G1 (≥ 1 správce, hlavní), G2 (≥ 3 správci), G3 (G1 u firem < 2 mld. USD),
   * POTVRZENO jen při t ≥ 2 a stejném znaménku v obou polovinách (do 2023 / od 2024).
-Kontrola párování CUSIP → symbol na jménech (`audit`) se dělá před pohledem na výnosy (poučení E3).
+Kontrola párování CUSIP → symbol na jménech (`audit`) se dělá před pohledem na výnosy (poučení E3). Při ní se ukázalo,
+že náš seznam firem obsahuje i uzavřené fondy (Nuveen, PIMCO…) → podle protokolu („fondy vypadnou“) se vyřadí podle
+jména (FUND_NAME) ještě před výpočtem výnosů.
 """
 
 import json
 import math
+import re
 import random
 import statistics
 from datetime import date, timedelta
@@ -25,6 +28,13 @@ ENTRY_DAYS = 46
 SMALL_CAP = 2e9
 SPLIT_DAY = date(2023, 12, 31).toordinal()
 FIRST_PERIOD, LAST_PERIOD = "2021-03-31", "2026-03-31"
+FUND_NAME = re.compile(r"\b(fund|funds|etf|municipal|muni|income trust)\b", re.I)
+
+
+def is_fund(name: str | None, industry: str | None = None) -> bool:
+    """Uzavřený fond podle jména; „Income Trust“ u realitních REIT (Office Properties Income Trust) fondem není."""
+    m = FUND_NAME.search(name or "")
+    return bool(m) and not (m.group(1).lower() == "income trust" and "real estate" in (industry or "").lower())
 
 
 def symbol_for(ftd_symbol: str, universe: set[str]) -> str | None:
@@ -36,36 +46,101 @@ def symbol_for(ftd_symbol: str, universe: set[str]) -> str | None:
     return alt if alt in universe else None
 
 
+def _first(name: str) -> str:
+    return (norm(name).split() or [""])[0][:4]
+
+
 def cusip_symbols(cache_conn, universe: set[str]) -> dict[str, tuple[str, str]]:
-    out = {}
-    for cusip, sym, desc in cache_conn.execute("SELECT cusip, symbol, description FROM cusip_map"):
+    """CUSIP → (symbol, popis). Ticker se po zániku firmy přiděluje znovu (Barnes Group „B“ → Barrick „B“ 2025), ceny
+    jsou podle dnešního tickeru → u symbolu platí jen jeho nejnovější CUSIP a starší CUSIP jen se stejným prvním slovem
+    jména (nový CUSIP téže firmy); přejmenování se stejným CUSIP (Square → Block) zůstává."""
+    by_sym: dict[str, list[tuple[str, str, str]]] = {}
+    for cusip, sym, desc, seen in cache_conn.execute("SELECT cusip, symbol, description, seen FROM cusip_map"):
         s = symbol_for(sym, universe)
         if s:
-            out[cusip] = (s, desc or "")
+            by_sym.setdefault(s, []).append((seen, cusip, desc or ""))
+    out = {}
+    for s, items in by_sym.items():
+        items.sort()
+        latest = items[-1]
+        for seen, cusip, desc in items:
+            if cusip == latest[1] or _first(desc) == _first(latest[2]):
+                out[cusip] = (s, desc)
     return out
 
 
-def best_ideas(cache_conn, cmap: dict[str, tuple[str, str]]) -> dict[tuple[str, str], dict]:
-    """(období, symbol) → {správců, max_aw, jméno_13f}; každý správce přispěje jednou akcií."""
+GENERIC = {"capital", "financial", "finl", "bank", "bancorp", "bancshares", "energy", "international", "intl", "global",
+           "american", "national", "first", "systems", "sys", "technologies", "technology", "tech", "resources",
+           "industries", "inds", "services", "svcs", "trust", "realty", "properties", "partners", "pharmaceuticals", "pharma",
+           "therapeutics", "health", "healthcare", "medical", "communications", "solutions", "mining", "gold", "oil",
+           "gas", "investment", "invt", "mortgage", "insurance", "new", "united", "general", "data", "software", "acquisition",
+           "brands", "biosciences", "bio", "sciences", "products", "enterprises", "worldwide", "com", "shs", "ord", "adr",
+           "sponsored", "ads", "spdr", "ishares", "etf", "index", "and", "of", "de", "del"}
+
+
+def _tokens(name: str) -> set[str]:
+    return {t for t in norm(name).split() if len(t) >= 3 and t not in GENERIC}
+
+
+def names_agree(a: str, refs: list[str]) -> bool:
+    """Shodne se jméno z 13F s některým referenčním jménem? (slovo ≥ 3 znaky, jedno je začátkem druhého;
+    obecná slova jako „capital“ se nepočítají). Prázdné jméno z 13F = nelze ověřit → nepřijmout."""
+    ta = _tokens(a)
+    for ref in refs:
+        for t in _tokens(ref):
+            if any(x.startswith(t) or t.startswith(x) for x in ta):
+                return True
+    return False
+
+
+def best_ideas(cache_conn, cmap: dict[str, tuple[str, str]], names: dict[str, str] | None = None,
+               stats: dict | None = None) -> dict[tuple[str, str], dict]:
+    """(období, symbol) → {správců, max_aw, jméno_13f}; každý správce přispěje jednou akcií.
+
+    Kontrola chyb správců (2026-10-11, na jménech, před výnosy): správce občas uvede u ETF nebo jiné firmy cizí CUSIP
+    („SPDR S&P 500“ s CUSIP Sherwin-Williams) → chybně označená pozice má nízkou běžnou váhu a vypadala by jako
+    „nejsilnější sázka“. Pozice se přijme jen když jméno z 13F odpovídá našemu jménu firmy, popisu z FTD nebo
+    nejčastějšímu jménu, pod kterým tento CUSIP v daném čtvrtletí uvádějí aspoň 2 správci (přejmenování zůstávají)."""
+    names = names or {}
+    stats = stats if stats is not None else {}
     managers = {p: n for p, n in cache_conn.execute("SELECT period, managers FROM f13_period")}
-    cons = {}
-    for p, c, sw in cache_conn.execute("SELECT period, cusip, sum_w FROM f13_cons"):
-        cons[(p, c)] = sw / managers[p]
-    best: dict[str, tuple[float, str, str, str]] = {}
-    for acc, period, cusip, name, w in cache_conn.execute(
-            "SELECT t.accession, m.period, t.cusip, t.name, t.w FROM f13_top t JOIN f13_mgr m USING (accession)"
-            " WHERE m.period BETWEEN ? AND ?", (FIRST_PERIOD, LAST_PERIOD)):
-        if cusip not in cmap:
-            continue
-        aw = w - cons.get((period, cusip), 0.0)
-        if acc not in best or aw > best[acc][0]:
-            best[acc] = (aw, period, cusip, name or "")
     out: dict[tuple[str, str], dict] = {}
-    for aw, period, cusip, name in best.values():
-        sym = cmap[cusip][0]
-        d = out.setdefault((period, sym), {"spravcu": 0, "max_aw": 0.0, "jmeno_13f": name, "jmeno_ftd": cmap[cusip][1]})
-        d["spravcu"] += 1
-        d["max_aw"] = max(d["max_aw"], aw)
+    periods = [p for p in sorted(managers) if FIRST_PERIOD <= p <= LAST_PERIOD]
+    for period in periods:
+        cons = {c: sw / managers[period] for c, sw in cache_conn.execute(
+            "SELECT cusip, sum_w FROM f13_cons WHERE period = ?", (period,))}
+        rows = cache_conn.execute(
+            "SELECT t.accession, t.cusip, t.name, t.w FROM f13_top t JOIN f13_mgr m USING (accession) WHERE m.period = ?",
+            (period,)).fetchall()
+        counts: dict[str, dict[str, int]] = {}
+        for _, cusip, name, _ in rows:
+            if cusip in cmap and name:
+                k = counts.setdefault(cusip, {})
+                k[norm(name)] = k.get(norm(name), 0) + 1
+        # nejčastější jméno CUSIP platí jen když ho používají aspoň 2 správci (jinak by chyba jediného správce
+        # potvrdila sama sebe: „ALPHABET INC-C“ s CUSIP Global Net Lease)
+        common = {}
+        for c, k in counts.items():
+            nm, cnt = max(k.items(), key=lambda kv: kv[1])
+            if cnt >= 2:
+                common[c] = nm
+        best: dict[str, tuple[float, str, str]] = {}
+        for acc, cusip, name, w in rows:
+            if cusip not in cmap:
+                continue
+            sym, desc = cmap[cusip]
+            if not names_agree(name or "", [names.get(sym, ""), desc, common.get(cusip, "")]):
+                stats["odmitnuto_jmeno"] = stats.get("odmitnuto_jmeno", 0) + 1
+                continue
+            stats["prijato"] = stats.get("prijato", 0) + 1
+            aw = w - cons.get(cusip, 0.0)
+            if acc not in best or aw > best[acc][0]:
+                best[acc] = (aw, cusip, name or "")
+        for aw, cusip, name in best.values():
+            sym = cmap[cusip][0]
+            d = out.setdefault((period, sym), {"spravcu": 0, "max_aw": 0.0, "jmeno_13f": name, "jmeno_ftd": cmap[cusip][1]})
+            d["spravcu"] += 1
+            d["max_aw"] = max(d["max_aw"], aw)
     return out
 
 
@@ -74,7 +149,7 @@ def audit(cache_conn, ideas: dict, names: dict[str, str], n: int = 40, seed: int
     items = sorted(ideas.items())
     rng = random.Random(seed)
     sample = rng.sample(items, min(n, len(items)))
-    first = lambda s: (norm(s).split() or [""])[0][:4]
+    first = _first
     rows = [{"symbol": sym, "obdobi": p, "13f": d["jmeno_13f"], "ftd": d["jmeno_ftd"], "nase": names.get(sym, ""),
              "shoda": first(d["jmeno_13f"]) == first(names.get(sym, ""))} for (p, sym), d in sample]
     all_ok = sum(1 for (p, sym), d in items if first(d["jmeno_13f"]) == first(names.get(sym, "")))
@@ -101,11 +176,17 @@ def base_rates(market, days: list[int], universe: set[str]) -> dict:
 def run(cache_conn, main_conn, *, log=print, audit_only: bool = False) -> dict:
     market = load_market(cache_conn, main_conn)
     us = {s for s in market.data.secs if "." not in s}
-    names = {s: n for s, n in cache_conn.execute("SELECT symbol, name FROM securities")}
-    cmap = cusip_symbols(cache_conn, us)
-    ideas = best_ideas(cache_conn, cmap)
-    log(f"CUSIP → symbol: {len(cmap)}; událostí (akcie × čtvrtletí): {len(ideas)}")
+    names, industry = {}, {}
+    for s, n, ind in cache_conn.execute("SELECT symbol, name, industry FROM securities"):
+        names[s], industry[s] = n, ind
+    funds = {s for s in us if is_fund(names.get(s), industry.get(s))}
+    cmap = cusip_symbols(cache_conn, us - funds)
+    name_stats: dict = {}
+    ideas = best_ideas(cache_conn, cmap, names, name_stats)
+    log(f"CUSIP → symbol: {len(cmap)} (vyřazeno fondů {len(funds)}); kontrola jmen pozic {name_stats}; "
+        f"událostí (akcie × čtvrtletí): {len(ideas)}")
     check = audit(cache_conn, ideas, names)
+    check["kontrola_jmen_pozic"] = name_stats
     if audit_only:
         return {"audit": check}
     fund = Fundamentals(cache_conn, us)

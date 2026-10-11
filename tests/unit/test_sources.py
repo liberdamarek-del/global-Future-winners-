@@ -142,3 +142,26 @@ def test_sec_frames_do_not_refetch_old_empty_quarters(monkeypatch):
     sec.fetch_frames(c, start=date(2024, 1, 1), end=date(2025, 12, 31), refresh_recent=2)
     # druhý běh: jen 2 poslední kvartály × 6 tagů, staré prázdné kvartály se už nestahují
     assert first == 6 * 8 and len(calls) == 6 * 2
+
+
+def test_interrupted_transfer_is_retried_and_counted(db_env, monkeypatch):
+    import http.client
+    (db_env / "kontakt.txt").write_text("someone@example.com\n")
+    calls = []
+
+    class Resp:
+        headers = {}
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self):
+            if len(calls) == 1:
+                raise http.client.IncompleteRead(b"x" * 10, 5)   # přenos přerušený uprostřed (2026-10-11, balík 13F)
+            return b"ok"
+
+    monkeypatch.setattr(contact.urllib.request, "urlopen", lambda req, timeout: calls.append(req) or Resp())
+    monkeypatch.setattr(contact, "MAX_PER_SECOND", 1000.0)
+    monkeypatch.setattr(contact.time, "sleep", lambda s: None)
+    assert contact.http_get("https://www.sec.gov/files/x.zip", "balík") == b"ok"
+    assert len(calls) == 2
+    conn = sqlite3.connect(db_env / "t.db")
+    assert conn.execute("SELECT requests FROM email_usage").fetchone()[0] == 2     # e-mail odešel dvakrát → evidováno 2×
