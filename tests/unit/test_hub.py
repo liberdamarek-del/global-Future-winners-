@@ -181,3 +181,21 @@ def test_registry_marks_xtb_blocked_from_journal(conn):
     assert src["xtb.com — nabídka akcií"]["stav"] == "BLOKOVÁNO"
     R.record_run(conn, "causal", {}, NOW, "OK", {"xtb_nedostupne": False}, finished=NOW)
     assert R.xtb_blocked(conn) is None                                                  # poslední běh prošel
+
+
+def test_funds_role_uses_conservative_t_and_evidence_is_capped(conn):
+    res = {"tabulka_6m": {"G3 G1 u firem < 2 mld. USD": {"n": 3126, "mesicu": 18, "nad_kontrolou_prumer": 0.019, "t_mesice": 3.5},
+                          "G3 G1 u firem < 2 mld. USD · do 2023": {"nad_kontrolou_prumer": 0.028, "t_mesice": 4.3},
+                          "G3 G1 u firem < 2 mld. USD · od 2024": {"nad_kontrolou_prumer": 0.010, "t_mesice": 0.8}},
+           "robustnost": {"G3 G1 u firem < 2 mld. USD": {"t_newey_west": 2.4}},
+           "plus40_minus25": {"G3 G1 u firem < 2 mld. USD": {"plus40": 0.12, "minus25": 0.18}}, "vsechny_akcie": {"plus40": 0.09, "minus25": 0.18},
+           "aktualni": {"obdobi": "2026-06-30", "zverejneno_do": "2026-08-15",
+                        "seznam": [{"symbol": "ABC", "nazev": "Abc Inc.", "spravcu": 1, "max_aw": 0.05, "mcap_mld": 0.8}]}}
+    conn.execute("INSERT INTO fund_runs (run_at, data_through, period, result_json, app_version) VALUES (?, ?, ?, ?, ?)",
+                 ("2026-10-11T10:00:00Z", "2026-10-09", "2026-06-30", json.dumps(res), "t"))
+    rel = F.reliability(conn)["FONDY_13F:sazka"]
+    assert rel["stav"] == "OVĚŘENO" and rel["t"] == 2.4 and rel["vaha"] == 0.6      # menší z t 3,5 a Newey-West 2,4
+    ev = E.from_funds(conn)
+    assert [e["entita"] for e in ev] == ["ABC"] and ev[0]["uprava"]["strop"] == 0.5
+    d = I.dossier("ABC", ev, {"FONDY_13F:sazka": rel}, {}, {}, [], date(2026, 8, 20))
+    assert d["pro"] == 0.5 and d["postoj"] == "PŘÍLEŽITOST"                         # strop 0,5 (malý, slábnoucí efekt)

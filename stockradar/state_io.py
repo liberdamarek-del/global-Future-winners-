@@ -23,6 +23,7 @@ TABLES = (
     "model_runs",
     "discovery_runs",
     "smart_money_runs",
+    "fund_runs",
     "model_evaluations",
     "signal_runs",
     "signal_forecasts",

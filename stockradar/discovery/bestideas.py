@@ -105,7 +105,7 @@ def best_ideas(cache_conn, cmap: dict[str, tuple[str, str]], names: dict[str, st
     stats = stats if stats is not None else {}
     managers = {p: n for p, n in cache_conn.execute("SELECT period, managers FROM f13_period")}
     out: dict[tuple[str, str], dict] = {}
-    periods = [p for p in sorted(managers) if FIRST_PERIOD <= p <= LAST_PERIOD]
+    periods = [p for p in sorted(managers) if p >= FIRST_PERIOD]
     for period in periods:
         cons = {c: sw / managers[period] for c, sw in cache_conn.execute(
             "SELECT cusip, sum_w FROM f13_cons WHERE period = ?", (period,))}
@@ -173,7 +173,61 @@ def base_rates(market, days: list[int], universe: set[str]) -> dict:
     return {"n": n, "plus40": round(up / n, 4) if n else None, "minus25": round(down / n, 4) if n else None}
 
 
-def run(cache_conn, main_conn, *, log=print, audit_only: bool = False) -> dict:
+def _mcap_now(market, fund, sym: str) -> float | None:
+    s = market.data.secs.get(sym)
+    if s is None or not s.prep.bars.days:
+        return None
+    i = len(s.prep.bars.days) - 1
+    rate = market.data.usd_rate(s.currency, s.prep.bars.days[i]) or 1.0
+    lm = fund.features(sym, s.prep.bars.days[i], s.prep.bars.closes[i] * rate).get("log_mcap")
+    return math.exp(lm) if lm is not None else None
+
+
+def nw_t(xs: list[float], lag: int = 1) -> float | None:
+    """t-statistika průměru s korekcí Newey-West: 6měsíční výnosy sousedních čtvrtletí se z poloviny překrývají,
+    takže obyčejné t přes měsíce je nadsazené."""
+    n = len(xs)
+    if n < 4:
+        return None
+    m = statistics.fmean(xs)
+    d = [x - m for x in xs]
+    var = sum(v * v for v in d) / n
+    for l in range(1, lag + 1):
+        var += 2 * (1 - l / (lag + 1)) * sum(d[i] * d[i - l] for i in range(l, n)) / n
+    return m / math.sqrt(var / n) if var > 0 else None
+
+
+def monthly(rows: list[dict], h: str = "6m") -> list[tuple[str, float, int]]:
+    by: dict[str, list[float]] = {}
+    for r in rows:
+        if r.get(f"ex_ctrl_{h}") is not None:
+            by.setdefault(r["public"][:7], []).append(r[f"ex_ctrl_{h}"])
+    return [(k, statistics.fmean(v), len(v)) for k, v in sorted(by.items())]
+
+
+def current_list(ideas: dict, names: dict[str, str], today: date, mcap_of=None, max_cap: float = SMALL_CAP) -> dict:
+    """Aktuální nejsilnější sázky na MALÉ firmy (skupina G3, < 2 mld. USD podle dnešní ceny): poslední čtvrtletí, jehož
+    zprávy už jsou veřejné (konec + 46 dní ≤ dnes). Velké firmy (AAPL je „nejsilnější sázkou“ stovek malých správců)
+    uživateli nic nového neřeknou a jejich výhoda od 2024 mizí."""
+    periods = sorted({p for p, _ in ideas if date.fromisoformat(p) + timedelta(days=ENTRY_DAYS) <= today})
+    if not periods:
+        return {"obdobi": None, "seznam": []}
+    last = periods[-1]
+    items = []
+    for (p, sym), d in ideas.items():
+        if p != last:
+            continue
+        cap = mcap_of(sym) if mcap_of else None
+        if cap is None or cap >= max_cap:
+            continue
+        items.append({"symbol": sym, "nazev": names.get(sym), "spravcu": d["spravcu"], "max_aw": round(d["max_aw"], 4),
+                      "mcap_mld": round(cap / 1e9, 2)})
+    items.sort(key=lambda x: (-x["spravcu"], -x["max_aw"]))
+    return {"obdobi": last, "zverejneno_do": (date.fromisoformat(last) + timedelta(days=ENTRY_DAYS)).isoformat(),
+            "skupina": "G3 (firmy < 2 mld. USD)", "vsech_sazek": sum(1 for p, _ in ideas if p == last), "seznam": items}
+
+
+def run(cache_conn, main_conn, *, log=print, audit_only: bool = False, today: date | None = None) -> dict:
     market = load_market(cache_conn, main_conn)
     us = {s for s in market.data.secs if "." not in s}
     names, industry = {}, {}
@@ -192,6 +246,8 @@ def run(cache_conn, main_conn, *, log=print, audit_only: bool = False) -> dict:
     fund = Fundamentals(cache_conn, us)
     rows = []
     for (period, sym), d in ideas.items():
+        if period > LAST_PERIOD:          # studie podle protokolu E4; novější čtvrtletí jen do aktuálního seznamu
+            continue
         q_end = date.fromisoformat(period).toordinal()
         m = E.measure(market, E.Event(sym, q_end + ENTRY_DAYS, q_end, "BEST_IDEA", d))
         if not m:
@@ -223,8 +279,29 @@ def run(cache_conn, main_conn, *, log=print, audit_only: bool = False) -> dict:
     t = main.get("t_mesice")
     verdict = ("POTVRZENO" if t is not None and t >= 2 and same and main["nad_kontrolou_prumer"] > 0 else
                "VYVRÁCENO (horší než kontrola)" if t is not None and t <= -2 else "NEPOTVRZENO")
+    robust = {}
+    for name in ("G1 ≥ 1 správce (hlavní hypotéza)", "G2 ≥ 3 správci", "G3 G1 u firem < 2 mld. USD"):
+        series = monthly(groups[name])
+        t_nw = nw_t([m for _, m, _ in series])
+        robust[name] = {"t_newey_west": None if t_nw is None else round(t_nw, 2),
+                        "mesice": [(k, round(m, 4), n) for k, m, n in series]}
+    end = max((s.prep.bars.days[-1] for s in market.data.secs.values() if s.prep.bars.days), default=None)
     return {"audit": {k: v for k, v in check.items() if k != "vzorek"}, "udalosti": len(rows), "tabulka": tab,
-            "plus40_minus25": rates, "vsechny_akcie": base, "verdikt": verdict, "stejne_znamenko": same}
+            "plus40_minus25": rates, "vsechny_akcie": base, "verdikt": verdict, "stejne_znamenko": same,
+            "robustnost": robust, "aktualni": current_list(ideas, names, today or date.today(), lambda sym: _mcap_now(market, fund, sym)),
+            "data_do": date.fromordinal(end).isoformat() if end else None}
+
+
+def save_run(conn, res: dict) -> int:
+    from stockradar import __version__
+    from stockradar.timeutil import to_iso, utcnow
+    slim = {k: v for k, v in res.items() if k != "tabulka"}
+    slim["tabulka_6m"] = {name: per["6m"] for name, per in res["tabulka"].items()}
+    with conn:
+        cur = conn.execute("INSERT INTO fund_runs (run_at, data_through, period, result_json, app_version) VALUES (?, ?, ?, ?, ?)",
+                           (to_iso(utcnow()), res.get("data_do") or "", (res.get("aktualni") or {}).get("obdobi") or "",
+                            json.dumps(slim, ensure_ascii=False, default=str), __version__))
+    return cur.lastrowid
 
 
 def main():

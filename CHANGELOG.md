@@ -4,6 +4,24 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-11 · v0.12.0 — Nový modul: nejsilnější sázky fondů (SEC 13F, výzkum E4)
+
+Důvod: autonomní výzkum nového bezplatného typu informace ([docs/VYZKUM.md](docs/VYZKUM.md), E4). Hypotéza a protokol
+zapsány a commitnuty PŘED stažením dat; párování zkontrolováno na jménech PŘED pohledem na výnosy.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `sources/sec13f.py` (nový) | SEC Form 13F Data Sets (22 čtvrtletí, ~90 MB/sada) zredukované na pozice správců s 20–500 akciemi (bez opcí, bez dodatků, jen včas podané), konsenzus vah nezávislý na jednotkách; CUSIP → symbol ze souborů SEC Fails-to-Deliver; hotové sady se nestahují znovu, zip se maže | `test_sec13f.py` (7) |
+| `discovery/bestideas.py` (nový) | Nejsilnější sázka správce = největší (váha − běžná váha) mezi 20 největšími pozicemi; vyřazení fondů, znovu přidělených tickerů a chybných CUSIP správců (kontrola jména); studie událostí (G1/G2/G3, poloviny, Newey-West); aktuální sázky na malé firmy | `test_sec13f.py` |
+| `migrations/0009_funds.sql`, `cli.py` (`funds`), `state_io.py` | Tabulka `fund_runs` (append-only); příkaz `funds` (bez nové sady přeskočí, deník) | celý `pytest` |
+| `hub/evidence.py`, `hub/feedback.py`, `hub/registry.py`, `hub/integrate.py`, `diag.py` | Důkazy `FONDY_13F` (sázky na malé firmy, strop váhy 0,5), role `FONDY_13F:sazka` (t = menší z obyčejného a Newey-West), modul „fondy“ a zdroj „SEC 13F“ v registru, otisk centra a diagnostika znají `fund_runs`, poučení #21 | `test_hub.py::test_funds_role_uses_conservative_t_and_evidence_is_capped` |
+| `contact.py` | Přerušený přenos velkého souboru (`IncompleteRead`) se opakuje (dřív spadl celý běh); každý pokus se dál eviduje | `test_sources.py::test_interrupted_transfer_is_retried_and_counted` |
+| `site.py` | Dokument `stav/prehled` drží rezervu 20 % pod limitem (ubírají se nejslabší firmy): 169 kB → 135 kB | `diag` |
+| `web/index.html` | Název modulu „Fondy 13F“ v důkazním řetězci | kontrola syntaxe |
+
+**Výsledek E4:** POTVRZENO podle předem daného pravidla (+0,9 % za 6 m nad podobnými akciemi, t 3,4, Newey-West 3,1),
+ale malé a od 2024 slabší (t 1,1); šance na +40 % není vyšší než u všech akcií. Malé firmy +1,9 % (t 2,7).
+
 ## 2026-10-11 · v0.11.1 — Výzkum E3: federální zakázky USA (nový bezplatný zdroj USAspending.gov)
 
 Důvod: autonomní výzkum nového typu informace (deník [docs/VYZKUM.md](docs/VYZKUM.md), E3).

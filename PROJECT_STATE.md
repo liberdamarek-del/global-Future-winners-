@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-11 · **Verze:** v0.11.1 · **Schema DB:** v8 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-11 · **Verze:** v0.12.0 · **Schema DB:** v9 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -115,8 +115,8 @@
 
 | Položka | Stav |
 |---|---|
-| Moduly (registr) | HOTOVO/OVĚŘENO 2 (signály, smart money), HOTOVO 3 (ceny, XTB, centrum), NEOVĚŘENO 4 (energie, objevování, kauzální radar, ruční výzkum), ROZPRACOVÁNO 1 (vyhodnocení predikcí) |
-| Ověřené role mimo vzorek | varování 1 měsíc (t 3,7), varování 6 měsíců (t 4,0), aktivní nákup insiderů (t 2,7 proti podobným akciím) |
+| Moduly (registr) | HOTOVO/OVĚŘENO 3 (signály, smart money, fondy 13F), HOTOVO 4 (ceny, XTB, centrum, vyhodnocení predikcí), NEOVĚŘENO 4 (energie, objevování, kauzální radar, ruční výzkum) |
+| Ověřené role mimo vzorek | varování 1 měsíc (t 3,7), varování 6 měsíců (t 4,0), aktivní nákup insiderů (t 2,7 proti podobným akciím), nejsilnější sázka fondu u malé firmy (t 2,6 po korekci; efekt +1,9 % za 6 m, váha nejvýš 0,5) |
 | Neověřené role | výběry 14 d / 1 m / 6 m, rakety 6 m, kauzální příležitosti, energetika TOP 5, ruční výzkum |
 | Centrum (běh #2) | 151 firem, 307 důkazů: příležitost 103 (téměř vše neověřené), riziko 28, rozpor 7 (DINO, MPC, VLO, DK, ASM, HBM, LAC), nevím 13 |
 | Ruční výzkum | #1–#8: G7 uvolňuje až 100 mil. barelů ropy a nafty → tlak na marže rafinérií (DINO, MPC, VLO, PSX, PBF, DK, CVI, PARR), platí do 2027-02-03 |
@@ -124,7 +124,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 142 testů prošlo 2026-10-11)
+## HOTOVO (ověřeno testy — 151 testů prošlo 2026-10-11)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -149,6 +149,7 @@
 | `hub/*`, `migrations/0008` | Centrum důkazů, spolehlivost rolí, pohled na firmu s rozpory a poučeními, registr modulů a zdrojů, deník běhů, ruční výzkum | `tests/unit/test_hub.py` (10) |
 | `causal/memo.py` | Paměť výpočtů (týdenní řady, citlivosti) podle otisku dat; `signals` bez nových dat se přeskočí | `test_hub.py`, ostrý běh (56 s → 0,5 s, shodný výsledek) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
+| `sources/sec13f.py`, `discovery/bestideas.py`, `migrations/0009` | Fondy 13F (výzkum E4): čtvrtletní sady SEC → nejsilnější sázky správců, studie událostí, aktuální sázky na malé firmy do centra (`python -m stockradar funds`) | `tests/unit/test_sec13f.py` (7), `test_hub.py` |
 | `sources/usaspending.py`, `discovery/contracts.py` | Výzkumný nástroj E3: federální zakázky USA → studie událostí (výsledek NEOVĚŘENO, do modelu nezapojeno) | `tests/unit/test_contracts.py` (4) |
 
 ## ROZPRACOVÁNO

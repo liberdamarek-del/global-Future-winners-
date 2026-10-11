@@ -20,7 +20,7 @@ from stockradar.timeutil import to_iso, utcnow
 
 DIRECTIONAL = ("prilezitost", "riziko")
 MODULE_NAMES = {"SIGNAL_14D": "Signály 14 dní", "SIGNAL_1M": "Signály 1 měsíc", "SIGNAL_6M": "Model 6 měsíců",
-                "RAKETY_6M": "Rakety 6 m", "SMART_MONEY": "Smart money", "KAUZALNI": "Kauzální radar",
+                "RAKETY_6M": "Rakety 6 m", "SMART_MONEY": "Smart money", "FONDY_13F": "Fondy 13F", "KAUZALNI": "Kauzální radar",
                 "ENERGIE": "Energetický radar", "LEDGER": "Ledger", "KATALYZATORY": "Katalyzátor", "VYZKUM": "Výzkum",
                 "XTB": "XTB"}
 SHORT = {"PŘÍLEŽITOST": "P", "RIZIKO": "R", "ROZPOR": "X", "NEVÍM": "N"}
@@ -33,6 +33,7 @@ LESSON_RULES = {
     "CHYBA-DAT-REVERSE-SPLIT": {"role": {"RAKETY_6M:vyber"}},
     "SM-ESPP-FLIP-WIX": {"role": {"SMART_MONEY:nakup"}},
     "POUCENI-KOMBINACE-INSIDER-6M": {"role": {"SMART_MONEY:nakup"}},
+    "POUCENI-FONDY-13F": {"role": {"FONDY_13F:sazka"}},
     "MECH-KLINICKA-DATA": {"katalyzator": {"CLINICAL_DATA"}, "studie": True},
     "MECH-KRYPTO-TREASURY": {"slova": ("sharplink", "bitcoin", "ethereum", "crypto", "blockchain", "digital asset")},
     "RARE": {"katalyzator_do": CATALYST_SOON_DAYS},
@@ -154,6 +155,7 @@ def fingerprint(conn, today: date) -> str:
     """Otisk vstupů centra: nové běhy modulů, výsledky, výzkum, poučení, katalyzátory, den. Stejný otisk = nic nového."""
     parts = [today.isoformat(), __version__]
     for q in ("SELECT MAX(id) FROM signal_runs", "SELECT MAX(id) FROM discovery_runs", "SELECT MAX(id) FROM smart_money_runs",
+              "SELECT MAX(id) FROM fund_runs",
               "SELECT MAX(id) FROM causal_runs", "SELECT MAX(id) FROM model_runs", "SELECT COUNT(*) FROM predictions",
               "SELECT COUNT(*) FROM prediction_outcomes", "SELECT COUNT(*) FROM signal_outcomes",
               "SELECT COUNT(*) FROM causal_outcomes", "SELECT MAX(id) FROM research_evidence", "SELECT COUNT(*) FROM lessons",

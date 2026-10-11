@@ -572,7 +572,8 @@ def build_prehled_doc(res: dict, limit: int = DOC_LIMIT) -> dict:
            "system": {"moduly": sysv.get("moduly", []), "zdroje": sysv.get("zdroje", []), "pocty": sysv.get("pocty", {}),
                       "denik": [{k: j[k] for k in ("id", "prikaz", "zacatek", "trvani_s", "stav", "chyba")} for j in sysv.get("denik", [])[:12]]},
            "pouceni": lessons, "firmy": firms}
-    while len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode()) > limit and doc["firmy"]:
+    # rezerva 20 % pod limitem serveru (diag varuje nad 85 %); od v0.12.0 přibylo ~180 firem jen se slabým důkazem z 13F
+    while len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode()) > int(limit * 0.8) and doc["firmy"]:
         doc["firmy"].popitem()                        # firmy jsou seřazené podle síly důkazů → ubírá se od nejslabších
         doc["zkraceno"] = True
     return doc

@@ -249,6 +249,45 @@ def cmd_smart_money(args) -> int:
     return 0
 
 
+def cmd_funds(args) -> int:
+    """Nejsilnější sázky fondů (SEC 13F, výzkum E4): nové čtvrtletní sady → studie událostí + aktuální seznam."""
+    from datetime import date
+
+    from stockradar.discovery import bestideas
+    from stockradar.discovery import cache as dcache
+    from stockradar.sources import sec13f
+
+    conn = _open()
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    new = 0
+    if not args.no_download:
+        today = date.today()
+        months = [f"{y}{m:02d}" for y in range(2021, today.year + 1) for m in (3, 6, 9, 12) if (y, m) <= (today.year, today.month)]
+        print("SEC Fails-to-Deliver (CUSIP → symbol):", sec13f.download_cusip_map(cconn, months, log=log))
+        res = sec13f.download(cconn, log=log)
+        new = res["baliku"]
+        print("SEC 13F:", res)
+    last = conn.execute("SELECT run_at FROM fund_runs ORDER BY id DESC LIMIT 1").fetchone()
+    if last and not new and not args.force:
+        print(f"Žádná nová čtvrtletní sada 13F od posledního běhu ({last[0]}) → studie se nepočítá znovu (--force přepočítá).")
+        _note(args, preskoceno=True, duvod="žádná nová sada 13F")
+        return 0
+    result = bestideas.run(cconn, conn, log=log)
+    run_id = bestideas.save_run(conn, result)
+    export_state(conn, state_dir())
+    cur = result["aktualni"]
+    g3 = "G3 G1 u firem < 2 mld. USD"
+    g = result["tabulka"][g3]["6m"]
+    print(f"Běh fondů #{run_id}: verdikt hlavní hypotézy {result['verdikt']}; malé firmy nad kontrolou {g.get('nad_kontrolou_prumer')} "
+          f"(t {g.get('t_mesice')}, Newey-West {result['robustnost'][g3]['t_newey_west']}); "
+          f"aktuální sázky na malé firmy k {cur['obdobi']}: {len(cur['seznam'])}")
+    _note(args, beh=run_id, verdikt=result["verdikt"], obdobi=cur["obdobi"], akcii=len(cur["seznam"]), novych_sad=new)
+    _refresh_hub(args, conn, cconn)
+    _print_email_today(conn)
+    return 0
+
+
 def cmd_signals(args) -> int:
     """Signální engine na 14 dní: karta pravděpodobností, důvěra, NEVÍM; zamčený test jen jednou na konfiguraci."""
     from stockradar.discovery import cache as dcache
@@ -633,6 +672,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_sm = sub.add_parser("smart-money", help="nákupy insiderů, politiků, velké podíly a buybacky: test + signály")
     p_sm.add_argument("--no-download", action="store_true", help="nestahovat nová data (jen analýza)")
     p_sm.set_defaults(func=cmd_smart_money)
+    p_fu = sub.add_parser("funds", help="nejsilnější sázky fondů (SEC 13F): nové sady → studie + aktuální seznam")
+    p_fu.add_argument("--no-download", action="store_true", help="nestahovat nové sady (jen analýza)")
+    p_fu.add_argument("--force", action="store_true", help="přepočítat i bez nové sady (po změně kódu)")
+    p_fu.set_defaults(func=cmd_funds)
     p_sig = sub.add_parser("signals", help="signály na 14 dní, 1 měsíc a 6 měsíců: P(+5 %%), P(−5 %%), důvěra, NEVÍM; přísný test")
     p_sig.add_argument("--no-download", action="store_true", help="bez stažení čerstvých nákupů insiderů")
     p_sig.add_argument("--no-news", action="store_true", help="bez titulků (novost a kvalita informací)")
@@ -674,7 +717,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 # Příkazy, které se zapisují do deníku (`system_runs`): mění data nebo kontrolují systém. Čistě čtecí příkazy
 # (status, ledger, system, email…) a obnova ze state/ se nezapisují — deník nemá měnit stav jen tím, že se díváme.
-JOURNALED = {"update", "discover", "smart-money", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
+JOURNALED = {"update", "discover", "smart-money", "funds", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
              "seed-lessons"}
 
 

@@ -83,6 +83,10 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   sady), Sněmovna, Senát, 13D/13G, buybacky → test, SMART MONEY SCORE, 10 signálů ověřených ve Form 4 do ledgeru
   (strategie SMART_MONEY, WATCH 6 m) + dokument `stav/smartmoney` pro web (pak `update` a zápis 5 dokumentů `stav/*`).
   Verdikt VYSOKÁ jen při typu nákupu s výhodou potvrzenou v učení i testu (t ≥ 2). Zpráva: `docs/SMART_MONEY_*.md`.
+- **Fondy 13F (každou sobotu po smart money, nová data jen čtvrtletně):** `python -m stockradar funds` — nové sady SEC
+  Form 13F (+ Fails-to-Deliver pro CUSIP → symbol, e-mail evidován) → nejsilnější sázky správců (20–500 pozic),
+  studie událostí a aktuální sázky na malé firmy (< 2 mld. USD) do centra (role `FONDY_13F:sazka`, váha nejvýš 0,5).
+  Bez nové sady se přeskočí. Výzkum E4 v `docs/VYZKUM.md`: potvrzeno, ale malé (+1–2 % za 6 m) a rakety nenajde.
 - **Signály na 14 dní, 1 měsíc a 6 měsíců (každou sobotu po smart money):** `python -m stockradar signals` — tři modely
   (SIGNAL_14D: ±5 % za 10 obchodních dní; SIGNAL_1M: ±10 % za 20 dní; SIGNAL_6M: +40 % / −25 % za 126 dní, řazení podle
   šance na +40 %, velké firmy zvlášť, POKLES mezi vítěze nepatří), každý s vlastním zamčeným testem; žebříček TOP 20

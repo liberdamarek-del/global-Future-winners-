@@ -116,6 +116,26 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
      (odmítnuto 1,7 % pozic).
   Po opravách: 20 696 událostí, shoda prvního slova jména 95,7 %, náhodný vzorek 40 bez chyby; zbylé neshody jsou
   převážně přejmenování (J2 → Ziff Davis, MicroStrategy → Strategy, Square → Block).
+- **Výsledek (fund_runs #1–#2, 6 měsíců nad kontrolou ze stejného oboru s podobným obratem):** ceny začínají 2021-10,
+  takže efektivně 18 čtvrtletí (vstupy 2021-11 … 2026-02); 20 635 událostí, ve studii 19 002.
+
+| Skupina | Případů | Nad kontrolou průměr (medián) | t | t Newey-West | 2021–23 / 2024+ (t) | +40 % / −25 % |
+|---|---|---|---|---|---|---|
+| **G1 ≥ 1 správce (hlavní)** | 17 187 | **+0,9 %** (−0,3 %) | **3,4** | 3,1 | +1,3 % (4,7) / +0,4 % (1,1) | 7,8 % / 12,0 % |
+| G2 ≥ 3 správci | 4 131 | +1,5 % (+0,2 %) | 3,5 | 3,1 | +2,2 % (4,2) / +0,8 % (1,3) | 7,3 % / 7,2 % |
+| G3 malé firmy < 2 mld. USD | 3 126 | +1,9 % (−0,7 %) | 2,7 | 2,6 | +2,8 % (4,3) / +1,0 % (0,8) | 11,5 % / 17,6 % |
+| Všechny akcie (stejné dny) | 59 789 | – | – | – | – | 9,4 % / 18,5 % |
+
+- **Verdikt podle předem daného pravidla:** POTVRZENO (G1: t 3,4 ≥ 2, kladné v obou polovinách; i po korekci na
+  překryv 6 měsíců t 3,1). **Prakticky slabé:** +0,9 % za 6 m, medián pod kontrolou (výhoda jen v pravém chvostu),
+  od 2024 slábne (t 1,1). Šance na +40 % NENÍ vyšší než u všech akcií (G1 7,8 % proti 9,4 %); nižší je riziko −25 %
+  (velké firmy). G2 jsou převážně obří firmy (AAPL je nejsilnější sázkou 662 malých správců, NVDA 512) — od 2024 ~0.
+  Malé firmy (G3) +1,9 %, ale po čtvrtletích kolísají (2024-11 −5 %, 2025-05 −4 %, 2025-08 až 2026-02 +4 až +5 %).
+- **Použití (v0.12.0):** modul `fondy` (příkaz `funds`, čtvrtletně, jen při nové sadě SEC) → do centra jen aktuální
+  sázky na MALÉ firmy (G3, cíl uživatele = menší firmy), role `FONDY_13F:sazka` s menším z t (obyčejné / Newey-West)
+  = 2,6 → OVĚŘENO, ale váha důkazu nejvýš 0,5 (malý a kolísavý efekt). Není to výběr raket; je to slabý kladný náklon.
+- **Poučení:** u nového zdroje rozhodla kvalita párování (fondy v seznamu akcií, znovu přidělené tickery, chybné
+  CUSIP správců) — bez ní by „nejsilnější sázky“ obsahovaly ETF a cizí firmy. Zapsáno `POUCENI-FONDY-13F`.
 
 ## Zvážené, ale odložené hypotézy
 

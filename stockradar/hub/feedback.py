@@ -30,6 +30,7 @@ ROLES = {
     "SIGNAL_6M:pokles": ("signaly", "6 měsíců — rozhodnutí POKLES", -1),
     "RAKETY_6M:vyber": ("objevovani", "Rakety do 6 měsíců (+50 %) — kandidáti", 1),
     "SMART_MONEY:nakup": ("smart_money", "Aktivní nákup insiderů (ověřeno ve Form 4)", 1),
+    "FONDY_13F:sazka": ("fondy", "Nejsilnější sázka správce fondu u malé firmy (SEC 13F)", 1),
     "KAUZALNI:prilezitost": ("kauzalni", "Šok komodity → obor (data i logika)", 0),
     "ENERGIE:vyber": ("energie", "Energetický radar — TOP 5", 1),
     "VYZKUM": ("vyzkum", "Ruční výzkum se zdrojem", 0),
@@ -134,6 +135,29 @@ def _from_tests(conn) -> dict[str, dict]:
                     f"{_p(g.get('nad_spy_prumer'), 1)}; nejvyšší pětina skóre v testu {_p(q.get('nad_kontrolou_prumer'), 1)} → skóre navíc nepomáhá")
     else:
         out["SMART_MONEY:nakup"] = judge(None, typ="chybí", metrika="smart money zatím neběželo")
+    # fondy 13F (výzkum E4): studie událostí s předem daným protokolem; t = menší z obyčejného a Newey-West (překryv 6 m)
+    try:
+        r = conn.execute("SELECT result_json FROM fund_runs ORDER BY id DESC LIMIT 1").fetchone()
+    except Exception:
+        r = None
+    fd = json.loads(r[0]) if r else {}
+    tab = fd.get("tabulka_6m") or {}
+    g = tab.get("G3 G1 u firem < 2 mld. USD") or {}
+    if g.get("n"):
+        t_nw = ((fd.get("robustnost") or {}).get("G3 G1 u firem < 2 mld. USD") or {}).get("t_newey_west")
+        ts = [x for x in (g.get("t_mesice"), t_nw) if x is not None]
+        h1, h2 = tab.get("G3 G1 u firem < 2 mld. USD · do 2023") or {}, tab.get("G3 G1 u firem < 2 mld. USD · od 2024") or {}
+        pr = (fd.get("plus40_minus25") or {}).get("G3 G1 u firem < 2 mld. USD") or {}
+        base = fd.get("vsechny_akcie") or {}
+        out["FONDY_13F:sazka"] = judge(
+            min(ts) if ts else None, typ="studie událostí 2021–2026 (protokol E4 předem)", n=g.get("mesicu"),
+            efekt=g.get("nad_kontrolou_prumer"),
+            metrika=f"nejsilnější sázka správce u firmy < 2 mld. USD: za 6 m proti podobným akciím {_p(g.get('nad_kontrolou_prumer'), 1)} "
+                    f"(2021–23 {_p(h1.get('nad_kontrolou_prumer'), 1)}, 2024+ {_p(h2.get('nad_kontrolou_prumer'), 1)} t {h2.get('t_mesice')}); "
+                    f"+40 % {_p(pr.get('plus40'))} a −25 % {_p(pr.get('minus25'))} proti {_p(base.get('plus40'))} a "
+                    f"{_p(base.get('minus25'))} u všech akcií ; výsledky po čtvrtletích silně kolísají")
+    else:
+        out["FONDY_13F:sazka"] = judge(None, typ="chybí", metrika="fondy 13F zatím neběžely (python -m stockradar funds)")
     # kauzální řetězce: pokračuje dopad po šoku ještě dál? (to, co radar nabízí jako příležitost)
     r = conn.execute("SELECT metrics_json, evaluated_at FROM model_evaluations WHERE model_name = 'CAUSAL_CHAINS'"
                      " AND split = 'LOCKED_TEST' ORDER BY id DESC LIMIT 1").fetchone()

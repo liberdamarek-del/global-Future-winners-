@@ -33,3 +33,8 @@
 {"day": "2026-10-11", "first_at": "2026-10-11T04:37:50Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:48:47Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
 {"day": "2026-10-11", "first_at": "2026-10-11T04:48:44Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:48:46Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
 {"day": "2026-10-11", "first_at": "2026-10-11T04:50:30Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:50:32Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 8}
+{"day": "2026-10-11", "first_at": "2026-10-11T09:32:18Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:40:34Z", "purpose": "seznam datových sad 13F (výzkum E4)", "requests": 4}
+{"day": "2026-10-11", "first_at": "2026-10-11T09:33:19Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:43:55Z", "purpose": "datové sady 13F (výzkum E4)", "requests": 25}
+{"day": "2026-10-11", "first_at": "2026-10-11T09:34:30Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:34:34Z", "purpose": "seznam souborů Fails-to-Deliver (výzkum E4, CUSIP → symbol)", "requests": 2}
+{"day": "2026-10-11", "first_at": "2026-10-11T09:34:42Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:36:33Z", "purpose": "Fails-to-Deliver (výzkum E4, CUSIP → symbol)", "requests": 24}
+{"day": "2026-10-11", "first_at": "2026-10-11T09:36:19Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:36:19Z", "purpose": "seznam souborů Fails-to-Deliver (výzkum E4)", "requests": 1}

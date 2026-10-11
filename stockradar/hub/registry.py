@@ -26,6 +26,8 @@ MODULES = (
      "tabulka": ("discovery_runs", "run_at"), "vstupy": ("ceny", "xtb"), "role": ("RAKETY_6M:vyber",)},
     {"id": "smart_money", "nazev": "Smart money (insideři, politici, 13D/G, buybacky)", "prikaz": "smart-money", "kadence": 7,
      "tabulka": ("smart_money_runs", "run_at"), "vstupy": ("ceny",), "role": ("SMART_MONEY:nakup",)},
+    {"id": "fondy", "nazev": "Nejsilnější sázky fondů (SEC 13F)", "prikaz": "funds", "kadence": 100,
+     "tabulka": ("fund_runs", "run_at"), "vstupy": ("ceny",), "role": ("FONDY_13F:sazka",)},
     {"id": "kauzalni", "nazev": "Kauzální radar (událost → komodita → obor → firmy)", "prikaz": "causal", "kadence": 1,
      "tabulka": ("causal_runs", "run_at"), "vstupy": ("ceny",), "role": ("KAUZALNI:prilezitost",)},
     {"id": "signaly", "nazev": "Signály 14 dní / 1 měsíc / 6 měsíců", "prikaz": "signals", "kadence": 7,
@@ -37,9 +39,9 @@ MODULES = (
     {"id": "zpetna_vazba", "nazev": "Vyhodnocení predikcí (3 knihy)", "prikaz": "update / signals / causal", "kadence": None,
      "vstupy": ("energie", "signaly", "kauzalni")},
     {"id": "centrum", "nazev": "Centrum důkazů a integrace", "prikaz": "hub (i automaticky po hlavních příkazech)", "kadence": 1,
-     "tabulka": ("hub_runs", "run_at"), "vstupy": ("energie", "objevovani", "smart_money", "kauzalni", "signaly", "vyzkum")},
+     "tabulka": ("hub_runs", "run_at"), "vstupy": ("energie", "objevovani", "smart_money", "fondy", "kauzalni", "signaly", "vyzkum")},
 )
-COMMAND_MODULE = {"update": "energie", "discover": "objevovani", "smart-money": "smart_money", "causal": "kauzalni",
+COMMAND_MODULE = {"update": "energie", "discover": "objevovani", "smart-money": "smart_money", "funds": "fondy", "causal": "kauzalni",
                   "signals": "signaly", "hub": "centrum", "research": "vyzkum"}
 
 
@@ -227,6 +229,9 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
         add("SEC Form 4 — čtvrtletní sady", "OK" if q else "ROZPRACOVÁNO",
             f"poslední čtvrtletí {q}; SEC je zveřejňuje se zpožděním → čerstvé nákupy z openinsider (přehled Form 4)"
             if q else "zatím nestaženo (python -m stockradar smart-money)")
+        f13 = _one(cache_conn, "SELECT COUNT(*), MAX(fetched_at) FROM f13_files") or (0, None)
+        add("SEC 13F — zprávy fondů (+ Fails-to-Deliver)", "OK" if f13[0] else "ROZPRACOVÁNO",
+            f"{f13[0]} čtvrtletních sad, naposledy {f13[1]}" if f13[0] else "zatím nestaženo (python -m stockradar funds)")
         ct = _one(cache_conn, "SELECT COUNT(*), MAX(fetched_at) FROM ct_studies") or (0, None)
         add("ClinicalTrials.gov", "OK" if ct[0] else "ROZPRACOVÁNO", f"{ct[0]} studií, staženo {ct[1] or '–'}")
         x = _one(cache_conn, "SELECT COUNT(*), MAX(checked_at) FROM xtb_offer") or (0, None)

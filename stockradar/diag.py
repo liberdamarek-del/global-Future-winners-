@@ -108,7 +108,7 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
     from stockradar.hub import feedback, registry
     hub_last = conn.execute("SELECT MAX(run_at) FROM hub_runs").fetchone()[0]
     newest = max((conn.execute(f"SELECT MAX(run_at) FROM {t}").fetchone()[0] or "", t) for t in
-                 ("model_runs", "discovery_runs", "smart_money_runs", "signal_runs", "causal_runs"))
+                 ("model_runs", "discovery_runs", "smart_money_runs", "fund_runs", "signal_runs", "causal_runs"))
     add("VAROVÁNÍ" if not hub_last or hub_last < newest[0] else "OK", "Centrum důkazů (propojený pohled)",
         "zatím neběželo → python -m stockradar hub" if not hub_last else
         f"starší než výstup {newest[1]} ({newest[0]}) → python -m stockradar hub" if hub_last < newest[0] else f"poslední běh {hub_last}")

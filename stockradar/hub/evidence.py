@@ -112,6 +112,30 @@ def from_smart_money(conn) -> list[dict]:
     return out
 
 
+def from_funds(conn) -> list[dict]:
+    """Nejsilnější sázky správců fondů na malé firmy (< 2 mld. USD) v posledním zveřejněném čtvrtletí (SEC 13F, E4)."""
+    try:
+        r = conn.execute("SELECT id, result_json FROM fund_runs ORDER BY id DESC LIMIT 1").fetchone()
+    except sqlite3.OperationalError:
+        return []
+    if r is None:
+        return []
+    res = json.loads(r["result_json"])
+    cur = res.get("aktualni") or {}
+    rec = ((res.get("tabulka_6m") or {}).get("G3 G1 u firem < 2 mld. USD · od 2024") or {}).get("t_mesice")
+    # efekt je malý (≈ +2 % za 6 m) a po čtvrtletích kolísá (2024–25 tři čtvrtletí v minusu) → váha nejvýš 0,5
+    adj = {"strop": 0.5, "duvod": f"fondy 13F: malý a kolísavý efekt (od 2024 t {rec}) → váha nejvýš 0,5"}
+    out = []
+    for s in cur.get("seznam") or []:
+        out.append(_ev(s["symbol"], modul="FONDY_13F", role="FONDY_13F:sazka", druh="prilezitost", smer=1, horizont=182,
+                       uprava=adj, zdroj=f"fund_runs #{r['id']} (SEC 13F k {cur.get('obdobi')})",
+                       url="https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets",
+                       data_do=cur.get("zverejneno_do"), stav="AUTO", nazev=s.get("nazev"),
+                       text=f"nejsilnější sázka {s['spravcu']} správce/ů fondů (zprávy 13F k {cur.get('obdobi')}, "
+                            f"o {s['max_aw'] * 100:.1f} p. b. nad běžnou vahou; firma {s.get('mcap_mld')} mld. USD)"))
+    return out
+
+
 def from_causal(conn) -> list[dict]:
     r = conn.execute("SELECT id, data_through, result_json FROM causal_runs ORDER BY id DESC LIMIT 1").fetchone()
     if r is None:
@@ -237,7 +261,7 @@ def collect(conn, cache_conn, today: date) -> dict:
     """Všechny důkazy + pořadí modelů + seznam firem; nic se nepočítá znovu, jen čte z uložených výstupů."""
     sig, ranks = from_signals(conn)
     research, expired = from_research(conn, today)
-    items = sig + from_rockets(conn) + from_smart_money(conn) + from_causal(conn) + from_energy(conn) + \
+    items = sig + from_rockets(conn) + from_smart_money(conn) + from_funds(conn) + from_causal(conn) + from_energy(conn) + \
         from_ledger(conn) + from_catalysts(conn, today) + research
     firms = {e["entita"] for e in items if e["typ"] == "firma"}
     firms |= {f for e in items for f in e.get("firmy") or []}
