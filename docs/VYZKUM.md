@@ -30,6 +30,35 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
 - **Poučení:** modely poznají rozkolísanost, ne směr. Spojení modulů vybírá klidnější akcie, ne vítěze. Zapsáno jako
   poučení `POUCENI-KOMBINACE-INSIDER-6M` (centrum ho ukazuje u signálů smart money).
 
+## E2 · 2026-10-11 · Koš nejrozkolísanějších kandidátů (rakety) vs trh
+
+- **Hypotéza:** když modely poznají rozkolísanost, ne směr, mohl by mít KOŠ TOP N raket díky šikmému rozdělení vyšší
+  průměrný výnos než trh, i když u jednotlivé firmy směr neznáme.
+- **Postup:** model raket naučený do 2024-12-31; řazení vybrané nově na validaci (viz oprava níže); pro každý den
+  testu (2025-07…, 20 kohort po 14 dnech) koš TOP 10 / 20 / 50 proti průměru všech akcií téhož dne, 6 m; t přes kohorty
+  s korekcí na překryv (13×). Průzkum na období, které už bylo dřív použito k hodnocení modelu → nejde o zamčený test.
+- **Výsledek:**
+
+| Koš | Průměr 6 m | Trh | Rozdíl (t) | Rakety +50 % | Propady −33 % | Koš porazil trh |
+|---|---|---|---|---|---|---|
+| TOP 10 | +1,1 % | +6,7 % | −5,6 % (−0,3) | 39,5 % | 60,0 % | 40 % kohort |
+| TOP 20 | +2,4 % | +6,7 % | −4,3 % (−0,4) | 40,8 % | 58,0 % | 25 % kohort |
+| TOP 50 | +3,5 % | +6,7 % | −3,2 % (−0,3) | 41,5 % | 54,4 % | 30 % kohort |
+
+- **Ověření výběru řazení (validace):** „raketa“ měla na obou validačních pololetích nejlepší (rakety − propady):
+  2024 H1 +0,04 (horní 1 %: průměr +29 %), 2025 H1 +0,24 (průměr +66 %); „asymetrie“ +0,03 a +0,12.
+  Stejné řazení v testu: rakety 40 %, propady 54–60 %, výnos pod trhem.
+- **Verdikt:** NEPOTVRZENO. Koš raket v testu trh neporazil. Výhoda raket **závisí na režimu trhu** (v horkém 1. pololetí
+  2025 velká, potom záporná) — není stabilní.
+- **Poučení:** dřívější lepší čísla raket („asymetrie“, test +25 % raket / 18 % propadů) byla zčásti dána výběrem řazení
+  přímo na testu (opraveno). Rakety jsou loterie s režimovou závislostí, ne vítězové. Zapsáno `POUCENI-RAKETY-REZIM`.
+
+## Zvážené, ale odložené hypotézy
+
+| Hypotéza | Proč odloženo (2026-10-11) |
+|---|---|
+| Spin-offy (SEC 10-12B) po prvním měsíci obchodování porážejí obor | cenová data obsahují jen dnes obchodované firmy (zkreslení přeživších), ~150 případů za 5 let, literatura rozporná (2010–2019 spin-offy zaostávaly o −2,7 % ročně, jiné studie +8 % proti oboru) → výsledek by nebyl spolehlivý |
+
 ## Opravy nalezené při průzkumu (2026-10-11)
 
 | Nález | Dopad | Oprava |

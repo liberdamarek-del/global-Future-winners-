@@ -28,6 +28,7 @@ CATALYST_SOON_DAYS = 7
 # Obecná poučení → kdy se týkají firmy (role důkazu, typ katalyzátoru, slova v názvu, blízký katalyzátor)
 LESSON_RULES = {
     "POUCENI-RAKETY-VOLATILITA": {"role": {"RAKETY_6M:vyber", "SIGNAL_6M:vyber"}},
+    "POUCENI-RAKETY-REZIM": {"role": {"RAKETY_6M:vyber"}},
     "OVERENI-RAKETY-2026-10-03": {"role": {"RAKETY_6M:vyber"}},
     "CHYBA-DAT-REVERSE-SPLIT": {"role": {"RAKETY_6M:vyber"}},
     "SM-ESPP-FLIP-WIX": {"role": {"SMART_MONEY:nakup"}},
