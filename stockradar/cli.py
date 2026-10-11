@@ -198,6 +198,7 @@ def cmd_discover(args) -> int:
                                   xtb_check=checker.check)
     xsum = checker.summary()
     print(f"XTB: {xsum['dotazu']} dotazů na xtb.com, {xsum['z_cache']} z cache, chyb {xsum['chyb']}")
+    _note(args, xtb_nedostupne=xsum["nedostupne"])
     run_id = store.save_run(conn, result)
     created, notes = store.record_candidates(conn, cconn, result, run_id)
     rockets, rnotes = store.record_rockets(conn, cconn, result.get("rakety_6m") or {}, run_id)
@@ -286,8 +287,8 @@ def cmd_signals(args) -> int:
                    xtb_check=checker.check)
     data = res.pop("_data")
     xsum = checker.summary()
-    print(f"XTB: {xsum['dotazu']} dotazů na xtb.com, {xsum['z_cache']} z cache, chyb {xsum['chyb']}"
-          + (" — XTB NEDOSTUPNÉ, část firem neověřena" if xsum["nedostupne"] else ""))
+    print(f"XTB: {xsum['dotazu']} dotazů na xtb.com, {xsum['z_cache']} z cache, {xsum['z_cache_starsi']} ze staršího"
+          f" ověření, chyb {xsum['chyb']}" + (" — XTB NEDOSTUPNÉ, firmy bez dřívějšího ověření neověřeny" if xsum["nedostupne"] else ""))
     evaluated = sstore.evaluate_forecasts(conn, data)
     runs = {}
     for name, r in res["modely"].items():
@@ -305,7 +306,7 @@ def cmd_signals(args) -> int:
     export_state(conn, state_dir())
     sizes = write_signals_doc(conn, web_dir())
     print(f"Vyhodnoceno dřívějších karet: {len(evaluated)}; web: " + ", ".join(f"{k} {v // 1024} kB" for k, v in sizes.items()))
-    _note(args, behy=runs, vyhodnoceno=len(evaluated), xtb_dotazu=xsum["dotazu"])
+    _note(args, behy=runs, vyhodnoceno=len(evaluated), xtb_dotazu=xsum["dotazu"], xtb_nedostupne=xsum["nedostupne"])
     _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
     return 0
@@ -372,7 +373,8 @@ def cmd_causal(args) -> int:
           f"nových predikcí {len(ids)}, vyhodnoceno {len(evaluated)}; GDACS {len(gd)} výstrah; "
           f"test řetězců za 13 týdnů {(t.get('13t') or {}).get('prumer')} (t {(t.get('13t') or {}).get('t')}); web {size // 1024} kB")
     _note(args, beh=run_id, karet=len(res["karty"]), prilezitosti=len(res["prilezitosti"]), predikci=len(ids),
-          vyhodnoceno=len(evaluated), rady_z_pameti=from_memo, gdacs=gd_error or len(gd))
+          vyhodnoceno=len(evaluated), rady_z_pameti=from_memo, gdacs=gd_error or len(gd),
+          xtb_nedostupne=checker.summary()["nedostupne"])
     _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
     return 0

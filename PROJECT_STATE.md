@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-07 · **Verze:** v0.10.0 · **Schema DB:** v8 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md)
+**Aktualizováno:** 2026-10-11 · **Verze:** v0.10.1 · **Schema DB:** v8 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -120,9 +120,10 @@
 | Centrum (běh #2) | 151 firem, 307 důkazů: příležitost 103 (téměř vše neověřené), riziko 28, rozpor 7 (DINO, MPC, VLO, DK, ASM, HBM, LAC), nevím 13 |
 | Ruční výzkum | #1–#8: G7 uvolňuje až 100 mil. barelů ropy a nafty → tlak na marže rafinérií (DINO, MPC, VLO, PSX, PBF, DK, CVI, PARR), platí do 2027-02-03 |
 | Zpětná vazba | 0 vyhodnocených, 236 čeká; první vyhodnocení 2026-10-09; živé výsledky přebijí testy od 30 případů v 6 týdnech |
-| Zdroje BLOKOVÁNO | GDELT (HTTP 429); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
+| Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
+| Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 134 testů prošlo 2026-10-07)
+## HOTOVO (ověřeno testy — 136 testů prošlo 2026-10-11)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -165,6 +166,7 @@
 | Co | Proč | Co je potřeba |
 |---|---|---|
 | GDELT (světové zprávy) | HTTP 429 ze sdílené adresy serveru | jiný server nebo jiný bezplatný zdroj; zatím Google News RSS |
+| xtb.com (nabídka brokera) | od 2026-10-11 firewall F5 odmítá dotazy z našeho serveru (HTTP 403) | používá se poslední známé ověření s datem; nové firmy bez ověření do žebříčku nejdou (14 dní: 56, 1 měsíc: 50, 6 měsíců: 21 přeskočeno); zkoušet každý týden |
 | Tržní kapitalizace mimo USA a data výsledků z Yahoo | `quote`/`quoteSummary` vyžadují crumb, odsud HTTP 401/429 | US firmy: kapitalizace ze SEC (akcie × cena); ostatní odhad z obratu |
 
 ## NEOVĚŘENO

@@ -29,5 +29,7 @@
 {"day": "2026-10-11", "first_at": "2026-10-11T04:37:42Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:43Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
 {"day": "2026-10-11", "first_at": "2026-10-11T04:37:43Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:43Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
 {"day": "2026-10-11", "first_at": "2026-10-11T04:37:43Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:44Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
-{"day": "2026-10-11", "first_at": "2026-10-11T04:37:44Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:37:44Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 1}
-{"day": "2026-10-11", "first_at": "2026-10-11T04:37:50Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:50Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 1}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:44Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:48:46Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 2}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:50Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:48:47Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:48:44Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:48:46Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:50:30Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:50:32Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 8}

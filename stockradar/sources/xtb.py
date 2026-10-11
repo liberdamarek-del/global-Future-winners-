@@ -104,15 +104,23 @@ class Checker:
         cache_conn.executescript(SCHEMA)
         self.conn, self.search, self.pause, self.max_age = cache_conn, search, pause, max_age
         self.now = now or utcnow()
-        self.requests = self.cached = self.errors = 0
+        self.requests = self.cached = self.errors = self.stale = 0
         self._fails = 0
         self.down = False
 
-    def _cached(self, symbol: str) -> dict | None:
+    def _cached(self, symbol: str, *, any_age: bool = False) -> dict | None:
         r = self.conn.execute("SELECT * FROM xtb_offer WHERE symbol = ?", (symbol,)).fetchone()
-        if r is None or r["source"] != SOURCE or self.now - parse_iso(r["checked_at"]) > self.max_age:
+        if r is None or r["source"] != SOURCE or (not any_age and self.now - parse_iso(r["checked_at"]) > self.max_age):
             return None
         return dict(r)
+
+    def _last_known(self, symbol: str) -> dict | None:
+        """xtb.com nedostupné (např. firewall 403 od 2026-10-11) → poslední známé ověření, i starší než 30 dní.
+        Datum ověření jde s výsledkem až na web; firma nikdy neověřená zůstává NEOVĚŘENO (do žebříčku nejde)."""
+        row = self._cached(symbol, any_age=True)
+        if row:
+            self.stale += 1
+        return row
 
     def check(self, symbol: str, name: str | None = None) -> dict | None:
         hit = self._cached(symbol)
@@ -120,7 +128,7 @@ class Checker:
             self.cached += 1
             return hit
         if self.down:
-            return None
+            return self._last_known(symbol)
         xsym, nname = xtb_symbol(symbol), norm_name(name)
         res = {"status": "NE", "xtb_symbol": None, "xtb_name": None, "currency": None, "other_exchange": 0}
         queries = []
@@ -130,7 +138,7 @@ class Checker:
                 continue
             items = self._search(query)
             if items is None:
-                return None
+                return self._last_known(symbol)
             queries.append(query)
             found = classify(items, sym, name)
             if found["status"] == "AKCIE" and sym is None and xsym:
@@ -165,7 +173,7 @@ class Checker:
 
     def summary(self) -> dict:
         return {"zdroj": SOURCE, "stranka": PAGE_URL, "dotazu": self.requests, "z_cache": self.cached,
-                "chyb": self.errors, "nedostupne": self.down, "overeno": to_iso(self.now)}
+                "z_cache_starsi": self.stale, "chyb": self.errors, "nedostupne": self.down, "overeno": to_iso(self.now)}
 
 
 def unique_listing(items: list[dict]) -> list[dict]:

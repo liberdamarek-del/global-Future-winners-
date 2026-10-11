@@ -230,7 +230,10 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
         ct = _one(cache_conn, "SELECT COUNT(*), MAX(fetched_at) FROM ct_studies") or (0, None)
         add("ClinicalTrials.gov", "OK" if ct[0] else "ROZPRACOVÁNO", f"{ct[0]} studií, staženo {ct[1] or '–'}")
         x = _one(cache_conn, "SELECT COUNT(*), MAX(checked_at) FROM xtb_offer") or (0, None)
-        add("xtb.com — nabídka akcií", "OK" if x[0] else "ROZPRACOVÁNO", f"{x[0]} ověřených firem, naposledy {x[1] or '–'}")
+        blocked = xtb_blocked(conn)
+        add("xtb.com — nabídka akcií", "BLOKOVÁNO" if blocked else "OK" if x[0] else "ROZPRACOVÁNO",
+            (f"při běhu {blocked} web odmítl dotazy (firewall) → použito dřívější ověření; firmy bez něj do žebříčku nejdou; "
+             if blocked else "") + f"{x[0]} ověřených firem, naposledy {x[1] or '–'}")
     r = conn.execute("SELECT result_json FROM causal_runs ORDER BY id DESC LIMIT 1").fetchone()
     if r:
         res = json.loads(r[0])
@@ -243,6 +246,15 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
             f"{len(p) - len(bad)} z {len(p)} komodit" + (f"; nedostupné: {', '.join(bad)}" if bad else ""))
     add("GDELT — světové zprávy", "BLOKOVÁNO", "HTTP 429 ze sdílené adresy serveru (zjištěno 2026-10-06) → nepoužito")
     return out
+
+
+def xtb_blocked(conn) -> str | None:
+    """Kdy byl xtb.com naposledy nedostupný — podle posledního běhu v deníku, který XTB ověřoval (None = dostupný)."""
+    for started, summ in conn.execute("SELECT started_at, summary_json FROM system_runs ORDER BY id DESC LIMIT 50"):
+        s = json.loads(summ)
+        if "xtb_nedostupne" in s:
+            return started[:16] if s["xtb_nedostupne"] else None
+    return None
 
 
 SUMMARY_KEYS = ("HOTOVO/OVĚŘENO", "HOTOVO", "NEOVĚŘENO", "ROZPRACOVÁNO", "BLOKOVÁNO", "CHYBA")

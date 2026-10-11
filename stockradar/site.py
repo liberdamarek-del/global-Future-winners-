@@ -369,8 +369,9 @@ def _trim_card(c: dict) -> dict:
     info = c.get("informace") or {}
     c["informace"] = {k: info.get(k) for k in ("stav", "titulku", "pribehu", "prepisu", "pribehu_7d", "novych_7d",
                                                "novost", "kvalita", "typ")} | {
-        "nove": [{k: n.get(k) for k in ("poprve", "titulek", "prvni_zdroj", "kvalita", "kopii", "url")}
-                 for n in (info.get("nove") or [])[:2]]}
+        # web ukazuje titulek, zdroj a odkaz; odkazy Google News mají ~300 znaků → jen nejnovější titulek (limit dokumentu)
+        "nove": [{"titulek": (n.get("titulek") or "")[:110], "prvni_zdroj": n.get("prvni_zdroj"), "url": n.get("url")}
+                 for n in (info.get("nove") or [])[:1]]}
     an = c.get("analogie") or {}
     keep_h = {str(c.get("obchodnich_dni") or 10), "60"}
     c["analogie"] = {"pocet": an.get("pocet"), "nezavislych": an.get("nezavislych"),

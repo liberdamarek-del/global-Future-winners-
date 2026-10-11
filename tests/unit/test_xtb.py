@@ -62,6 +62,11 @@ def test_checker_caches_and_stops_after_network_errors():
     assert all(bad.check(f"X{i}") is None for i in range(7))
     assert bad.down and bad.requests == 5                                         # po 5 chybách už nezkouší
     assert bad.summary()["nedostupne"]
+    # blokovaný web: starší ověření (> 30 dní) se použije s datem, místo aby firma ze žebříčku vypadla
+    blocked = xtb.Checker(conn, search=broken, pause=0, now=parse_iso(ch.check("VST")["checked_at"]) + timedelta(days=45))
+    old = blocked.check("VST")
+    assert old["status"] == "AKCIE" and blocked.stale == 1 and blocked.summary()["z_cache_starsi"] == 1
+    assert blocked.check("NEW") is None                                           # nikdy neověřená firma → NEOVĚŘENO
 
 
 def test_name_fallback_finds_listing_under_other_symbol_or_exchange():

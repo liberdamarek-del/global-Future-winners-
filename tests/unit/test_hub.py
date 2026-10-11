@@ -171,3 +171,13 @@ def test_signals_guard_skips_only_unchanged_data(conn, tmp_path):
     conn.execute("INSERT INTO smart_money_runs (run_at, data_through, result_json, app_version)"
                  " VALUES ('2026-10-04T08:00:00Z', '2026-10-02', '{}', 'x')")
     assert R.signals_unchanged(conn, cc, models) is None                               # nový vstup → počítat
+
+
+def test_registry_marks_xtb_blocked_from_journal(conn):
+    assert R.xtb_blocked(conn) is None
+    R.record_run(conn, "signals", {}, NOW, "OK", {"xtb_nedostupne": True}, finished=NOW)
+    assert R.xtb_blocked(conn) == "2026-10-07T12:00"
+    src = {z["zdroj"]: z for z in R.sources_status(conn, dcache.connect(":memory:"), NOW)}
+    assert src["xtb.com — nabídka akcií"]["stav"] == "BLOKOVÁNO"
+    R.record_run(conn, "causal", {}, NOW, "OK", {"xtb_nedostupne": False}, finished=NOW)
+    assert R.xtb_blocked(conn) is None                                                  # poslední běh prošel

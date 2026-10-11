@@ -4,6 +4,21 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-11 · v0.10.1 — Včasné vyhodnocení predikcí, výpadek xtb.com, menší dokument žebříčku
+
+Důvod: chyby nalezené v denních a týdenních bězích 2026-10-09 až 2026-10-11 (zlepšení týdne).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `update.py` | Denní závěr je použitelný od 16:15 newyorského času (letní 20:15 UTC, zimní 21:15 UTC) místo pevných 21:00 UTC. Večerní rutina (20:47 UTC v létě) dřív dnešní závěr nikdy neviděla → každé vyhodnocení se zpozdilo o obchodní den (9. 10.: 0 vyhodnocených místo 6) | `test_update_pipeline.py::test_bar_close_time_follows_new_york_daylight_saving` |
+| `sources/xtb.py` | xtb.com od 2026-10-11 odmítá dotazy z našeho serveru (firewall F5, HTTP 403). Když web nejde, použije se poslední známé ověření i starší než 30 dní (s datem); firma nikdy neověřená do žebříčku nejde. Bez toho by se žebříčky po vypršení cache (~5. 11.) vyprázdnily | `test_xtb.py` |
+| `cli.py`, `hub/registry.py` | `signals`, `discover` a `causal` zapisují do deníku, zda byl xtb.com dostupný; registr pak ukáže zdroj „xtb.com“ jako BLOKOVÁNO | `test_hub.py::test_registry_marks_xtb_blocked_from_journal` |
+| `site.py` | U karty v žebříčku jen nejnovější titulek (odkazy Google News mají ~300 znaků): `stav/zebricek` 144 kB → 124 kB (limit 170 kB) | celý `pytest` (136) |
+
+**Výsledek týdne (data k 2026-10-09):** objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH), smart money #4
+(10 signálů, 4 do ledgeru), signály #18–#20 (zamčené testy jen načteny), první vyhodnocení ledgeru: +7 dní 4 HIT / 2 MISS
+vůči S&P 500 (energetické predikce z 2. 10.).
+
 ## 2026-10-07 · v0.10.0 — Propojený systém: centrum důkazů, zpětná vazba, pohled na firmu, registr a deník
 
 Důvod: zadání uživatele 2026-10-07 — systém má fungovat jako propojená síť specializovaných částí, které si předávají
