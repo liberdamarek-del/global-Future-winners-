@@ -36,3 +36,11 @@ def test_name_normalization_and_unique_matching():
     idx = C.name_index(conn, {"KTOS", "AAA", "AAB", "LEU"})
     assert idx[C.norm("KRATOS DEFENSE & SECURITY SOLUTIONS, INC.")] == "KTOS"
     assert "acme" not in idx                                         # dvě firmy se stejným jménem → nepárovat
+
+
+def test_firm_key_matches_subsidiaries_sharing_first_two_words():
+    key = C.firm_key("Kratos Defense & Security Solutions, Inc. Common Stock")
+    assert key == "kratos defense"
+    accept = lambda rec: (C.norm(rec) + " ").startswith(key + " ")
+    assert accept("KRATOS DEFENSE & ROCKET SUPPORT SERVICES INC") and not accept("KRATOS UNMANNED AERIAL SYSTEMS")
+    assert C.firm_key("Oklo Inc. Class A Common Stock") == "oklo" and C.firm_key("AB Inc.") is None

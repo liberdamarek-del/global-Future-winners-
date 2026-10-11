@@ -53,6 +53,19 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
 - **Poučení:** dřívější lepší čísla raket („asymetrie“, test +25 % raket / 18 % propadů) byla zčásti dána výběrem řazení
   přímo na testu (opraveno). Rakety jsou loterie s režimovou závislostí, ne vítězové. Zapsáno `POUCENI-RAKETY-REZIM`.
 
+## E3 · 2026-10-11 · Velká federální zakázka USA → výnos za 6 měsíců (nový typ informace)
+
+- **Hypotéza (předem):** nová zakázka (Mod 0) v hodnotě ≥ 10 % tržní hodnoty firmy → výnos za 6 m lepší než kontrolní
+  skupina (5 akcií ze stejného oboru s podobným obratem). POTVRZENO jen při t ≥ 2 a stejném znaménku v obou polovinách.
+- **Data:** USAspending.gov (zdarma, bez klíče), transakce zakázek — částka známá v den akce (součet „Award Amount“
+  obsahuje i pozdější navýšení → nepoužito). Vstup až ≥ 7 dní po akci (měří se pokračování, ne reakce na oznámení).
+  Tržní hodnota z akcií ze SEC známých k danému dni. Studie událostí z `smartmoney/events.py` (žádný nový duplicitní výpočet).
+- **Krok 1 (všechny transakce ≥ 10 mil. USD, 2021-01…2026-09):** 53 921 transakcí, 20 181 nových zakázek, spárováno 98
+  příjemců (2 479 zakázek) — téměř jen velké firmy. Skupina ≥ 10 % hodnoty firmy: **jen 5 případů** → nelze vyhodnotit;
+  5–10 %: 8 případů, +7 % nad kontrolou (t 1,6); velké firmy (< 2 %, 1 556 případů): −1,6 % (t −0,6).
+- **Mezistav:** NEOVĚŘENO (málo dat). Krok 2: cílené stažení zakázek ≥ 1 mil. USD pro 923 menších firem (20 mil.–5 mld.
+  USD) z oborů s vládními zakázkami (obrana, letectví a vesmír, IT služby, stavby, elektronika, biotech/BARDA).
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |

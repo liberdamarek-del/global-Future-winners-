@@ -30,7 +30,21 @@ CREATE TABLE IF NOT EXISTS gov_tx (
     PRIMARY KEY (award_id, mod, action_date, amount)
 );
 CREATE TABLE IF NOT EXISTS gov_tx_done (month TEXT PRIMARY KEY, n INTEGER NOT NULL, fetched_at TEXT NOT NULL);
+-- cílené stažení pro menší firmy: transakce ≥ FIRM_MIN_AMOUNT přiřazené konkrétnímu symbolu (shoda začátku jména)
+CREATE TABLE IF NOT EXISTS gov_tx_firm (
+    symbol      TEXT NOT NULL,
+    award_id    TEXT NOT NULL,
+    mod         TEXT NOT NULL,
+    recipient   TEXT NOT NULL,
+    action_date TEXT NOT NULL,
+    amount      REAL NOT NULL,
+    agency      TEXT,
+    description TEXT,
+    PRIMARY KEY (symbol, award_id, mod, action_date, amount)
+);
+CREATE TABLE IF NOT EXISTS gov_firm_done (symbol TEXT PRIMARY KEY, query TEXT NOT NULL, n INTEGER NOT NULL, fetched_at TEXT NOT NULL);
 """
+FIRM_MIN_AMOUNT = 1_000_000
 
 
 def _post(payload: dict, timeout: int = 60) -> dict:
@@ -91,3 +105,48 @@ def download(cache_conn, start: date, end: date, *, post=_post, pause: float = 1
         if m == 13:
             y, m = y + 1, 1
     return {"mesicu": fetched, "transakci": total}
+
+
+def fetch_firm(query: str, accept, *, post=_post, pause: float = 1.0, start: str = "2021-01-01", end: str = "2026-09-30",
+               max_pages: int = 5) -> list[tuple]:
+    """Transakce ≥ FIRM_MIN_AMOUNT, jejichž příjemce odpovídá dotazu; `accept(recipient)` rozhodne o přesné shodě."""
+    rows, page = [], 1
+    while page <= max_pages:
+        d = post({"filters": {"award_type_codes": CONTRACTS, "recipient_search_text": [query],
+                              "time_period": [{"start_date": start, "end_date": end}]},
+                  "fields": FIELDS, "limit": 100, "page": page, "sort": "Transaction Amount", "order": "desc"})
+        res = d.get("results") or []
+        for r in res:
+            amt = r.get("Transaction Amount") or 0
+            if amt >= FIRM_MIN_AMOUNT and r.get("Action Date") and accept(r.get("Recipient Name") or ""):
+                rows.append((r.get("Award ID") or "?", str(r.get("Mod") or ""), r["Recipient Name"], r["Action Date"],
+                             float(amt), r.get("Awarding Agency"), (r.get("Transaction Description") or "")[:200]))
+        if pause:
+            time.sleep(pause)
+        if not res or not (d.get("page_metadata") or {}).get("hasNext") or (res[-1].get("Transaction Amount") or 0) < FIRM_MIN_AMOUNT:
+            break
+        page += 1
+    return rows
+
+
+def download_firms(cache_conn, firms: list[tuple[str, str, object]], *, post=_post, pause: float = 1.0, log=print) -> dict:
+    """firms: [(symbol, dotaz, accept)] — hotové firmy se znovu nestahují."""
+    cache_conn.executescript(SCHEMA)
+    done = {r[0] for r in cache_conn.execute("SELECT symbol FROM gov_firm_done")}
+    n_firms = n_rows = 0
+    for i, (sym, query, accept) in enumerate(firms):
+        if sym in done:
+            continue
+        try:
+            rows = fetch_firm(query, accept, post=post, pause=pause)
+        except Exception as exc:
+            log(f"USAspending {sym}: {str(exc)[:100]}")
+            continue
+        with cache_conn:
+            cache_conn.executemany("INSERT OR IGNORE INTO gov_tx_firm VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [(sym, *r) for r in rows])
+            cache_conn.execute("INSERT OR REPLACE INTO gov_firm_done VALUES (?, ?, ?, ?)", (sym, query, len(rows), to_iso(utcnow())))
+        n_firms += 1
+        n_rows += len(rows)
+        if i % 50 == 0:
+            log(f"USAspending firmy: {i}/{len(firms)}, transakcí zatím {n_rows}")
+    return {"firem": n_firms, "transakci": n_rows}

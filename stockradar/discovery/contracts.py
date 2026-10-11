@@ -44,20 +44,54 @@ def name_index(cache_conn, symbols: set[str]) -> dict[str, str]:
     return {n: next(iter(s)) for n, s in seen.items() if len(s) == 1}
 
 
+TARGET_INDUSTRY = ("military", "government", "aerospace", "defense", "edp services", "engineering", "construction",
+                   "electronic components", "telecommunications equipment", "radio and television", "professional services",
+                   "biotechnology", "industrial machinery", "environmental", "electric utilities", "nuclear", "shipbuilding",
+                   "computer communications", "space", "ordnance")
+
+
+def firm_key(name: str) -> str | None:
+    """Klíč pro cílené hledání: první dvě slova normalizovaného jména (zachytí i dceřiné firmy „Kratos Unmanned…“
+    jen když sdílí obě slova); jednoslovné jméno jen s ≥ 4 znaky."""
+    words = norm(name).split()
+    if not words or (len(words) == 1 and len(words[0]) < 4):
+        return None
+    return " ".join(words[:2])
+
+
+def target_firms(cache_conn, symbols: set[str]) -> list[tuple[str, str, object]]:
+    """Menší americké firmy (20 mil.–5 mld. USD) z oborů, kde jsou vládní zakázky běžné."""
+    out = []
+    for sym, name, ind, cap in cache_conn.execute("SELECT symbol, name, industry, market_cap_usd FROM securities"):
+        if sym not in symbols or not cap or not (2e7 <= cap <= 5e9) or not any(k in (ind or "").lower() for k in TARGET_INDUSTRY):
+            continue
+        key = firm_key(name)
+        if key:
+            out.append((sym, key, (lambda k: lambda rec: (norm(rec) + " ").startswith(k + " "))(key)))
+    return out
+
+
 def events(cache_conn, market, fund: Fundamentals) -> tuple[list[E.Event], dict]:
     us = {s for s in market.data.secs if "." not in s}
     idx = name_index(cache_conn, us)
     stats = {"transakci": 0, "novych_zakazek": 0, "sparovano": 0, "bez_hodnoty_firmy": 0}
     out = []
-    for award, mod, rec, day, amount, agency, desc in cache_conn.execute(
-            "SELECT award_id, mod, recipient, action_date, amount, agency, description FROM gov_tx"):
+    rows = [(idx.get(norm(r[2])), *r) for r in cache_conn.execute(
+        "SELECT award_id, mod, recipient, action_date, amount, agency, description FROM gov_tx")]
+    try:                                       # cílené stažení menších firem (symbol přiřazen při stažení)
+        rows += [tuple(r) for r in cache_conn.execute(
+            "SELECT symbol, award_id, mod, recipient, action_date, amount, agency, description FROM gov_tx_firm")]
+    except Exception:
+        pass
+    seen = set()
+    for sym, award, mod, rec, day, amount, agency, desc in rows:
         stats["transakci"] += 1
         if mod not in ("0", "00", "000", ""):
             continue
         stats["novych_zakazek"] += 1
-        sym = idx.get(norm(rec))
-        if sym is None:
+        if sym is None or sym not in us or (sym, award, day) in seen:
             continue
+        seen.add((sym, award, day))
         stats["sparovano"] += 1
         d = date.fromisoformat(day[:10]).toordinal()
         i = market.idx_on_or_before(sym, d)
