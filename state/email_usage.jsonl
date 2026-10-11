@@ -24,3 +24,10 @@
 {"day": "2026-10-05", "first_at": "2026-10-05T17:18:56Z", "host": "data.sec.gov", "last_at": "2026-10-05T17:27:50Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 6}
 {"day": "2026-10-05", "first_at": "2026-10-05T17:18:57Z", "host": "data.sec.gov", "last_at": "2026-10-05T17:27:51Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 6}
 {"day": "2026-10-05", "first_at": "2026-10-05T17:18:58Z", "host": "data.sec.gov", "last_at": "2026-10-05T17:27:52Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 6}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:37Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:37:37Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:38Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:41Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:42Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:43Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:43Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:43Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:43Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:44Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:44Z", "host": "www.sec.gov", "last_at": "2026-10-11T04:37:44Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 1}
+{"day": "2026-10-11", "first_at": "2026-10-11T04:37:50Z", "host": "data.sec.gov", "last_at": "2026-10-11T04:37:50Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 1}
