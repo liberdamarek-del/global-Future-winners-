@@ -9,10 +9,12 @@ pokračování, ne samotná reakce na oznámení); tržní hodnota z akcií zná
 s firmou jen přes přesnou shodu normalizovaného jména (dceřiné firmy s jiným jménem se ztratí — přesnost před úplností).
 Omezení: ceny jen dnes obchodovaných firem (zkreslení přeživších), měřeno proti kontrole ze stejného oboru.
 
-Upřesnění PŘED vyhodnocením kroku 2 (2026-10-11, výsledky ještě neviděny): příjemce z cíleného stažení se přijme jen
-při přesné shodě celého normalizovaného jména, nebo když klíč firmy má DVĚ slova a jméno příjemce jimi začíná
-(dceřiné firmy „Kratos Defense & Rocket Support“); jednoslovný klíč jen přesně („Alamo Group“ ≠ „Alamo City
-Engineering“). Jedna událost na firmu a měsíc (největší zakázka) — shluky zakázek nenafukují počet případů.
+Upřesnění PŘED vyhodnocením kroku 2 (2026-10-11): jedna událost na firmu a měsíc (největší zakázka) — shluky zakázek
+nenafukují počet případů. Párování příjemce: původně přesná shoda NEBO shoda prvních dvou slov (dceřiné firmy);
+kontrola 29 událostí ≥ 5 % hodnoty firmy našla 3 chybné shody přes obecná slova („Asia Pacific Wire & Cable“ ←
+„Asia Pacific Aerospace“, „Energy Services of America“ ← „Energy Services Group“, „Alpha Technology Group“ ←
+„Alpha Technology Associate“) → platí jen PŘESNÁ shoda celého normalizovaného jména (přesnost před úplností;
+dceřiné firmy s jiným jménem se ztratí). Kontrola párování se dělala na jménech, ne podle výnosů.
 """
 
 import json
@@ -65,14 +67,9 @@ def firm_key(name: str) -> str | None:
 
 
 def strict_match(security_name: str, recipient: str) -> bool:
-    """Přísná shoda příjemce zakázky s firmou (viz upřesnění v záhlaví)."""
-    full, rec = norm(security_name), norm(recipient)
-    if not rec:
-        return False
-    if rec == full:
-        return True
-    key = firm_key(security_name)
-    return bool(key) and len(key.split()) == 2 and (rec + " ").startswith(key + " ")
+    """Přísná shoda příjemce zakázky s firmou: jen celé normalizované jméno (viz upřesnění v záhlaví)."""
+    rec = norm(recipient)
+    return bool(rec) and len(rec) >= 4 and rec == norm(security_name)
 
 
 def target_firms(cache_conn, symbols: set[str]) -> list[tuple[str, str, object]]:

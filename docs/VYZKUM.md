@@ -63,8 +63,28 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
 - **Krok 1 (všechny transakce ≥ 10 mil. USD, 2021-01…2026-09):** 53 921 transakcí, 20 181 nových zakázek, spárováno 98
   příjemců (2 479 zakázek) — téměř jen velké firmy. Skupina ≥ 10 % hodnoty firmy: **jen 5 případů** → nelze vyhodnotit;
   5–10 %: 8 případů, +7 % nad kontrolou (t 1,6); velké firmy (< 2 %, 1 556 případů): −1,6 % (t −0,6).
-- **Mezistav:** NEOVĚŘENO (málo dat). Krok 2: cílené stažení zakázek ≥ 1 mil. USD pro 923 menších firem (20 mil.–5 mld.
-  USD) z oborů s vládními zakázkami (obrana, letectví a vesmír, IT služby, stavby, elektronika, biotech/BARDA).
+- **Krok 2 (cílené stažení):** zakázky ≥ 1 mil. USD pro 921 menších firem (20 mil.–5 mld. USD) z oborů s vládními
+  zakázkami (obrana, letectví a vesmír, IT služby, stavby, elektronika, biotech/BARDA) → 2 313 transakcí. Předem
+  doplněno: jedna událost na firmu a měsíc (největší zakázka).
+- **Kontrola párování (na jménech, ne na výnosech):** shoda přes první dvě slova jména dala 3 chybné shody z 29 událostí
+  ≥ 5 % hodnoty firmy (Asia Pacific Wire & Cable ← Asia Pacific Aerospace, Energy Services of America ← Energy
+  Services Group, Alpha Technology Group ← Alpha Technology Associate). Jediná z nich (ATGL, +362 % nad kontrolou)
+  zvedla průměr skupiny 5–10 % na +62 %. → platí jen přesná shoda celého jména.
+- **Výsledek (874 událostí, 6 měsíců, nad kontrolní skupinou ze stejného oboru):**
+
+| Zakázka / tržní hodnota | Případů | Medián výnosu | Nad kontrolou průměr (medián) | t | 2021–23 / 2024+ |
+|---|---|---|---|---|---|
+| **≥ 10 % (hlavní hypotéza)** | **6** | +9,6 % | +15,9 % (−1,9 %) | 0,8 | +6,1 % / +64,8 % (1 případ) |
+| 5–10 % | 10 | +11,0 % | +4,5 % (+0,2 %) | 1,1 | +8,6 % / +0,4 % |
+| 2–5 % | 35 | −4,9 % | −8,0 % (−3,2 %) | −1,5 | −3,9 % / −11,1 % |
+| < 2 % (velké firmy) | 667 | +6,6 % | +1,9 % (+2,0 %) | 1,3 | +4,0 % / +0,2 % |
+
+- **Verdikt:** NEOVĚŘENO — hlavní hypotéza má jen 6 případů za 5,7 roku (potřeba ≥ 30). Žádná skupina nemá výhodu
+  s t ≥ 2 stabilní v obou polovinách; u velkých firem slábne k nule (2024+: +0,2 %).
+- **Poučení:** velká zakázka vzhledem k velikosti firmy je u kótovaných firem vzácná (většina menších dodavatelů vlády
+  je soukromá), takže jako systematický zdroj vítězů nestačí. Chybné párování jmen dokáže z jednoho případu vyrobit
+  „objev“ → u každého nového zdroje nejdřív kontrola párování. Zapsáno `POUCENI-ZAKAZKY-SHODA-JMEN`. Zakázky se do
+  modelu ani centra nezapojují; jednotlivou velkou zakázku lze brát jen jako ručně ověřený katalyzátor.
 
 ## Zvážené, ale odložené hypotézy
 

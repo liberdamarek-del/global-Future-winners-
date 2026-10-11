@@ -4,6 +4,19 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-11 · v0.11.1 — Výzkum E3: federální zakázky USA (nový bezplatný zdroj USAspending.gov)
+
+Důvod: autonomní výzkum nového typu informace (deník [docs/VYZKUM.md](docs/VYZKUM.md), E3).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `sources/usaspending.py` (nový) | Transakce federálních zakázek (zdarma, bez klíče, 1 dotaz/s): po měsících ≥ 10 mil. USD a cíleně pro menší firmy ≥ 1 mil. USD; částka transakce = známá v den akce (ne „Award Amount“ s pozdějším navýšením); hotové měsíce/firmy se znovu nestahují | `test_contracts.py::test_fetch_month_pages_until_amount_falls_below_limit` |
+| `discovery/contracts.py` (nový) | Studie událostí (z `smartmoney/events.py`): nová zakázka / tržní hodnota k danému dni → výnos 6 m proti kontrole ze stejného oboru; přesná shoda jména příjemce, jedna událost na firmu a měsíc | `test_contracts.py` (4) |
+| `lessons` (#20) | POUCENI-ZAKAZKY-SHODA-JMEN: hlavní hypotéza má jen 6 případů (NEOVĚŘENO); volné párování jmen vyrobilo falešný výsledek (+62 % → +4,5 %) | ostrý běh 874 událostí |
+
+**Výsledek:** NEOVĚŘENO. Zakázka ≥ 10 % hodnoty firmy jen 6× za 5,7 roku; žádná skupina nemá stabilní výhodu (velké
+firmy +1,9 % nad kontrolou, t 1,3, v letech 2024+ jen +0,2 %). Zakázky se do modelu ani centra nezapojují.
+
 ## 2026-10-11 · v0.11.0 — Autonomní výzkum: experiment spojení rolí, nezávislý test raket, radar z denních cen
 
 Důvod: zadání uživatele 2026-10-11 (autonomní režim: hypotézy, experimenty, učení z výsledků). Deník:

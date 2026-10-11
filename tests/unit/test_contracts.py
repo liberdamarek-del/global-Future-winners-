@@ -46,9 +46,10 @@ def test_firm_key_matches_subsidiaries_sharing_first_two_words():
     assert C.firm_key("Oklo Inc. Class A Common Stock") == "oklo" and C.firm_key("AB Inc.") is None
 
 
-def test_strict_match_rejects_loose_single_word_prefix():
+def test_strict_match_accepts_only_full_normalized_name():
     assert C.strict_match("Alamo Group, Inc.", "ALAMO GROUP INC")
     assert not C.strict_match("Alamo Group, Inc.", "ALAMO CITY ENGINEERING SERVICES, INC.")    # jednoslovný klíč jen přesně
-    assert C.strict_match("Kratos Defense & Security Solutions, Inc. Common Stock", "KRATOS DEFENSE & ROCKET SUPPORT SERVICES INC")
-    assert not C.strict_match("Kratos Defense & Security Solutions, Inc.", "KRATOS UNMANNED AERIAL SYSTEMS")
+    assert C.strict_match("Bridger Aerospace Group Holdings Inc. Common Stock", "BRIDGER AEROSPACE GROUP, LLC")
+    assert not C.strict_match("Asia Pacific Wire & Cable Corporation Ltd", "ASIA PACIFIC AEROSPACE PTY. LTD.")   # obecná slova
+    assert not C.strict_match("Energy Services of America Corporation", "ENERGY SERVICES GROUP INC")
     assert not C.strict_match("Oklo Inc.", "")
