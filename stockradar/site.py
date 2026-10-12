@@ -575,10 +575,17 @@ def build_prehled_doc(res: dict, limit: int = DOC_LIMIT) -> dict:
            "system": {"moduly": sysv.get("moduly", []), "zdroje": sysv.get("zdroje", []), "pocty": sysv.get("pocty", {}),
                       "denik": [{k: j[k] for k in ("id", "prikaz", "zacatek", "trvani_s", "stav", "chyba")} for j in sysv.get("denik", [])[:12]]},
            "pouceni": lessons, "firmy": firms}
-    # rezerva 20 % pod limitem serveru (diag varuje nad 85 %); od v0.12.0 přibylo ~180 firem jen se slabým důkazem z 13F
-    while len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode()) > int(limit * 0.8) and doc["firmy"]:
-        doc["firmy"].popitem()                        # firmy jsou seřazené podle síly důkazů → ubírá se od nejslabších
-        doc["zkraceno"] = True
+    # rezerva 20 % pod limitem serveru (diag varuje nad 85 %); od v0.12.0 přibylo ~180 firem jen se slabým důkazem z 13F.
+    # Firmy jsou seřazené podle síly důkazů → ubírá se od nejslabších, ale firmy, které web ukazuje (žebříčky, rakety,
+    # signály smart money), zůstávají vždy — jinak by detail firmy v žebříčku neukázal postoj centra (chyba 2026-10-12).
+    shown = {d["ticker"] for d in res["firmy"] if any((x.get("role") or "").endswith(":vyber") or x.get("role") == "SMART_MONEY:nakup"
+                                                       for x in d["dukazy"])}
+    size = lambda: len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode())
+    for target, protect in ((int(limit * 0.8), shown), (limit, set())):
+        drop = [t for t in reversed(list(doc["firmy"])) if t not in protect]
+        while size() > target and drop:
+            del doc["firmy"][drop.pop(0)]
+            doc["zkraceno"] = True
     return doc
 
 

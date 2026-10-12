@@ -4,6 +4,16 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-12 · v0.12.2 — Oprava: firmy ze žebříčků vždy v přehledu centra
+
+Důvod: denní běh 2026-10-12 našel, že první firmy žebříčků (KMX, MPC, ACDC, DINO) chyběly v dokumentu `stav/prehled`,
+takže po rozkliknutí na webu nebyl vidět postoj centra. Zkracování dokumentu (v0.12.0, rezerva 20 %) ubíralo firmy se
+slabými důkazy včetně firem ze žebříčků.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `site.py` (`build_prehled_doc`) | Firmy, které web ukazuje (role `…:vyber`, signály smart money), se nezkracují; ostatní od nejslabších. Když by ani to nestačilo, platí tvrdý limit dokumentu | `test_site_limits.py::test_prehled_trimming_keeps_firms_shown_on_web` |
+
 ## 2026-10-11 · v0.12.1 — Web: nejvýš 10 firem v každé sekci
 
 Důvod: rozhodnutí uživatele 2026-10-11 („zkrať každou sekci aspoň o pět firem, minimum je 10“). Zvoleno 10: model
