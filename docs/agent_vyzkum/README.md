@@ -21,7 +21,7 @@ Formát hlídá `tests/unit/test_agent_research.py` (povinná pole, výčty, uni
 
 ### `zdroje.jsonl` — pole
 `id` (Z-RRRRMMDD-n), `beh` (datum běhu), `smer` (id směru), `klic` (krátký klíč myšlenky, slouží k odhalení
-opakování), `nazev`, `url` (https), `datum_zdroje` (RRRR-MM-DD nebo RRRR-MM), `typ_zdroje`
+opakování), `nazev`, `url` (https), `datum_zdroje` (RRRR-MM-DD, RRRR-MM nebo RRRR), `typ_zdroje`
 (CLANEK_RECENZOVANY / PREPRINT / DOKUMENTACE / OPEN_SOURCE / BLOG / DISKUSE), `zjisteni` (konkrétní fakt, čísla),
 `zralost` (PRAXE / VYZKUM / HYPOTEZA), `duveryhodnost` (VYSOKA / STREDNI / NIZKA) + `duvod_duvery`, `vyuziti`
 (k čemu u nás), `navrh` (id návrhu nebo null), `overeno_primarnim_zdrojem` (true/false).

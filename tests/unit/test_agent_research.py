@@ -10,7 +10,7 @@ DUVERA = {"VYSOKA", "STREDNI", "NIZKA"}
 TYP = {"CLANEK_RECENZOVANY", "PREPRINT", "DOKUMENTACE", "OPEN_SOURCE", "BLOG", "DISKUSE"}
 STAV_NAVRHU = {"NAVRZENO", "EXPERIMENT", "ZAVEDENO", "ZAMITNUTO", "ODLOZENO"}
 STAV_SMERU = {"AKTIVNI", "UTLUMENY", "UZAVRENY"}
-DATUM = re.compile(r"^\d{4}-\d{2}(-\d{2})?$")
+DATUM = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")
 
 
 def _jsonl(name: str) -> list[dict]:
