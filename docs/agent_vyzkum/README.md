@@ -71,7 +71,7 @@ u 120 největších týdenních raket za 2 roky čte titulky Google News a pří
 — **do modelu se nedostávají** a internet se u jednotlivých raket ručně neověřuje (výjimky v `lessons`: ABVX, AEMD,
 SharpLink). Okno 14 dní se samostatně nehledá.
 
-**Plán (první úkol denní úlohy):**
+**Stav 2026-10-13: postaveno (v0.13.0, `python -m stockradar rakety`).** Plán:
 1. Denně jeden dotaz na Nasdaq screener (už ho používáme) → snímek cen všech amerických akcií; spolu s týdenními
    cenami z Yahoo → rakety ≥ +30 % za 5, ≥ +40 % za 10 a ≥ +50 % za 21 obchodních dní (likvidní, cena ≥ 1 USD).
 2. Pro 5 největších nových raket dne: ověřit příčinu na internetu z **primárního zdroje** (8-K, tisková zpráva,

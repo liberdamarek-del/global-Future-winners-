@@ -4,6 +4,23 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-13 · v0.13.0 — Raketový deník (rakety za 5 / 10 / 21 dní + ověřené příčiny)
+
+Důvod: zadání uživatele 2026-10-13 („když najdeš rakety za týden, 14 dní nebo měsíc — analyzuješ proč a zanášíš to do
+modelu?“). Dosud se příčiny určovaly jen automaticky z titulků jednou týdně a do modelu se nedostávaly.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `discovery/diary.py` (nový) | Denní snímek Nasdaq screeneru (1 dotaz, jen po závěru obchodování, svátek se pozná podle shodných cen) + týdenní ceny Yahoo → rakety ≥ +30 % / 5, ≥ +40 % / 10, ≥ +50 % / 21 obchodních dní (likvidní, ≥ 1 USD); kontrola kvality dat (`study.anomalous`), dorovnání zpětných splitů (`winners.adjust_reverse_splits`), vyřazení fondů, kontrola návaznosti snímku na Yahoo; epizoda = firma v 21 dnech; AUTO příčina z titulků | `test_diary.py` (7) |
+| `migrations/0010_rocket_diary.sql` | `rocket_events` a `rocket_causes` (append-only; příčina jen s https zdrojem a datem) | `test_diary.py` |
+| `cli.py` (`rakety`) | detekce + zápis ověřené příčiny (`--pricina ID --kod … --url … --datum …`, `--neovereno`) | celý `pytest` |
+| `hub/*`, `state_io.py`, `web/index.html` | rakety jako kontext v centru (chyby dat se nezobrazují), modul „Raketový deník“ v registru (čerstvost podle snímku), export do `state/` | `test_diary.py::test_hub_shows_rockets_as_context_but_not_data_errors` |
+
+**První běh (data do 2026-10-12):** 5 938 řad, 286 fondů a 13 vadných řad vyřazeno, 48 epizod zapsáno před opravou
+filtrů — 2 z nich (NFE chyba dat, DHY zpětný split 1:10) otevřeně označeny jako CHYBA_DAT. Ověřeno z primárního zdroje
+(SEC 8-K): KOD (fáze 3 DAYBREAK, klinická data) a PDSB (PIPE vedené Nant Capital, nový velký investor); SVRN, NCPL,
+MEDS jen NEOVĚŘENO.
+
 ## 2026-10-12 · v0.12.2 — Oprava: firmy ze žebříčků vždy v přehledu centra
 
 Důvod: denní běh 2026-10-12 našel, že první firmy žebříčků (KMX, MPC, ACDC, DINO) chyběly v dokumentu `stav/prehled`,

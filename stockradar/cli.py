@@ -288,6 +288,43 @@ def cmd_funds(args) -> int:
     return 0
 
 
+def cmd_rakety(args) -> int:
+    """Raketový deník: denní snímek trhu → rakety 5 / 10 / 21 dní → AUTO příčina; zápis ověřené příčiny (--pricina)."""
+    from datetime import date
+
+    from stockradar.discovery import cache as dcache
+    from stockradar.discovery import diary, news
+
+    conn = _open()
+    if args.pricina:
+        cid = diary.record_cause(conn, args.pricina, code=args.kod, status="NEOVĚŘENO" if args.neovereno else "OVĚŘENO",
+                                 summary=args.text, source=args.zdroj, source_url=args.url, published_on=args.datum,
+                                 scheduled=None if args.predem is None else bool(args.predem), pre_signals=args.predzvesti)
+        export_state(conn, state_dir())
+        print(f"Příčina #{cid} zapsána k raketě #{args.pricina}")
+        _note(args, pricina=cid)
+        _refresh_hub(args, conn, None)
+        return 0
+    cconn = dcache.connect()
+    log = lambda m: print(f"  {m}", flush=True)
+    snap = {"stav": "VYPNUTO"} if args.bez_snimku else diary.take_snapshot(cconn, log=log)
+    print("Snímek trhu:", snap)
+    found, stats = diary.scan(cconn)
+    new = diary.record_new(conn, found, today=date.today(), auto=None if args.bez_zprav else news.explain_event,
+                           top_auto=args.zpravy, log=log)
+    export_state(conn, state_dir())
+    print(f"Řad {stats['rad']}, přeskočeno kvůli splitu / chybě dat {stats['split_nebo_chyba']}, starých {stats['stara_data']};"
+          f" raket {stats['raket']}, nových epizod {len(new)}")
+    for r in new[:15]:
+        m = {k: v for k, v in r["moves"].items() if v is not None}
+        auto = (r.get("auto") or {}).get("hlavni_pricina") or "–"
+        print(f"  #{r['id']} {r['symbol']:<6} {(r['nazev'] or '')[:40]:<40} " + " ".join(f"{k} {v * 100:+.0f} %" for k, v in m.items())
+              + f" · AUTO: {auto}")
+    _note(args, raket=stats["raket"], novych=len(new), snimek=snap.get("stav"), split=stats["split_nebo_chyba"])
+    _refresh_hub(args, conn, cconn)
+    return 0
+
+
 def cmd_signals(args) -> int:
     """Signální engine na 14 dní: karta pravděpodobností, důvěra, NEVÍM; zamčený test jen jednou na konfiguraci."""
     from stockradar.discovery import cache as dcache
@@ -672,6 +709,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_sm = sub.add_parser("smart-money", help="nákupy insiderů, politiků, velké podíly a buybacky: test + signály")
     p_sm.add_argument("--no-download", action="store_true", help="nestahovat nová data (jen analýza)")
     p_sm.set_defaults(func=cmd_smart_money)
+    p_rk = sub.add_parser("rakety", help="raketový deník: rakety za 5 / 10 / 21 dní + příčiny (AUTO z titulků, ověřené ručně)")
+    p_rk.add_argument("--bez-snimku", action="store_true", help="nestahovat denní snímek Nasdaq")
+    p_rk.add_argument("--bez-zprav", action="store_true", help="bez automatické příčiny z titulků")
+    p_rk.add_argument("--zpravy", type=int, default=10, help="u kolika největších nových raket hledat titulky (výchozí 10)")
+    p_rk.add_argument("--pricina", type=int, default=None, help="ID rakety, ke které se zapisuje ověřená příčina")
+    p_rk.add_argument("--kod", default=None, help="kód příčiny (FDA, CLINICAL, ACQUISITION, EARNINGS, CONTRACT, …, JINE, CHYBA_DAT)")
+    p_rk.add_argument("--predem", type=int, choices=(0, 1), default=None, help="1 = termín byl znám předem, 0 = nebyl")
+    p_rk.add_argument("--predzvesti", default=None, help="co bylo vidět předem (fakta)")
+    p_rk.add_argument("--text", default=None, help="shrnutí příčiny: FAKT se zdrojem")
+    p_rk.add_argument("--zdroj", default=None)
+    p_rk.add_argument("--url", default=None, help="https:// primární zdroj (8-K, tisková zpráva, FDA, SEC)")
+    p_rk.add_argument("--datum", default=None, help="den zveřejnění zdroje YYYY-MM-DD")
+    p_rk.add_argument("--neovereno", action="store_true", help="příčina z neprimárního zdroje / nepotvrzená")
+    p_rk.set_defaults(func=cmd_rakety)
     p_fu = sub.add_parser("funds", help="nejsilnější sázky fondů (SEC 13F): nové sady → studie + aktuální seznam")
     p_fu.add_argument("--no-download", action="store_true", help="nestahovat nové sady (jen analýza)")
     p_fu.add_argument("--force", action="store_true", help="přepočítat i bez nové sady (po změně kódu)")
@@ -717,7 +768,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 # Příkazy, které se zapisují do deníku (`system_runs`): mění data nebo kontrolují systém. Čistě čtecí příkazy
 # (status, ledger, system, email…) a obnova ze state/ se nezapisují — deník nemá měnit stav jen tím, že se díváme.
-JOURNALED = {"update", "discover", "smart-money", "funds", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
+JOURNALED = {"update", "discover", "smart-money", "funds", "rakety", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
              "seed-lessons"}
 
 

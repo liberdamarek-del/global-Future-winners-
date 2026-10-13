@@ -28,6 +28,8 @@ MODULES = (
      "tabulka": ("smart_money_runs", "run_at"), "vstupy": ("ceny",), "role": ("SMART_MONEY:nakup",)},
     {"id": "fondy", "nazev": "Nejsilnější sázky fondů (SEC 13F)", "prikaz": "funds", "kadence": 100,
      "tabulka": ("fund_runs", "run_at"), "vstupy": ("ceny",), "role": ("FONDY_13F:sazka",)},
+    {"id": "raketovy_denik", "nazev": "Raketový deník (rakety 5 / 10 / 21 dní + příčiny)", "prikaz": "rakety", "kadence": 1,
+     "tabulka": ("rocket_events", "recorded_at"), "vstupy": ("ceny",)},
     {"id": "kauzalni", "nazev": "Kauzální radar (událost → komodita → obor → firmy)", "prikaz": "causal", "kadence": 1,
      "tabulka": ("causal_runs", "run_at"), "vstupy": ("ceny",), "role": ("KAUZALNI:prilezitost",)},
     {"id": "signaly", "nazev": "Signály 14 dní / 1 měsíc / 6 měsíců", "prikaz": "signals", "kadence": 7,
@@ -41,7 +43,7 @@ MODULES = (
     {"id": "centrum", "nazev": "Centrum důkazů a integrace", "prikaz": "hub (i automaticky po hlavních příkazech)", "kadence": 1,
      "tabulka": ("hub_runs", "run_at"), "vstupy": ("energie", "objevovani", "smart_money", "fondy", "kauzalni", "signaly", "vyzkum")},
 )
-COMMAND_MODULE = {"update": "energie", "discover": "objevovani", "smart-money": "smart_money", "funds": "fondy", "causal": "kauzalni",
+COMMAND_MODULE = {"update": "energie", "discover": "objevovani", "smart-money": "smart_money", "funds": "fondy", "rakety": "raketovy_denik", "causal": "kauzalni",
                   "signals": "signaly", "hub": "centrum", "research": "vyzkum"}
 
 
@@ -126,6 +128,9 @@ def _age(iso: str | None, now: datetime) -> float | None:
 def _last_output(conn, cache_conn, m: dict) -> str | None:
     if m["id"] == "ceny":
         r = _one(cache_conn, "SELECT MAX(s.fetched_at) FROM series s JOIN securities m ON m.symbol = s.symbol")
+        return r[0] if r else None
+    if m["id"] == "raketovy_denik":               # běh bez nových raket nic nezapíše → čerstvost podle denního snímku
+        r = _one(cache_conn, "SELECT MAX(fetched_at) FROM nasdaq_snap")
         return r[0] if r else None
     if m["id"] == "xtb":
         r = _one(cache_conn, "SELECT MAX(checked_at) FROM xtb_offer")

@@ -136,6 +136,29 @@ def from_funds(conn) -> list[dict]:
     return out
 
 
+def from_rocket_diary(conn, today: date) -> list[dict]:
+    """Raketový deník: nedávné rakety (kontext — pohyb už proběhl) s ověřenou nebo AUTO příčinou."""
+    try:
+        from stockradar.discovery.diary import recent
+        rows = recent(conn, days=30, today=today)
+    except sqlite3.OperationalError:
+        return []
+    out = []
+    for r in rows:
+        if (r.get("pricina") or {}).get("cause_code") == "CHYBA_DAT":      # falešná raketa (split, chyba dat) do centra nepatří
+            continue
+        moves = ", ".join(f"{k} {_thr(r[f'move_{k}'])}" for k in ("5d", "10d", "21d") if r[f"move_{k}"] is not None
+                          and k in r["windows"].split(","))
+        c = r.get("pricina")
+        cause = (f"příčina ({c['status']}): {c['summary'][:160]}" if c else
+                 f"příčina AUTO z titulků: {r['auto_cause']}" if r["auto_cause"] else "příčina zatím neověřena")
+        out.append(_ev(r["symbol"], modul="RAKETY_DENIK", druh="kontext", smer=0, horizont=30, nazev=r["name"],
+                       zdroj=f"rocket_events #{r['id']}", url=c["source_url"] if c else None, data_do=r["end_day"],
+                       stav=(c["status"] if c else "AUTO"),
+                       text=f"raketa {moves} (do {r['end_day']}); {cause}"))
+    return out
+
+
 def from_causal(conn) -> list[dict]:
     r = conn.execute("SELECT id, data_through, result_json FROM causal_runs ORDER BY id DESC LIMIT 1").fetchone()
     if r is None:
@@ -262,7 +285,7 @@ def collect(conn, cache_conn, today: date) -> dict:
     sig, ranks = from_signals(conn)
     research, expired = from_research(conn, today)
     items = sig + from_rockets(conn) + from_smart_money(conn) + from_funds(conn) + from_causal(conn) + from_energy(conn) + \
-        from_ledger(conn) + from_catalysts(conn, today) + research
+        from_ledger(conn) + from_catalysts(conn, today) + research + from_rocket_diary(conn, today)
     firms = {e["entita"] for e in items if e["typ"] == "firma"}
     firms |= {f for e in items for f in e.get("firmy") or []}
     items += from_xtb(cache_conn, firms)

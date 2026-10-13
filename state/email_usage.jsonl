@@ -38,3 +38,8 @@
 {"day": "2026-10-11", "first_at": "2026-10-11T09:34:30Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:34:34Z", "purpose": "seznam souborů Fails-to-Deliver (výzkum E4, CUSIP → symbol)", "requests": 2}
 {"day": "2026-10-11", "first_at": "2026-10-11T09:34:42Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:36:33Z", "purpose": "Fails-to-Deliver (výzkum E4, CUSIP → symbol)", "requests": 24}
 {"day": "2026-10-11", "first_at": "2026-10-11T09:36:19Z", "host": "www.sec.gov", "last_at": "2026-10-11T09:36:19Z", "purpose": "seznam souborů Fails-to-Deliver (výzkum E4)", "requests": 1}
+{"day": "2026-10-13", "first_at": "2026-10-13T12:26:55Z", "host": "www.sec.gov", "last_at": "2026-10-13T12:26:56Z", "purpose": "ověření příčiny rakety PDSB (8-K, raketový deník)", "requests": 2}
+{"day": "2026-10-13", "first_at": "2026-10-13T12:27:08Z", "host": "www.sec.gov", "last_at": "2026-10-13T12:27:08Z", "purpose": "ověření příčiny rakety KOD (seznam CIK)", "requests": 1}
+{"day": "2026-10-13", "first_at": "2026-10-13T12:27:08Z", "host": "data.sec.gov", "last_at": "2026-10-13T12:27:08Z", "purpose": "ověření příčiny rakety KOD (seznam filingů)", "requests": 1}
+{"day": "2026-10-13", "first_at": "2026-10-13T12:27:14Z", "host": "www.sec.gov", "last_at": "2026-10-13T12:27:14Z", "purpose": "ověření příčiny rakety KOD (8-K)", "requests": 1}
+{"day": "2026-10-13", "first_at": "2026-10-13T12:27:14Z", "host": "www.sec.gov", "last_at": "2026-10-13T12:27:14Z", "purpose": "ověření příčiny rakety KOD (8-K příloha)", "requests": 1}
