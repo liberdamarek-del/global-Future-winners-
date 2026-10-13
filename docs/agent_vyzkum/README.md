@@ -72,7 +72,7 @@ u 120 největších týdenních raket za 2 roky čte titulky Google News a pří
 SharpLink). Okno 14 dní se samostatně nehledá.
 
 **Stav 2026-10-13: postaveno (v0.13.0, `python -m stockradar rakety`).** Plán:
-1. Denně jeden dotaz na Nasdaq screener (už ho používáme) → snímek cen všech amerických akcií; spolu s týdenními
+1. Denně jeden dotaz na Nasdaq screener (už ho používáme) → snímek cen všech amerických akcií — ve 14:13 (Praha); večer v 22:47 screener ještě ukazuje předchozí den, kontrola shodných cen snímek přeskočí (ověřeno 2026-10-13); spolu s týdenními
    cenami z Yahoo → rakety ≥ +30 % za 5, ≥ +40 % za 10 a ≥ +50 % za 21 obchodních dní (likvidní, cena ≥ 1 USD).
 2. Pro 5 největších nových raket dne: ověřit příčinu na internetu z **primárního zdroje** (8-K, tisková zpráva,
    FDA, SEC) — kód příčiny (stejné kódy jako AUTO), zda byl termín znám předem, co bylo vidět předem (insideři, 13D,
