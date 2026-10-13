@@ -1,0 +1,14 @@
+{
+ "aktualizovano": "2026-10-13",
+ "pravidlo": "hlavní směr = nejvyšší priorita, průzkumný = nejméně běhů; 3 prázdné běhy po sobě → priorita / 2 a stav UTLUMENY; nové zjištění s návrhem → priorita + 0,1 (max 1)",
+ "smery": [
+  {"id": "S1", "nazev": "Experimentování a statistika: mnohonásobné testování a přeučení na historii", "proc_pro_nas": "děláme mnoho experimentů a variant modelů (E1–E4, pokusy na zamčených testech) → riziko falešných objevů; hledat korekce typu deflated Sharpe, PBO, reality check, Benjamini–Hochberg", "priorita": 0.9, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S2", "nazev": "Sebehodnocení a kalibrace: proper scoring, konformní predikce, abstence", "proc_pro_nas": "karty mají pravděpodobnosti a NEVÍM; chybí intervaly s garantovaným pokrytím a průběžné měření kalibrace na živých výsledcích", "priorita": 0.8, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S3", "nazev": "LLM jako čtenář zpráv a filingů (extrakce událostí, příčin)", "proc_pro_nas": "příčiny raket se určují klíčovými slovy (AUTO, 59/120 bez příčiny); literatura o LLM a výnosech akcií; přímo souvisí s raketovým deníkem", "priorita": 0.8, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S4", "nazev": "Učení ze zpětné vazby a alokace pozornosti (bandity, online učení)", "proc_pro_nas": "váhy rolí jsou pevné pravidlo (t/4); který modul / kandidáta ručně zkoumat se rozhoduje ad hoc", "priorita": 0.6, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S5", "nazev": "Dlouhodobá paměť agenta (reflexe, epizodická paměť, vyhledání poučení)", "proc_pro_nas": "lessons se párují pravidly (LESSON_RULES); paměť mezi sessions je jen v souborech a DB", "priorita": 0.5, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S6", "nazev": "Ověřování faktů a práce s nástroji (citace, křížová kontrola zdrojů)", "proc_pro_nas": "denní výzkum stojí na shrnutích vyhledávání; chybné párování entit už dvakrát vyrobilo falešný výsledek (E3, E4)", "priorita": 0.6, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S7", "nazev": "Plánování a orchestrace agentů (workflow vs agent, planner/executor)", "proc_pro_nas": "rutiny jsou pevné scénáře; adaptivní plán by mohl šetřit čas a přesouvat úsilí tam, kde je přínos", "priorita": 0.4, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"},
+  {"id": "S8", "nazev": "Hodnocení agentů (evals, metriky procesu)", "proc_pro_nas": "chybí objektivní měření kvality běhů (chyby nalezené diag, čas opravy, podíl ověřených důkazů) pro srovnání verzí", "priorita": 0.5, "behu": 0, "prazdnych_behu_po_sobe": 0, "posledni_beh": null, "stav": "AKTIVNI"}
+ ]
+}

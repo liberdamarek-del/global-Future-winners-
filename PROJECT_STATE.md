@@ -161,6 +161,7 @@
 | Živá zpětná vazba | Role se zatím hodnotí jen z testů; první živé výsledky 2026-10-09, spolehlivé po ~30 případech v 6 týdnech |
 | Vyhodnocení ručního výzkumu | Výzkum se ukládá a propojuje, ale zatím se neměří proti cenám (role VÝZKUM = NEOVĚŘENO) |
 | Kauzální radar mezi sobotami | VYŘEŠENO 2026-10-11 (v0.11.0): šok komodity z denních cen k dni běhu |
+| Denní výzkum agenta + raketový deník | `trig_01TjbvgR2D2sxxoToNXQU3Sr`, každý den 14:13 (Praha): výzkum nových přístupů k agentům → `docs/agent_vyzkum/` (směry, zdroje, návrhy, reporty); raketový deník (rakety 5 / 10 / 21 dní s ověřenou příčinou) se staví v prvním běhu |
 | Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `system` + `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` (14 dní, 1 měsíc, 6 měsíců; bez nových cen přeskočí) + `update` + `causal` + `diag` + `hub` + jedno zlepšení kódu s testem + web (10 dokumentů) |
 | Učení z ledgeru (H3) | Energetický model se učí z historie cen, ne z vlastních výsledků — plán P2.1 |
 | Kroky běhu v `model_runs` (M3) | Ukládají se před koncem běhu |

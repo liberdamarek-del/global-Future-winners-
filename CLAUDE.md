@@ -74,6 +74,16 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
    Nikdy neobchoduj a nic neslibuj („určitě +100 %“ je zakázáno, §37).
 
+## Denní výzkum agenta a raketový deník (každý den 14:13 Praha, od 2026-10-13)
+
+Zadání uživatele 2026-10-13: dlouhodobě a samostatně zkoumat nové přístupy k agentům (plánování, paměť, nástroje,
+experimenty, učení ze zpětné vazby, sebehodnocení) a převádět je na měřitelné návrhy pro Stock Radar; plus raketový
+deník (rakety za týden / 14 dní / měsíc → ověřená příčina z internetu → předzvěsti a „co bude po raketě“ pro model).
+Přesný postup, schéma a kritéria: `docs/agent_vyzkum/README.md`. Evidence: `smery.json`, `zdroje.jsonl`,
+`navrhy.jsonl` (jen přidávat), `reporty/RRRR-MM-DD.md`; formát hlídá `tests/unit/test_agent_research.py`.
+Každý běh vychází z předchozích záznamů, neopakuje stejná zjištění (URL / klíč), výslovně píše „nic nového“, když nic
+není, a nejvýš jeden experiment týdně opravdu zavede (vratně, s testem, metrika předem).
+
 ## Globální objevování (Growth Engine, týdně v sobotu)
 
 - `python -m stockradar discover --universe --download` — seznamy firem (Nasdaq screener, ASX, JPX, Wikipedie),
