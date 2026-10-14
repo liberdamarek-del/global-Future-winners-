@@ -165,6 +165,12 @@ def fingerprint(conn, today: date) -> str:
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
+def applies(e: dict, ticker: str) -> bool:
+    """Oborový důkaz platí pro každou firmu oboru; důkaz kauzálního radaru s ověřenou citlivostí firem jen pro vybrané
+    firmy (obor podle Nasdaq bývá široký: „marine transportation“ = rejdaři i výletní lodě; 2026-10-14)."""
+    return not e.get("jen_vybrane") or ticker in (e.get("firmy") or [])
+
+
 def build(conn, cache_conn, today: date, *, prev: dict | None = None) -> dict:
     ev = E.collect(conn, cache_conn, today)
     rel = F.reliability(conn)
@@ -182,7 +188,7 @@ def build(conn, cache_conn, today: date, *, prev: dict | None = None) -> dict:
     dossiers = []
     for tic, items in by_firm.items():
         ind = (sec.get(tic) or {}).get("obor") or next((e["obor"] for e in items if e.get("obor")), None)
-        extra = by_industry.get((ind or "").lower(), [])
+        extra = [e for e in by_industry.get((ind or "").lower(), []) if applies(e, tic)]
         if not items and not extra:
             continue
         dossiers.append(dossier(tic, items + extra, rel, ev["poradi"], sec, lessons, today))

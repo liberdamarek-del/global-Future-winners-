@@ -199,3 +199,20 @@ def test_funds_role_uses_conservative_t_and_evidence_is_capped(conn):
     assert [e["entita"] for e in ev] == ["ABC"] and ev[0]["uprava"]["strop"] == 0.5
     d = I.dossier("ABC", ev, {"FONDY_13F:sazka": rel}, {}, {}, [], date(2026, 8, 20))
     assert d["pro"] == 0.5 and d["postoj"] == "PŘÍLEŽITOST"                         # strop 0,5 (malý, slábnoucí efekt)
+
+
+def test_causal_industry_evidence_reaches_only_firms_with_own_sensitivity(conn, monkeypatch):
+    """DRYBULK → „marine transportation“: rejdař s vlastní citlivostí ano, výletní lodě z téhož oboru ne (2026-10-14)."""
+    ind = "marine transportation"
+    firm = lambda tic: E._ev(tic, modul="SIGNAL_14D", role="SIGNAL_14D:vyber", druh="prilezitost", smer=1, horizont=14,
+                             text="x", zdroj="t", data_do="2026-10-09")
+    causal = E._ev(ind, typ="obor", modul="KAUZALNI", role="KAUZALNI:prilezitost", druh="riziko", smer=-1, horizont=30,
+                   text="DRYBULK → obor ↓", zdroj="causal_runs #1", data_do="2026-10-09", firmy=["SBLK"], jen_vybrane=True)
+    old = dict(causal, jen_vybrane=False, entita="old industry")
+    monkeypatch.setattr(E, "collect", lambda *a, **k: {
+        "dukazy": [firm("SBLK"), firm("CCL"), firm("OLD"), causal, old], "poradi": {}, "vyzkum_proslo": [],
+        "firmy": {"SBLK": {"obor": ind}, "CCL": {"obor": ind}, "OLD": {"obor": "old industry"}}})
+    by = {d["ticker"]: d for d in I.build(conn, None, TODAY)["firmy"]}
+    assert "KAUZALNI" in by["SBLK"]["moduly"] and by["SBLK"]["postoj"] == "ROZPOR"
+    assert "KAUZALNI" not in by["CCL"]["moduly"] and by["CCL"]["postoj"] != "ROZPOR"
+    assert "KAUZALNI" in by["OLD"]["moduly"]                                      # starší běhy: celý obor jako dřív

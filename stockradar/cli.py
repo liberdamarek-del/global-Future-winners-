@@ -5,6 +5,7 @@ Každý příkaz, který mění data, na konci automaticky exportuje state/ (zdr
 
 import argparse
 import json
+import os
 import sys
 from datetime import timedelta
 
@@ -785,7 +786,42 @@ def _journal(args, started, status: str, error: str | None = None) -> None:
         print(f"Deník: zápis selhal ({exc})", file=sys.stderr)
 
 
+class QuietPipe:
+    """Standardní výstup, který po zavření roury (`… | head -1`) další text tiše zahodí. Příkaz tak doběhne celý
+    a deník běhů nezapíše CHYBU jen proto, že čtenář výstupu skončil dřív (rakety 2026-10-13, hub 2026-10-14)."""
+
+    def __init__(self, inner):
+        self.inner, self.broken = inner, False
+
+    def _closed(self) -> None:
+        self.broken = True
+        try:                                           # ať ani závěrečný flush interpretu nevyhodí chybu
+            os.dup2(os.open(os.devnull, os.O_WRONLY), self.inner.fileno())
+        except (OSError, ValueError, AttributeError):
+            pass
+
+    def write(self, text: str) -> int:
+        if not self.broken:
+            try:
+                return self.inner.write(text)
+            except BrokenPipeError:
+                self._closed()
+        return len(text)
+
+    def flush(self) -> None:
+        if not self.broken:
+            try:
+                self.inner.flush()
+            except BrokenPipeError:
+                self._closed()
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+
 def main(argv: list[str] | None = None) -> int:
+    if not isinstance(sys.stdout, QuietPipe):
+        sys.stdout = QuietPipe(sys.stdout)
     args = build_parser().parse_args(argv)
     if args.command not in JOURNALED or (args.command == "research" and not args.entita):
         return args.func(args)

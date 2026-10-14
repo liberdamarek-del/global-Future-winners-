@@ -7,6 +7,7 @@ za posledních WINDOW týdnů (včetně w), t-statistika bety → „prokázaná
 
 import math
 import statistics
+from array import array
 from dataclasses import dataclass, field
 
 from stockradar.causal import data as cdata
@@ -22,6 +23,7 @@ class Weekly:
     ind: dict[str, list[float]]                        # obor → týdenní výnos nad trhem (nan = chybí)
     comm: dict[str, list[float]]                       # komodita → týdenní výnos
     n_stocks: dict[str, int] = field(default_factory=dict)
+    stocks: dict[str, array] = field(default_factory=dict)   # akcie → týdenní výnos nad trhem (pro citlivost firmy)
 
     def index(self, day: int) -> int | None:
         """Poslední týden ≤ day."""
@@ -51,6 +53,7 @@ def build_weekly(data: study.Data, commodities: dict, *, log=print) -> Weekly:
     nan = math.nan
     per: dict[str, list[list[float]]] = {}
     market: list[list[float]] = [[] for _ in weeks]
+    own_all: dict[str, list[float]] = {}
     for sym, s in data.secs.items():
         if not P.is_us(sym):
             continue
@@ -58,6 +61,7 @@ def build_weekly(data: study.Data, commodities: dict, *, log=print) -> Weekly:
         j = 0
         prev = None
         rows = per.setdefault(s.group, [[] for _ in weeks])
+        own = own_all[sym] = [nan] * len(weeks)
         for w, day in enumerate(weeks):
             while j + 1 < len(b.days) and b.days[j + 1] <= day:
                 j += 1
@@ -71,6 +75,7 @@ def build_weekly(data: study.Data, commodities: dict, *, log=print) -> Weekly:
                 if -0.6 < r < 1.5:                     # chyby dat (neupravené splity) ven
                     rows[w].append(r)
                     market[w].append(r)
+                    own[w] = r
             prev = c
     mkt = [statistics.median(m) if len(m) >= 50 else nan for m in market]
     ind, n_st = {}, {}
@@ -80,11 +85,16 @@ def build_weekly(data: study.Data, commodities: dict, *, log=print) -> Weekly:
         if sum(1 for v in series if v == v) >= MIN_WEEKS:
             ind[g] = series
             n_st[g] = max(len(r) for r in rows)
+    stocks = {}
+    for sym, own in own_all.items():
+        ex = [(v - mkt[w]) if v == v and mkt[w] == mkt[w] else nan for w, v in enumerate(own)]
+        if sum(1 for v in ex if v == v) >= MIN_WEEKS:
+            stocks[sym] = array("d", ex)
     comm = {}
     for cid, bars in commodities.items():
         comm[cid] = [(cdata.ret(bars, day, 7) if cdata.ret(bars, day, 7) is not None else nan) for day in weeks]
-    log(f"Týdenní řady: {len(weeks)} týdnů, {len(ind)} oborů, {len(comm)} komodit")
-    return Weekly(weeks, ind, comm, n_st)
+    log(f"Týdenní řady: {len(weeks)} týdnů, {len(ind)} oborů, {len(stocks)} akcií, {len(comm)} komodit")
+    return Weekly(weeks, ind, comm, n_st, stocks)
 
 
 def rolling_beta(y: list[float], x: list[float], window: int = WINDOW, min_n: int = MIN_WEEKS) -> list[tuple]:
@@ -121,6 +131,19 @@ def rolling_beta(y: list[float], x: list[float], window: int = WINDOW, min_n: in
         se = math.sqrt(resid / (n - 2) / vx)
         out.append((beta, beta / se if se > 0 else nan))
     return out
+
+
+def firm_beta(weekly: Weekly, symbol: str, cid: str, w: int) -> tuple[float, float] | None:
+    """Vlastní citlivost akcie na komoditu ke týdnu w: (beta, t) z posledních WINDOW týdnů stejným výpočtem jako
+    u oborů; None, když akcie nemá dost týdnů. Obor podle Nasdaq bývá široký („marine transportation“ = rejdaři
+    i výletní lodě a loděnice), proto se firma ověřuje sama (2026-10-14)."""
+    y = weekly.stocks.get(symbol)
+    x = weekly.comm.get(cid)
+    if y is None or x is None or w < 0:
+        return None
+    lo = max(0, w - WINDOW + 1)
+    beta, t = rolling_beta(list(y[lo:w + 1]), x[lo:w + 1])[-1]
+    return (beta, t) if beta == beta and t == t else None
 
 
 @dataclass

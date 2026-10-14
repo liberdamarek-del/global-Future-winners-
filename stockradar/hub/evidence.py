@@ -171,6 +171,8 @@ def from_causal(conn) -> list[dict]:
                        druh="prilezitost" if o["smer"] > 0 else "riziko", smer=o["smer"], horizont=o.get("horizont_dni") or 30,
                        zdroj=f"causal_runs #{r['id']}", data_do=r["data_through"], komodita=o.get("komodita"),
                        firmy=[f["ticker"] for f in o.get("firmy") or []],
+                       # od 0.14.1 radar ověřuje citlivost každé firmy → důkaz platí jen pro vybrané firmy, ne pro celý obor
+                       jen_vybrane=(o.get("firmy_pravidlo") or "").startswith("vlastní citlivost"),
                        text=f"{o.get('nazev_komodity')} → obor {o['obor']} {'↑' if o['smer'] > 0 else '↓'} "
                             f"({o.get('rad')}. řád, beta {o.get('beta')}, t {o.get('t')}); v ceně už "
                             f"{'–' if o.get('v_cene') is None else _pct(o['v_cene'])}: {o.get('proc')}"))

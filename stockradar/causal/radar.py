@@ -17,7 +17,7 @@ from datetime import date
 from stockradar.causal import commodities as CM
 from stockradar.causal import data as cdata
 from stockradar.causal.chains import _past
-from stockradar.causal.exposure import T_MIN, Exposure, daily_shock, shock
+from stockradar.causal.exposure import T_MIN, Exposure, daily_shock, firm_beta, shock
 
 Z_EVENT = 1.5
 T_STRONG = 3.0      # čistě datová vazba bez ekonomické logiky: přísnější práh (3 250 dvojic → ~160 náhodných při |t| ≥ 2)
@@ -52,16 +52,31 @@ def scenarios(ex: Exposure, cid: str, w: int, sign: int, h: int = 13) -> dict:
             "NEGATIVNI": {"p": 0.2, "pohyb": _quant(after, 0.2 if sign > 0 else 0.8), "popis": "šok se vrátí"}}
 
 
-def firms(securities: list[dict], industry: str, *, n: int = 3, check=None) -> list[dict]:
-    """Největší americké firmy oboru (kapitalizace ze seznamu firem), jen z nabídky XTB, když je kontrola."""
+FIRM_T = T_MIN          # firma musí mít vlastní prokázanou citlivost (|t| ≥ 2) se stejným znakem bety jako obor
+
+
+def firms(securities: list[dict], industry: str, *, n: int = 3, check=None, sens=None, sign: int | None = None) -> list[dict]:
+    """Největší americké firmy oboru (kapitalizace ze seznamu firem), jen z nabídky XTB, když je kontrola.
+    sens(symbol) → (beta, t) vlastní citlivosti akcie na komoditu, nebo None. Když je dána, projde jen firma se
+    stejným znakem bety jako obor (`sign`) a |t| ≥ FIRM_T; ostatní se vynechají i za cenu prázdného seznamu.
+    Důvod (2026-10-14): Nasdaq řadí do „marine transportation“ i General Dynamics a výletní lodě (RCL, VIK) —
+    největší firmy oboru pak vypadaly jako sázka na sazby lodní dopravy sypkých nákladů, i když s nimi nesouvisí."""
     out = []
     for s in sorted((x for x in securities if (x["industry"] or "").lower() == industry and x["market_cap_usd"]),
                     key=lambda x: -x["market_cap_usd"]):
+        bt = None
+        if sens is not None:
+            bt = sens(s["symbol"])
+            if bt is None or abs(bt[1]) < FIRM_T or (sign is not None and math.copysign(1, bt[0]) != sign):
+                continue
         row = check(s["symbol"], s["name"]) if check else None
         if check and not (row and row["status"] == "AKCIE"):
             continue
-        out.append({"ticker": s["symbol"], "firma": s["name"], "kapitalizace_mld": round(s["market_cap_usd"] / 1e9, 1),
-                    "xtb": row["xtb_symbol"] if row else None})
+        item = {"ticker": s["symbol"], "firma": s["name"], "kapitalizace_mld": round(s["market_cap_usd"] / 1e9, 1),
+                "xtb": row["xtb_symbol"] if row else None}
+        if bt is not None:
+            item |= {"beta": round(bt[0], 3), "t": round(bt[1], 1)}
+        out.append(item)
         if len(out) >= n:
             break
     return out
@@ -142,8 +157,13 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         # dvojicemi bývají náhodné, např. „železná ruda → farmacie“; čistá logika je neověřená)
         for it in sorted(chain, key=lambda x: -x["skore"])[:4]:
             if it["skore"] > 0 and it["dukaz"] == "EMPIRICKY_I_LOGIKA":
-                opps.append({"komodita": cid, "nazev_komodity": c["nazev"], **it,
-                             "firmy": firms(securities, it["obor"], check=xtb_check)})
+                by_firm = bool(getattr(wk, "stocks", None))
+                sens = (lambda sym, cid=cid: firm_beta(wk, sym, cid, w)) if by_firm else None
+                picked = firms(securities, it["obor"], check=xtb_check, sens=sens,
+                               sign=int(math.copysign(1, it["beta"])) if it["beta"] else None)
+                rule = (f"vlastní citlivost firmy na komoditu: stejný směr jako obor a |t| ≥ {FIRM_T:g}" if by_firm
+                        else "největší firmy oboru (vlastní citlivost NEOVĚŘENO)")
+                opps.append({"komodita": cid, "nazev_komodity": c["nazev"], **it, "firmy": picked, "firmy_pravidlo": rule})
         now = cdata.close_at(bars, sh_day) if bars else None
         cards.append({
             "komodita": cid, "nazev": c["nazev"], "symbol": c["symbol"], "skupina": c["skupina"],

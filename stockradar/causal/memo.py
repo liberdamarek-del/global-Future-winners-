@@ -18,7 +18,7 @@ from stockradar.causal import data as cdata
 from stockradar.causal.exposure import MIN_STOCKS, MIN_WEEKS, WINDOW, build_exposure, build_weekly
 from stockradar.config import db_path
 
-CALC_VERSION = 1        # zvýšit při změně výpočtu týdenních řad nebo citlivosti
+CALC_VERSION = 2        # zvýšit při změně výpočtu týdenních řad nebo citlivosti
 
 
 def cache_path() -> Path:

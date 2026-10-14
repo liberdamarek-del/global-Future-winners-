@@ -615,7 +615,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     $("zeb-note").textContent = `Svět → událost → komodita → obory → firmy. Data k ${den((K.beh || {}).data_do)}; ${fmt((K.karty || []).length, 0)} komodit s událostí, výstrah GDACS ${fmt((K.gdacs || {}).udalosti, 0)}. Každý krok má zdroj, nebo je označen NEOVĚŘENO.`;
     const opps = K.prilezitosti || [];
     $("ev-box").innerHTML = `<ol class="rank">${opps.length ? opps.map((o, i) => `<li class="evrow"><details><summary>
-        <span class="who"><b>${esc(o.nazev_komodity)} → ${esc(o.obor)}</b> ${ARROW(o.smer)}<span class="small muted nm">${fmt(o.rad, 0)}. řád · ${esc(EVID[o.dukaz] || o.dukaz)} · ${esc(o.proc)}</span><span class="small nm">${(o.firmy || []).map((f) => `<span class="xtbtag">${esc(f.xtb || f.ticker)}</span> ${esc(shortName(f.firma))}`).join(" · ")}</span></span>
+        <span class="who"><b>${esc(o.nazev_komodity)} → ${esc(o.obor)}</b> ${ARROW(o.smer)}<span class="small muted nm">${fmt(o.rad, 0)}. řád · ${esc(EVID[o.dukaz] || o.dukaz)} · ${esc(o.proc)}</span><span class="small nm" title="${esc(o.firmy_pravidlo || "")}">${(o.firmy || []).map((f) => `<span class="xtbtag">${esc(f.xtb || f.ticker)}</span> ${esc(shortName(f.firma))}`).join(" · ") || `<span class="muted">žádná firma oboru nemá vlastní prokázanou citlivost na tuto komoditu</span>`}</span></span>
         <span class="metric m1"><b class="${o.smer > 0 ? "pos" : "neg"}">${pct(o.ocekavany_pohyb, 1)}</b><span class="sub">očekáváno</span></span>
         <span class="metric m2 small">${nil(o.v_cene) ? "–" : pct(o.v_cene, 0)}<span class="sub">už v ceně</span></span></summary>
         ${evCard(cards[o.komodita])}</details></li>`).join("") : `<li class="empty">Dnes žádná významná událost s dopadem na obory.</li>`}</ol>`;

@@ -4,6 +4,28 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-14 · v0.14.1 — Kauzální radar: firmy jen s vlastní citlivostí na komoditu; příkazy odolné vůči zavřené rouře
+
+Důvod: denní rutina 2026-10-14 — karta DRYBULK (sazby lodní přepravy sypkých nákladů ↓) ukazovala jako firmy oboru
+„marine transportation“ General Dynamics, Royal Caribbean a Viking (Nasdaq je řadí do stejného oboru). Firmy se
+vybíraly jen podle velikosti, ne podle toho, zda se s komoditou opravdu hýbou → v centru 15 rozporů, z toho většina
+falešných (výletní lodě, offshore služby). Druhá chyba: `python -m stockradar hub | head -1` zapsal do deníku běhů
+CHYBU (BrokenPipeError), i když výpočet proběhl (stejně 2026-10-13 u `rakety`).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `causal/exposure.py` | týdenní řady i pro jednotlivé akcie (výnos nad mediánem trhu); `firm_beta` = vlastní beta a t akcie na komoditu za 78 týdnů do daného týdne (stejný výpočet jako u oborů, bez pohledu do budoucnosti) | `test_causal.py` |
+| `causal/radar.py` | `firms(..., sens, sign)`: projde jen firma se stejným znakem bety jako obor a \|t\| ≥ 2; u příležitosti pole `firmy_pravidlo`; prázdný seznam, když žádná firma neprošla | `test_causal.py::test_radar_lists_only_firms_with_own_sensitivity_to_the_commodity` |
+| `causal/memo.py` | `CALC_VERSION` 2 (jednorázový přepočet paměti výpočtů) | — |
+| `hub/evidence.py`, `hub/integrate.py` | důkaz radaru s ověřenými firmami (`jen_vybrane`) dostanou jen tyto firmy, ne celý obor; starší běhy beze změny | `test_hub.py::test_causal_industry_evidence_reaches_only_firms_with_own_sensitivity` |
+| `cli.py` | `QuietPipe`: po zavření roury se další výstup tiše zahodí, příkaz doběhne a deník zapíše skutečný výsledek | `test_cli_pipe.py` (2) |
+| `web/index.html` | u příležitosti bez firem text „žádná firma oboru nemá vlastní prokázanou citlivost“; pravidlo v nápovědě | — |
+
+**Výsledek (běh radaru #14, data k 2026-10-09):** DRYBULK → FRO (t 2,4), SBLK (t 3,6), CDLR (t 2,5); dolar → NEM, AEM,
+B a SCCO, RIO, FCX (všechny t ≤ −2,2); kukuřice → maso: žádná firma neprošla. Test řetězců a citlivost oborů beze změny
+(stejné výsledky učení / validace / testu). Centrum: rozpory 15 → 6 (zbývají SBLK, FRO a rafinerie DINO, MPC, DK, VLO).
+Predikce v ledgeru i kauzální predikce (na úrovni oboru) se nemění.
+
 ## 2026-10-14 · v0.14.0 — Experiment N-1: registr testů hypotéz a přísné pravidlo (t ≥ 3, Benjamini–Yekutieli)
 
 Důvod: denní výzkum agenta (docs/agent_vyzkum, návrh N-1): role se ověřují při t ≥ 2, ale testů děláme desítky →

@@ -102,6 +102,29 @@ def test_radar_card_has_chain_priced_ratio_and_scenarios():
     assert res["prilezitosti"] and res["prilezitosti"][0]["firmy"][0]["ticker"] == "FCX"
 
 
+def test_radar_lists_only_firms_with_own_sensitivity_to_the_commodity():
+    """Obor podle Nasdaq bývá široký: největší firma oboru (loděnice, výletní lodě) nesmí vypadat jako sázka na
+    komoditu, když se s ní sama nehýbe (DRYBULK → GD, RCL, VIK; 2026-10-14)."""
+    from array import array
+    wk = _weekly(n=200)
+    for j in range(4):
+        wk.comm["COPPER"][-1 - j] += 0.05
+        wk.ind["metal mining"][-1 - j] += 0.02
+    rng = random.Random(7)
+    wk.stocks = {"FCX": array("d", [0.9 * c + rng.gauss(0, 0.01) for c in wk.comm["COPPER"]]),     # těžař mědi
+                 "BIG": array("d", [rng.gauss(0, 0.01) for _ in wk.comm["COPPER"]]),               # s mědí nesouvisí
+                 "INV": array("d", [-0.9 * c + rng.gauss(0, 0.01) for c in wk.comm["COPPER"]])}    # opačný směr než obor
+    secs = [{"symbol": "BIG", "name": "Big Shipyard", "industry": "metal mining", "market_cap_usd": 9e10},
+            {"symbol": "INV", "name": "Inverse", "industry": "metal mining", "market_cap_usd": 8e10},
+            {"symbol": "FCX", "name": "Freeport", "industry": "metal mining", "market_cap_usd": 6e10},
+            {"symbol": "NODATA", "name": "No data", "industry": "metal mining", "market_cap_usd": 7e10}]
+    res = radar.build(build_exposure(wk), {}, date(2026, 10, 2), gdacs_links={}, pulses={}, securities=secs)
+    opp = next(o for o in res["prilezitosti"] if o["obor"] == "metal mining")
+    assert [f["ticker"] for f in opp["firmy"]] == ["FCX"] and opp["firmy"][0]["t"] >= 2
+    assert "vlastní citlivost" in opp["firmy_pravidlo"]
+    assert radar.firms(secs, "metal mining", sens=lambda s: None, sign=1) == []                 # nikdo neprošel → prázdné
+
+
 def test_causal_records_are_append_only_and_evaluated(tmp_path):
     conn = open_db(tmp_path / "t.db")
     wk = _weekly(n=200)

@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-14 · **Verze:** v0.14.0 · **Schema DB:** v10 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-14 · **Verze:** v0.14.1 · **Schema DB:** v10 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -111,6 +111,7 @@
 | SIGNAL_6M (`5703f7e451f2ff54`) | zamčený test: AUC +40 % 0,68, −25 % 0,75; dolní desetina −25 % v 57 % (t −4,0); horní desetina bez výhody |
 | Dnes (data k 2026-10-02) | všechny: KOS, ACDC, PUMP, NESR, DK…; velké: DINO, MPC, VLO, TWLO, QXO…; riziko pádu: LWLG, BW, SUNE, FCUV, HUT…; MSFT 2 457. z 3 673 |
 | Vzorec uživatele (základna u supportu) | 1 412 případů: medián 3 m +1,5 % vs +2,1 % → bez výhody |
+| Firmy u příležitosti (v0.14.1, 2026-10-14) | jen firmy s VLASTNÍ citlivostí na komoditu (beta za 78 týdnů, stejný znak jako obor, \|t\| ≥ 2); dřív největší firmy oboru podle Nasdaq → DRYBULK ukazoval General Dynamics a výletní lodě (RCL, VIK). Teď FRO, SBLK, CDLR; kukuřice → maso žádná firma. Centrum dává důkaz radaru jen těmto firmám (rozpory 15 → 6) |
 
 ## Propojený systém (v0.10.0, 2026-10-07) — `python -m stockradar system`
 
@@ -125,7 +126,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 166 testů prošlo 2026-10-14)
+## HOTOVO (ověřeno testy — 170 testů prošlo 2026-10-14)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -144,7 +145,7 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `sources/xtb.py` | Nabídka XTB: symbol na domácí burze, pak jméno firmy (CRH → CRH.UK, Lasertec → 6K8.DE); akcie / CFD / NE; cache `xtb_offer` 30 dní; po 5 chybách sítě stop | `tests/unit/test_xtb.py` (6) |
-| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (7) |
+| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (9) |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
 | `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (14) |
 | `hub/*`, `migrations/0008` | Centrum důkazů, spolehlivost rolí, pohled na firmu s rozpory a poučeními, registr modulů a zdrojů, deník běhů, ruční výzkum | `tests/unit/test_hub.py` (10) |
