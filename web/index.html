@@ -465,7 +465,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     $("sys-sum").innerHTML = `<div class="verdict"><span>Moduly: ${Object.entries(sy.pocty || {}).map(([k, v]) => `${chipS(k)} ${fmt(v, 0)}`).join(" ")}</span>
       <span>Ověřené mimo vzorek: <b>${ver.length ? ver.map((r) => esc(r.nazev)).join(", ") : "nic"}</b>. Ostatní výstupy jsou jen informace — výhoda zatím není prokázaná.</span>
       <span class="small muted">Propojeno ${fmt(n.firem, 0)} firem z ${fmt(n.dukazu, 0)} důkazů: příležitost ${fmt(n["PŘÍLEŽITOST"], 0)}, riziko ${fmt(n.RIZIKO, 0)}, rozpor ${fmt(n.ROZPOR, 0)}, nevím ${fmt(n["NEVÍM"], 0)}. ${esc(HP.princip || "")}</span></div>`;
-    $("sys-rel").innerHTML = (HP.spolehlivost || []).map((r) => `<tr><td><b>${esc(r.nazev)}</b><div class="small">${esc(r.typ)}${r.zive && r.zive.n ? ` · živě ${fmt(r.zive.n, 0)} predikcí` : ""}</div>
+    $("sys-rel").innerHTML = (HP.spolehlivost || []).map((r) => `<tr><td><b>${esc(r.nazev)}</b><div class="small">${esc(r.typ)}${r.zive && r.zive.n ? ` · živě ${fmt(r.zive.n, 0)} predikcí` : ""}${r.prisne && r.stav === "OVĚŘENO" ? ` · přísné pravidlo (t ≥ 3 po korekci na ${fmt(r.prisne.testu, 0)} testů): <b>${r.prisne.stav === "OVĚŘENO" ? "prošlo" : "neprošlo"}</b>` : ""}</div>
       <div class="small muted">${esc(r.metrika)}</div></td><td class="st">${chipS(r.stav)}</td><td class="r num">${nil(r.t) ? "–" : fmt(r.t, 1)}</td></tr>`).join("");
     $("sys-mod").innerHTML = (sy.moduly || []).map((m) => `<tr><td><b>${esc(m.nazev)}</b><div class="small">${esc(m.duvod)}</div><div class="small muted">příkaz: ${esc(m.prikaz)}</div></td>
       <td class="st">${chipS(m.stav)}</td><td class="small num">${m.posledni ? esc(praha(m.posledni)) : "–"}</td></tr>`).join("");

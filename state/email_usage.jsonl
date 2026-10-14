@@ -43,3 +43,6 @@
 {"day": "2026-10-13", "first_at": "2026-10-13T12:27:08Z", "host": "data.sec.gov", "last_at": "2026-10-13T12:27:08Z", "purpose": "ověření příčiny rakety KOD (seznam filingů)", "requests": 1}
 {"day": "2026-10-13", "first_at": "2026-10-13T12:27:14Z", "host": "www.sec.gov", "last_at": "2026-10-13T12:27:14Z", "purpose": "ověření příčiny rakety KOD (8-K)", "requests": 1}
 {"day": "2026-10-13", "first_at": "2026-10-13T12:27:14Z", "host": "www.sec.gov", "last_at": "2026-10-13T12:27:14Z", "purpose": "ověření příčiny rakety KOD (8-K příloha)", "requests": 1}
+{"day": "2026-10-14", "first_at": "2026-10-14T12:15:46Z", "host": "www.sec.gov", "last_at": "2026-10-14T12:15:46Z", "purpose": "ověření příčiny rakety PTC (seznam CIK)", "requests": 1}
+{"day": "2026-10-14", "first_at": "2026-10-14T12:15:47Z", "host": "data.sec.gov", "last_at": "2026-10-14T12:15:47Z", "purpose": "ověření příčiny rakety PTC (seznam filingů)", "requests": 1}
+{"day": "2026-10-14", "first_at": "2026-10-14T12:15:52Z", "host": "www.sec.gov", "last_at": "2026-10-14T12:15:52Z", "purpose": "ověření příčiny rakety PTC (8-K)", "requests": 1}

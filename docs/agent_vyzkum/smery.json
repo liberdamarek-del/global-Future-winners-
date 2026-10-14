@@ -1,5 +1,5 @@
 {
- "aktualizovano": "2026-10-13",
+ "aktualizovano": "2026-10-14",
  "pravidlo": "hlavní směr = nejvyšší priorita, průzkumný = nejméně běhů; 3 prázdné běhy po sobě → priorita / 2 a stav UTLUMENY; nové zjištění s návrhem → priorita + 0,1 (max 1)",
  "smery": [
   {
@@ -7,19 +7,19 @@
    "nazev": "Experimentování a statistika: mnohonásobné testování a přeučení na historii",
    "proc_pro_nas": "děláme mnoho experimentů a variant modelů (E1–E4, pokusy na zamčených testech) → riziko falešných objevů; hledat korekce typu deflated Sharpe, PBO, reality check, Benjamini–Hochberg",
    "priorita": 1.0,
-   "behu": 1,
+   "behu": 2,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-10-13",
+   "posledni_beh": "2026-10-14",
    "stav": "AKTIVNI"
   },
   {
    "id": "S2",
    "nazev": "Sebehodnocení a kalibrace: proper scoring, konformní predikce, abstence",
    "proc_pro_nas": "karty mají pravděpodobnosti a NEVÍM; chybí intervaly s garantovaným pokrytím a průběžné měření kalibrace na živých výsledcích",
-   "priorita": 0.8,
-   "behu": 0,
+   "priorita": 0.9,
+   "behu": 1,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": null,
+   "posledni_beh": "2026-10-14",
    "stav": "AKTIVNI"
   },
   {

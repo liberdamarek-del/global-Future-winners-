@@ -507,9 +507,9 @@ def cmd_system(args) -> int:
     print()
     print(_table(["Zdroj", "Stav", "Detail"], [[z["zdroj"], z["stav"], z["detail"][:100]] for z in ov["zdroje"]]))
     print()
-    print(_table(["Role modulu", "Stav", "Váha", "t", "Důkaz", "Živě (n/týdnů)"],
-                 [[r["nazev"][:46], r["stav"], r["vaha"], r["t"], r["typ"][:38], f"{r['zive']['n']}/{r['zive']['tydnu']}"]
-                  for r in rel.values()]))
+    print(_table(["Role modulu", "Stav", "Přísně (t≥3, BY)", "Váha", "t", "Důkaz", "Živě (n/týdnů)"],
+                 [[r["nazev"][:46], r["stav"], (r.get("prisne") or {}).get("stav", "–"), r["vaha"], r["t"], r["typ"][:38],
+                   f"{r['zive']['n']}/{r['zive']['tydnu']}"] for r in rel.values()]))
     print()
     last = integrate.last_run(conn)
     if last:

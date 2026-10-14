@@ -570,7 +570,7 @@ def build_prehled_doc(res: dict, limit: int = DOC_LIMIT) -> dict:
     sysv = res.get("system") or {}
     doc = {"vytvoreno": res["vytvoreno"], "den": res["den"], "verze": res["verze"], "princip": res["princip"],
            "beh": res.get("beh"), "pocty": res["pocty"], "kontroly": res["kontroly"], "zmeny": res["zmeny"][:40],
-           "spolehlivost": [{k: r.get(k) for k in ("role", "nazev", "modul", "smer", "stav", "vaha", "t", "n", "typ", "metrika", "zive")}
+           "spolehlivost": [{k: r.get(k) for k in ("role", "nazev", "modul", "smer", "stav", "vaha", "t", "n", "typ", "metrika", "zive", "prisne")}
                             for r in res["spolehlivost"]],
            "system": {"moduly": sysv.get("moduly", []), "zdroje": sysv.get("zdroje", []), "pocty": sysv.get("pocty", {}),
                       "denik": [{k: j[k] for k in ("id", "prikaz", "zacatek", "trvani_s", "stav", "chyba")} for j in sysv.get("denik", [])[:12]]},

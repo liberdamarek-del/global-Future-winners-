@@ -4,6 +4,20 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-14 · v0.14.0 — Experiment N-1: registr testů hypotéz a přísné pravidlo (t ≥ 3, Benjamini–Yekutieli)
+
+Důvod: denní výzkum agenta (docs/agent_vyzkum, návrh N-1): role se ověřují při t ≥ 2, ale testů děláme desítky →
+riziko falešných objevů (Harvey–Liu–Zhu: hranice t > 3; Benjamini–Yekutieli: FDR i při závislých testech).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `docs/testy_hypotez.jsonl` (nový) | registr všech testů hypotéz (zatím 13 z E1–E4; studie smart money a varianty modelů doplnit) | `test_multitest.py::test_registry_file_is_valid` |
+| `hub/multitest.py` (nový) | p-hodnoty, q-hodnoty BH a BY; přísné pravidlo = t ≥ 3 a q (BY) ≤ 0,10 v rodině testů + rolí | `test_multitest.py` (3) |
+| `hub/feedback.py`, `cli.py` (`system`), `site.py`, `web/index.html` | u každé role pole `prisne` a sloupec „Přísně“ — jen se zapisuje, o váze dál rozhoduje stávající pravidlo (experiment do 2027-01-06) | celý `pytest` |
+
+**Start experimentu:** přísně prošly varování 1 měsíc (t 3,68), varování 6 měsíců (t 3,98) a nákup insiderů (t 3,05);
+neprošla role „fondy 13F u malých firem“ (t 2,56).
+
 ## 2026-10-13 · v0.13.0 — Raketový deník (rakety za 5 / 10 / 21 dní + ověřené příčiny)
 
 Důvod: zadání uživatele 2026-10-13 („když najdeš rakety za týden, 14 dní nebo měsíc — analyzuješ proč a zanášíš to do

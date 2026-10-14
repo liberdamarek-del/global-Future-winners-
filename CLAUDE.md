@@ -83,6 +83,8 @@ Přesný postup, schéma a kritéria: `docs/agent_vyzkum/README.md`. Evidence: `
 `navrhy.jsonl` (jen přidávat), `reporty/RRRR-MM-DD.md`; formát hlídá `tests/unit/test_agent_research.py`.
 Každý běh vychází z předchozích záznamů, neopakuje stejná zjištění (URL / klíč), výslovně píše „nic nového“, když nic
 není, a nejvýš jeden experiment týdně opravdu zavede (vratně, s testem, metrika předem).
+Každý nový test hypotézy (experiment, skupina, t) se zapisuje do `docs/testy_hypotez.jsonl` — z něj se počítá přísné
+pravidlo (t ≥ 3 a Benjamini–Yekutieli, `hub/multitest.py`; experiment N-1 do 2027-01-06, zatím nerozhoduje o vahách).
 
 ## Globální objevování (Growth Engine, týdně v sobotu)
 

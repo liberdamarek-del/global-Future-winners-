@@ -233,4 +233,8 @@ def reliability(conn) -> dict[str, dict]:
             r = judge(t, typ=f"živé výsledky ({n} predikcí, {weeks} týdnů)", n=n,
                       metrika=f"výsledek ve směru role proti oboru / trhu; dřív {test_info}") | {"zive": r["zive"]}
         out[role] = {"role": role, "modul": modul, "nazev": nazev, "smer": smer} | r
+    # experiment N-1 (od 2026-10-14): přísné pravidlo t ≥ 3 a BY q ≤ 0,10 se jen zapisuje, o váze dál rozhoduje judge()
+    from stockradar.hub.multitest import strict
+    for role, sv in strict(out).items():
+        out[role]["prisne"] = sv
     return out
