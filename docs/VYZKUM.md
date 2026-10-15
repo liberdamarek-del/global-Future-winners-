@@ -137,6 +137,24 @@ nástroje ani účty a vystupovalo by se za uživatele); zamčené testy jen jed
 - **Poučení:** u nového zdroje rozhodla kvalita párování (fondy v seznamu akcií, znovu přidělené tickery, chybné
   CUSIP správců) — bez ní by „nejsilnější sázky“ obsahovaly ETF a cizí firmy. Zapsáno `POUCENI-FONDY-13F`.
 
+## N-1 · 2026-10-15 · Doplnění registru testů o studii smart money (experiment N-1 pokračuje)
+
+**Pravidlo dané předem (před výpočtem dopadu):** do `docs/testy_hypotez.jsonl` se zapíše KAŽDÁ t-statistika ze studie
+smart money (`smart_money_runs #4`, data k 2026-10-09), bez výběru podle výsledku (`hub/multitest.smart_money_rows`).
+
+| | Před (13 testů E1–E4) | Po (481 testů) |
+|---|---|---|
+| Testů ze studie smart money | 0 | 468 (|t| ≥ 2: 112, |t| ≥ 3: 30; testy se překrývají — stejné události, horizonty a období) |
+| Varování 1 m (t 3,68) | prošlo, q (BY) 0,012 | prošlo, q 0,052 |
+| Varování 6 m (t 3,98) | prošlo, q 0,007 | prošlo, q 0,023 |
+| Nákup insiderů (t 3,05) | prošlo, q 0,046 | **NEPROŠLO**, q 0,24 |
+| Fondy 13F u malých firem (t 2,56) | neprošlo, q 0,15 | neprošlo, q 0,56 |
+
+**Závěr:** po poctivém započtení všech testů studie smart money už „nákup insiderů“ přísné pravidlo nesplňuje. Podle
+Chordia–Goyal–Saretto (RFS 2020) by práh pro časové řady byl dokonce 3,84 — pak by prošlo jen varování 6 m. Váhy se
+NEMĚNÍ (N-1 jen zapisuje do 2027-01-06); do té doby rozhodnou živé výsledky. Chybí ještě varianty modelů signálů a
+studie E2 (doplnit).
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |

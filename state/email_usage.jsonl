@@ -46,3 +46,12 @@
 {"day": "2026-10-14", "first_at": "2026-10-14T12:15:46Z", "host": "www.sec.gov", "last_at": "2026-10-14T12:15:46Z", "purpose": "ověření příčiny rakety PTC (seznam CIK)", "requests": 1}
 {"day": "2026-10-14", "first_at": "2026-10-14T12:15:47Z", "host": "data.sec.gov", "last_at": "2026-10-14T12:15:47Z", "purpose": "ověření příčiny rakety PTC (seznam filingů)", "requests": 1}
 {"day": "2026-10-14", "first_at": "2026-10-14T12:15:52Z", "host": "www.sec.gov", "last_at": "2026-10-14T12:15:52Z", "purpose": "ověření příčiny rakety PTC (8-K)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:16:18Z", "host": "data.sec.gov", "last_at": "2026-10-15T12:16:18Z", "purpose": "ověření příčiny rakety BSP (seznam filingů)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:16:22Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:16:22Z", "purpose": "ověření příčiny rakety BSP (6-K)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:17:05Z", "host": "data.sec.gov", "last_at": "2026-10-15T12:17:05Z", "purpose": "ověření příčiny rakety SJT (seznam filingů)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:17:11Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:17:11Z", "purpose": "ověření příčiny rakety SJT (8-K)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:17:15Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:17:15Z", "purpose": "ověření příčiny rakety SJT (8-K příloha 99.1)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:17:40Z", "host": "data.sec.gov", "last_at": "2026-10-15T12:17:40Z", "purpose": "ověření příčiny rakety BYRN (seznam filingů)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:17:49Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:17:52Z", "purpose": "ověření příčiny rakety BYRN (8-K)", "requests": 2}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:17:56Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:17:56Z", "purpose": "ověření příčiny rakety BYRN (8-K příloha 99.1)", "requests": 1}
+{"day": "2026-10-15", "first_at": "2026-10-15T12:18:17Z", "host": "data.sec.gov", "last_at": "2026-10-15T12:18:17Z", "purpose": "ověření příčiny rakety MRNA (seznam filingů)", "requests": 1}

@@ -4,6 +4,20 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-15 · v0.14.2 — Registr testů doplněn o celou studii smart money (experiment N-1)
+
+Důvod: denní výzkum agenta (směr S1) — registr měl jen 13 testů E1–E4, korekce na mnohonásobné testování byla mírnější,
+než měla být. Pravidlo dané předem: zapsat KAŽDOU t-statistiku studie smart money, bez výběru podle výsledku.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `hub/multitest.py` | `smart_money_rows(result, run_id, datum)`: všechny skupiny s `t` / `t_mesice` jako řádky registru (průzkumné, `predem = False`) | `test_multitest.py::test_smart_money_rows_take_every_group_with_t` |
+| `docs/testy_hypotez.jsonl` | +468 testů ze `smart_money_runs #4` (celkem 481) | `test_multitest.py::test_registry_file_is_valid` |
+| `docs/VYZKUM.md`, `docs/agent_vyzkum/*` | výsledek, 4 nová zjištění, návrhy N-6 a N-7, report 2026-10-15 | `test_agent_research.py` |
+
+**Výsledek:** přísné pravidlo (t ≥ 3 a q (BY) ≤ 0,10) dál splňují varování 1 m (q 0,052) a 6 m (q 0,023); **nákup
+insiderů už ne** (q 0,24, dříve 0,046). Váhy rolí se nemění (N-1 jen zapisuje do 2027-01-06).
+
 ## 2026-10-14 · v0.14.1 — Kauzální radar: firmy jen s vlastní citlivostí na komoditu; příkazy odolné vůči zavřené rouře
 
 Důvod: denní rutina 2026-10-14 — karta DRYBULK (sazby lodní přepravy sypkých nákladů ↓) ukazovala jako firmy oboru

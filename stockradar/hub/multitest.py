@@ -62,3 +62,34 @@ def strict(rel: dict[str, dict], registry: list[dict] | None = None) -> dict[str
         out[role] = {"stav": "OVĚŘENO" if ok else ("NEPROŠLO" if v.get("stav") == "OVĚŘENO" else "NEOVĚŘENO"),
                      "t": t, "hlz": t >= HLZ_T, "q_by": round(a, 4), "q_bh": round(b, 4), "testu": len(fam)}
     return out
+
+
+def smart_money_rows(result: dict, run_id: int, datum: str) -> list[dict]:
+    """Všechny t-statistiky jedné studie smart money (`smart_money_runs.result_json`) jako řádky registru.
+    Pravidlo dané předem (2026-10-15): bere se KAŽDÁ skupina s t (pole `t` nebo `t_mesice`), bez výběru podle výsledku;
+    nezávislé jednotky = měsíce. Jde o průzkumné testy (predem = False), i když z nich vyšla ověřená role."""
+    rows: list[dict] = []
+
+    def add(section: str, group: str, d: dict) -> None:
+        t = d.get("t", d.get("t_mesice"))
+        if not isinstance(t, (int, float)):
+            return
+        rows.append({"id": f"SM{run_id}-{len(rows) + 1:04d}", "datum": datum, "experiment": f"Smart money (studie #{run_id})",
+                     "skupina": f"{section}: {group}", "n_nezavislych": d.get("mesicu"), "t": t, "predem": False,
+                     "hlavni": False, "zdroj": f"smart_money_runs #{run_id}"})
+
+    for section in ("insideri", "po_zverejneni", "podily", "buybacky", "politici"):
+        for group, by_h in (result.get(section) or {}).items():
+            for h, d in (by_h or {}).items():
+                if isinstance(d, dict):
+                    add(section, f"{group} / {h}", d)
+    for year, d in (result.get("insider_po_letech") or {}).items():
+        add("insider_po_letech", year, d)
+    for d in result.get("politici_osoby") or []:
+        add("politici_osoby", d.get("osoba", "?"), d)
+    for d in result.get("politici_sektory") or []:
+        add("politici_sektory", d.get("sektor", "?"), d)
+    for period, items in (result.get("aktivni_vs_pasivni") or {}).items():
+        for d in items or []:
+            add(f"aktivni_vs_pasivni/{period}", f"{d.get('situace')} · {d.get('skupina')} / {d.get('horizont')}", d)
+    return rows
