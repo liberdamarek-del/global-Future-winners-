@@ -17,7 +17,7 @@ zprávy zmiňují hlavní výrobní zemi.
 | `causal/radar.py` | zprávy bez vazby na výrobce = karta „SLEDOVAT (zprávy netýkají hlavních výrobců)“, bez příležitosti a predikce; starší data bez počtu jako dřív | dtto |
 
 **Výsledek (běh #16):** zlato a benzín → SLEDOVAT; měď (stávky v Chile: Escondida, Centinela — 10 zpráv u výrobců) a
-pšenice dál PŘÍLEŽITOST. Kauzální predikce „zlato → těžaři ↑“ z běhu #15 zůstává v záznamu (historie se nemění) a vyhodnotí se.
+pšenice dál PŘÍLEŽITOST. Běh #15 (před opravou) zapsal 2 kauzální predikce — obě u mědi (#33 → metal mining ↑, #34 → other metals ↑); pro zlato predikce nevznikla.
 
 ## 2026-10-15 · v0.14.2 — Registr testů doplněn o celou studii smart money (experiment N-1)
 
