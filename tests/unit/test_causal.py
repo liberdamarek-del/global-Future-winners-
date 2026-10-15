@@ -125,6 +125,25 @@ def test_radar_lists_only_firms_with_own_sensitivity_to_the_commodity():
     assert radar.firms(secs, "metal mining", sens=lambda s: None, sign=1) == []                 # nikdo neprošel → prázdné
 
 
+def test_news_confirm_supply_scenario_only_at_major_producers():
+    """Nálet na zlatý důl v Súdánu (není mezi hlavními výrobci) nesmí spustit scénář „zlato ↑“ (2026-10-15)."""
+    heads = [{"datum": "2026-10-12", "titulek": f"Airstrike kills workers at Sudan gold mine {i}", "zdroj": "X"} for i in range(5)]
+    fetch = lambda q, a, b: [h for h in heads if a <= date.fromisoformat(h["datum"]) < b]
+    assert events.news_pulse("GOLD", date(2026, 10, 15), fetch=fetch, pause=0)["u_vyrobcu_7d"] == 0
+    heads.append({"datum": "2026-10-13", "titulek": "Strike halts gold mines in Ghana", "zdroj": "Y"})
+    assert events.news_pulse("GOLD", date(2026, 10, 15), fetch=fetch, pause=0)["u_vyrobcu_7d"] == 1
+    wk = _weekly(n=200)                                                                 # poslední 4 týdny bez cenového šoku
+    ex = build_exposure(wk)
+    secs = [{"symbol": "FCX", "name": "Freeport", "industry": "metal mining", "market_cap_usd": 6e10}]
+    run = lambda n_prod: radar.build(ex, {}, date(2026, 10, 2), gdacs_links={}, securities=secs, pulse_history={"COPPER": [1, 1, 1]},
+                                     pulses={"COPPER": {"pribehu_7d": 6, "u_vyrobcu_7d": n_prod, "titulky": []}})
+    quiet = run(0)
+    assert quiet["karty"][0]["stav"].startswith("SLEDOVAT") and quiet["prilezitosti"] == []
+    assert "zprávy mimo hlavní výrobce" in quiet["karty"][0]["spoustec"]
+    loud = run(2)
+    assert loud["karty"][0]["stav"] == "PŘÍLEŽITOST" and "zprávy" in loud["karty"][0]["spoustec"]
+
+
 def test_causal_records_are_append_only_and_evaluated(tmp_path):
     conn = open_db(tmp_path / "t.db")
     wk = _weekly(n=200)

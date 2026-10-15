@@ -4,6 +4,21 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-15 · v0.14.3 — Kauzální radar: zprávy potvrzují scénář „narušení nabídky“ jen u hlavních výrobců
+
+Důvod: denní rutina 2026-10-15 — 15 zpráv o náletu na zlatý důl na hranici Súdánu a Egypta (72 mrtvých) spustilo
+scénář „zlato ↑ → těžaři zlata ↑“ (skóre 50, nejvyšší příležitost dne), i když Súdán mezi hlavními výrobci zlata v grafu
+není a cena zlata za 4 týdny klesla o 4,8 %. Scénář je „narušení nabídky → cena roste“, takže má smysl jen tam, kde
+zprávy zmiňují hlavní výrobní zemi.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `causal/events.py` | `news_pulse` počítá `u_vyrobcu_7d` = nové příběhy, jejichž titulek zmiňuje hlavní výrobní zemi komodity (seznam NEOVĚŘENO) | `test_causal.py::test_news_confirm_supply_scenario_only_at_major_producers` |
+| `causal/radar.py` | zprávy bez vazby na výrobce = karta „SLEDOVAT (zprávy netýkají hlavních výrobců)“, bez příležitosti a predikce; starší data bez počtu jako dřív | dtto |
+
+**Výsledek (běh #16):** zlato a benzín → SLEDOVAT; měď (stávky v Chile: Escondida, Centinela — 10 zpráv u výrobců) a
+pšenice dál PŘÍLEŽITOST. Kauzální predikce „zlato → těžaři ↑“ z běhu #15 zůstává v záznamu (historie se nemění) a vyhodnotí se.
+
 ## 2026-10-15 · v0.14.2 — Registr testů doplněn o celou studii smart money (experiment N-1)
 
 Důvod: denní výzkum agenta (směr S1) — registr měl jen 13 testů E1–E4, korekce na mnohonásobné testování byla mírnější,

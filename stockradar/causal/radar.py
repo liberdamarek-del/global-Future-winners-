@@ -108,11 +108,13 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         hist = sorted((pulse_history or {}).get(cid, []))
         base = hist[len(hist) // 2] if len(hist) >= 3 else None
         recent = pulse.get("pribehu_7d") or 0
-        news_spike = base is not None and recent >= 5 and recent >= 2 * max(base, 1)
+        news_attention = base is not None and recent >= 5 and recent >= 2 * max(base, 1)
+        # zprávy potvrzují scénář „narušení nabídky“ jen u hlavních výrobců (u starších dat bez počtu jako dřív)
+        news_spike = news_attention and (pulse.get("u_vyrobcu_7d") is None or pulse["u_vyrobcu_7d"] >= 1)
         if pulse:
             pulse = {**pulse, "zaklad_z_historie": base, "pozornost": round(recent / max(base, 1), 2) if base is not None else None}
         gd_hit = any(e["uroven"] == "Red" for e in gd) or (c["skupina"] == "zemědělství" and any(e["typ"] == "DR" for e in gd))
-        if not (price_shock or news_spike or gd_hit):
+        if not (price_shock or news_attention or gd_hit):
             continue
         r4 = sh[0] if sh else None
         # směr: když se cena už pohnula, podle pohybu; jinak scénář „nabídka se zúží → cena roste“
@@ -172,8 +174,11 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             "pohyb_4t": round(r4, 4) if r4 is not None else None, "z": round(sh[1], 2) if sh else None,
             "sok_k_datu": date.fromordinal(sh_day).isoformat(),
             "obory_k_datu": date.fromordinal(wk.weeks[w]).isoformat(),
-            "spoustec": [x for x, on in (("cenový šok", price_shock), ("zprávy", news_spike), ("GDACS", gd_hit)) if on],
-            "stav": "PŘÍLEŽITOST" if (price_shock or news_spike) else "SLEDOVAT (výstraha bez potvrzení cenou nebo zprávami)",
+            "spoustec": [x for x, on in (("cenový šok", price_shock), ("zprávy", news_spike),
+                                         ("zprávy mimo hlavní výrobce", news_attention and not news_spike), ("GDACS", gd_hit)) if on],
+            "stav": "PŘÍLEŽITOST" if (price_shock or news_spike) else
+                    "SLEDOVAT (zprávy netýkají hlavních výrobců)" if news_attention else
+                    "SLEDOVAT (výstraha bez potvrzení cenou nebo zprávami)",
             "zaklad_smeru": basis, "vyrobci": c["vyrobci"], "vyrobci_stav": CM.NEOVERENO, "uzly": c["uzly"],
             "udalosti": gd[:4], "zpravy": pulse,
             "retez": chain[:14], "scenare": scenarios(ex, cid, w, sign),

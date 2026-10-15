@@ -86,6 +86,9 @@ def news_pulse(cid: str, today: date, *, fetch=dnews.fetch_headlines, pause: flo
     recent, older = got["ted"], got["pred_mesicem"]
     ratio = len(recent) / len(older) if older else float(len(recent))
     top = sorted(recent, key=lambda s: (-s["kvalita"], -s["kopii"]))[:4]
+    # kolik nových příběhů zmiňuje hlavní výrobní zemi komodity (seznam výrobců je NEOVĚŘENO) — scénář „narušení
+    # nabídky“ má smysl jen tam (2026-10-15: nálet na zlatý důl v Súdánu spustil scénář „zlato ↑“)
+    at_producers = sum(1 for s in recent if cid in CM.producers_in(s.get("titulek") or ""))
     return {"stav": "AUTO (titulky Google News)", "pribehu_7d": len(recent), "pribehu_pred_mesicem": len(older),
-            "pozornost": round(ratio, 2), "titulky": [{k: s.get(k) for k in ("poprve", "titulek", "nejlepsi_zdroj", "kvalita",
+            "u_vyrobcu_7d": at_producers, "pozornost": round(ratio, 2), "titulky": [{k: s.get(k) for k in ("poprve", "titulek", "nejlepsi_zdroj", "kvalita",
                                                                                "kopii", "url")} for s in top]}
