@@ -55,3 +55,8 @@
 {"day": "2026-10-15", "first_at": "2026-10-15T12:17:49Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:17:52Z", "purpose": "ověření příčiny rakety BYRN (8-K)", "requests": 2}
 {"day": "2026-10-15", "first_at": "2026-10-15T12:17:56Z", "host": "www.sec.gov", "last_at": "2026-10-15T12:17:56Z", "purpose": "ověření příčiny rakety BYRN (8-K příloha 99.1)", "requests": 1}
 {"day": "2026-10-15", "first_at": "2026-10-15T12:18:17Z", "host": "data.sec.gov", "last_at": "2026-10-15T12:18:17Z", "purpose": "ověření příčiny rakety MRNA (seznam filingů)", "requests": 1}
+{"day": "2026-10-16", "first_at": "2026-10-16T12:25:49Z", "host": "data.sec.gov", "last_at": "2026-10-16T12:25:49Z", "purpose": "ověření příčiny rakety VWAV (seznam filingů)", "requests": 1}
+{"day": "2026-10-16", "first_at": "2026-10-16T12:25:50Z", "host": "data.sec.gov", "last_at": "2026-10-16T12:25:50Z", "purpose": "ověření příčiny rakety EVH (seznam filingů)", "requests": 1}
+{"day": "2026-10-16", "first_at": "2026-10-16T12:25:50Z", "host": "data.sec.gov", "last_at": "2026-10-16T12:25:50Z", "purpose": "ověření příčiny rakety CBRL (seznam filingů)", "requests": 1}
+{"day": "2026-10-16", "first_at": "2026-10-16T12:25:58Z", "host": "data.sec.gov", "last_at": "2026-10-16T12:25:58Z", "purpose": "ověření příčiny rakety CBRL (seznam filingů, delší okno)", "requests": 1}
+{"day": "2026-10-16", "first_at": "2026-10-16T12:25:58Z", "host": "www.sec.gov", "last_at": "2026-10-16T12:25:58Z", "purpose": "ověření příčiny rakety VWAV (8-K zpětný split)", "requests": 1}

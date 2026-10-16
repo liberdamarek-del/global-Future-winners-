@@ -84,3 +84,10 @@ def test_hub_shows_rockets_as_context_but_not_data_errors(conn):
                    source_url="https://x.example", published_on="2026-09-30")
     ev = E.from_rocket_diary(conn, date(2026, 10, 13))
     assert [e["entita"] for e in ev] == ["REAL"] and ev[0]["druh"] == "kontext" and ev[0]["smer"] == 0
+
+
+def test_partly_adjusted_split_is_a_data_error_not_a_rocket():
+    vwav = [11.52, 9.16, 9.7, 9.34, 9.06, 0.53, 0.38, 7.32, 5.26, 6.2, 6.21, 5.72, 5.79, 4.87, 4.57, 4.16, 4.42]
+    assert D.glitch(vwav)
+    assert not D.glitch([10.0, 9.0, 1.5, 1.4, 1.6, 1.7, 1.5])                                   # skutečný pád bez návratu
+    assert not D.glitch([1.0, 1.1, 1.3, 2.0, 3.1, 4.5, 4.0])                                    # skutečná raketa

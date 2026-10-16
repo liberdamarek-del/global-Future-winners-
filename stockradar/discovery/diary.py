@@ -139,6 +139,18 @@ def detect(days, closes, volumes) -> dict | None:
     return {"okna": hit, "moves": moves, "start": start, "end": days[-1], "cena": closes[-1], "obrat": turn}
 
 
+def glitch(closes, *, lookback: int = 40, drop: float = 0.2, back: float = 0.3, within: int = 5) -> bool:
+    """Chyba dat typu „propad a návrat“: cena během dne klesne aspoň 5× a do `within` dnů se vrátí aspoň na 30 %
+    původní úrovně. U skutečných akcií prakticky nenastává; vzniká, když zdroj upraví zpětný split jen u části dnů
+    (VWAV 2026-10-16: 9,06 → 0,53 → 0,38 → 7,32 kolem splitu 1:20; detektor splitu to nepoznal kvůli objemům)."""
+    n = len(closes)
+    for k in range(max(1, n - lookback), n):
+        a, b = closes[k - 1], closes[k]
+        if a > 0 and b / a <= drop and any(closes[j] / a >= back for j in range(k + 1, min(n, k + 1 + within))):
+            return True
+    return False
+
+
 def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]:
     """Rakety ke dni posledního snímku (americké akcie)."""
     cache_conn.executescript(SNAP_SCHEMA)
@@ -161,7 +173,7 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
         if is_fund(name, industry):                   # uzavřené fondy nejsou firmy (DHY)
             stats["fondy"] += 1
             continue
-        if anomalous(bars):                           # stejná kontrola kvality jako v objevování (NFE)
+        if anomalous(bars) or glitch(bars.closes):    # kontrola kvality jako v objevování (NFE) + propad a návrat (VWAV)
             stats["split_nebo_chyba"] += 1
             continue
         bars, _ = adjust_reverse_splits(bars)         # neupravené zpětné splity (poučení CHYBA-DAT-REVERSE-SPLIT)

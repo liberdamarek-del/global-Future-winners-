@@ -4,6 +4,21 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-16 · v0.14.4 — Raketový deník: chyba dat „propad a návrat“; registr testů + vyhodnocení modelů
+
+Důvod: denní výzkum agenta 2026-10-16 — největší nová „raketa“ VWAV (+964 % za 21 dní) byla chyba dat: zpětný split
+1:20 (8-K 18. 9. 2026), který Yahoo upravilo jen u části dnů (9,06 → 0,53 → 0,38 → 7,32 USD). Detektor splitu to
+nepoznal, protože neupravené dny měly obrovský objem. Registr testů (N-1) ještě neměl vyhodnocení modelů.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `discovery/diary.py` | `glitch`: pád aspoň 5× za den a návrat do 5 dnů aspoň na 30 % původní ceny = chyba dat → řada se v deníku přeskočí (z 5 938 řad zasáhne 4: VWAV, BURU, HLSQ, WHLR) | `test_diary.py::test_partly_adjusted_split_is_a_data_error_not_a_rocket` |
+| `hub/multitest.py` | `model_evaluation_rows`: všechny t z `model_evaluations` (u opakovaného vyhodnocení jen poslední, bez zdvojení už evidovaných) | `test_multitest.py::test_model_evaluation_rows_keep_latest_rerun_and_skip_registered` |
+| `docs/testy_hypotez.jsonl` | +111 testů (celkem 592) | `test_multitest.py::test_registry_file_is_valid` |
+
+**Výsledek:** přísné pravidlo beze změny závěru — varování 1 m (q 0,038) a 6 m (q 0,017) procházejí, nákup insiderů
+(q 0,22) a fondy 13F (q 0,56) ne. Váhy se nemění (N-1 jen zapisuje).
+
 ## 2026-10-15 · v0.14.3 — Kauzální radar: zprávy potvrzují scénář „narušení nabídky“ jen u hlavních výrobců
 
 Důvod: denní rutina 2026-10-15 — 15 zpráv o náletu na zlatý důl na hranici Súdánu a Egypta (72 mrtvých) spustilo

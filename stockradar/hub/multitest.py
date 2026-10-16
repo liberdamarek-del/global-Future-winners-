@@ -93,3 +93,32 @@ def smart_money_rows(result: dict, run_id: int, datum: str) -> list[dict]:
         for d in items or []:
             add(f"aktivni_vs_pasivni/{period}", f"{d.get('situace')} · {d.get('skupina')} / {d.get('horizont')}", d)
     return rows
+
+
+def model_evaluation_rows(evaluations: list[dict], datum: str, *, skip: set[tuple[int, str]] = frozenset()) -> list[dict]:
+    """Všechny t-statistiky vyhodnocení modelů (`model_evaluations`) jako řádky registru. Pravidlo dané předem
+    (2026-10-16): každá t ve metrikách; u opakovaného vyhodnocení téhož (model, konfigurace, období) jen poslední
+    (novější data nahrazují starší, nejde o novou hypotézu); `skip` = (id vyhodnocení, cesta) už evidované jinde."""
+    latest: dict[tuple, dict] = {}
+    for e in sorted(evaluations, key=lambda e: e["id"]):
+        latest[(e["model_name"], e["config_hash"], e["split"])] = e
+    rows: list[dict] = []
+    for e in sorted(latest.values(), key=lambda e: e["id"]):
+        found: list[tuple[str, float]] = []
+
+        def walk(o, path: str) -> None:
+            if isinstance(o, dict):
+                for k, v in o.items():
+                    if (k == "t" or k.startswith("t_")) and isinstance(v, (int, float)):
+                        found.append((path + k, v))
+                    else:
+                        walk(v, path + k + ".")
+        walk(e["metrics"], "")
+        for path, t in found:
+            if (e["id"], path) in skip:
+                continue
+            rows.append({"id": f"ME{e['id']}-{len(rows) + 1:04d}", "datum": datum,
+                         "experiment": f"{e['model_name']} ({e['config_hash'][:8]}, {e['split']})", "skupina": path,
+                         "n_nezavislych": e.get("n_independent"), "t": t, "predem": e["split"] == "LOCKED_TEST",
+                         "hlavni": False, "zdroj": f"model_evaluations #{e['id']}"})
+    return rows

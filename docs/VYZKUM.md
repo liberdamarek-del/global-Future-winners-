@@ -155,6 +155,11 @@ Chordia–Goyal–Saretto (RFS 2020) by práh pro časové řady byl dokonce 3,8
 NEMĚNÍ (N-1 jen zapisuje do 2027-01-06); do té doby rozhodnou živé výsledky. Chybí ještě varianty modelů signálů a
 studie E2 (doplnit).
 
+**Doplnění 2026-10-16:** pravidlo dané předem — každá t ze všech vyhodnocení modelů (`model_evaluations`: SIGNAL_14D,
+SIGNAL_1M, SIGNAL_6M, CAUSAL_CHAINS, INSIDER_X_6M; u opakovaného vyhodnocení téhož modelu, konfigurace a období jen
+poslední; 3 testy E1 už evidované se nezdvojí); E2 už v registru byl. +111 testů → **592 celkem**. Varování 1 m
+q (BY) 0,038, varování 6 m 0,017 (prošla), nákup insiderů 0,22 a fondy 13F 0,56 (neprošly). Závěr se nemění.
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |
