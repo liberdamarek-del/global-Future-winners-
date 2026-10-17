@@ -60,3 +60,16 @@
 {"day": "2026-10-16", "first_at": "2026-10-16T12:25:50Z", "host": "data.sec.gov", "last_at": "2026-10-16T12:25:50Z", "purpose": "ověření příčiny rakety CBRL (seznam filingů)", "requests": 1}
 {"day": "2026-10-16", "first_at": "2026-10-16T12:25:58Z", "host": "data.sec.gov", "last_at": "2026-10-16T12:25:58Z", "purpose": "ověření příčiny rakety CBRL (seznam filingů, delší okno)", "requests": 1}
 {"day": "2026-10-16", "first_at": "2026-10-16T12:25:58Z", "host": "www.sec.gov", "last_at": "2026-10-16T12:25:58Z", "purpose": "ověření příčiny rakety VWAV (8-K zpětný split)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:42Z", "host": "www.sec.gov", "last_at": "2026-10-17T08:54:42Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:43Z", "host": "data.sec.gov", "last_at": "2026-10-17T08:54:46Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:46Z", "host": "data.sec.gov", "last_at": "2026-10-17T08:54:47Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:47Z", "host": "data.sec.gov", "last_at": "2026-10-17T08:54:48Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:48Z", "host": "data.sec.gov", "last_at": "2026-10-17T08:54:49Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:49Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:03:52Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 2}
+{"day": "2026-10-17", "first_at": "2026-10-17T08:54:55Z", "host": "data.sec.gov", "last_at": "2026-10-17T09:03:53Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
+{"day": "2026-10-17", "first_at": "2026-10-17T09:03:51Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:03:52Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
+{"day": "2026-10-17", "first_at": "2026-10-17T09:05:18Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:05:19Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 2}
+{"day": "2026-10-17", "first_at": "2026-10-17T09:05:47Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:05:47Z", "purpose": "seznam datových sad insiderů (Form 3/4/5) — kontrola chybějících čtvrtletí", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T09:05:58Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:05:58Z", "purpose": "seznam souborů Fails-to-Deliver (výzkum E4)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T09:05:59Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:05:59Z", "purpose": "seznam datových sad 13F (výzkum E4)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T09:19:20Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:19:20Z", "purpose": "ověření rozporu v centru: SOC (424B5 nabídka akcií)", "requests": 1}

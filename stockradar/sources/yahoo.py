@@ -93,7 +93,7 @@ def store_bars(conn: sqlite3.Connection, quote: Quote, *, fetched_at: datetime |
     return len(quote.bars)
 
 
-SUBUNITS = {"GBp": "GBP", "GBX": "GBP", "ILA": "ILS", "ZAc": "ZAR"}  # pence, agorot, centy
+SUBUNITS = {"GBp": "GBP", "GBX": "GBP", "ILA": "ILS", "ZAc": "ZAR", "USX": "USD"}  # pence, agorot, centy (USX: futures v US centech)
 
 
 def fx_symbol(currency: str) -> str | None:

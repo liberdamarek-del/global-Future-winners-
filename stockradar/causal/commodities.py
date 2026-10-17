@@ -107,7 +107,7 @@ COMMODITIES = [
      "retez": [(1, r"packaged foods|specialty foods|consumer specialties", -1, "výrobci čokolády a cukrovinek"),
                (2, r"food chains|food distributors", -1, "dražší sortiment, nižší objem prodeje")]},
     {"id": "SUGAR", "symbol": "SB=F", "nazev": "Cukr", "skupina": "zemědělství", "slova": r"\b(sugar|sugarcane)\b",
-     "vyrobci": ["Brazílie", "Indie", "Thajsko", "Čína", "EU"], "uzly": [],
+     "vyrobci": ["Brazílie", "Indie", "Thajsko", "Čína", "EU", "USA", "Pákistán", "Rusko"], "uzly": [],
      "retez": [(1, r"farming/seeds/milling", +1, "producenti cukru a etanolu"),
                (2, r"packaged foods|beverages", -1, "cukr v nápojích a sladkostech")]},
     {"id": "COTTON", "symbol": "CT=F", "nazev": "Bavlna", "skupina": "zemědělství", "slova": r"\bcotton\b",
@@ -122,7 +122,7 @@ COMMODITIES = [
      "retez": [(1, r"meat/poultry/fish", -1, "zpracovatelé masa nakupují dobytek"),
                (2, r"restaurants|food chains", -1, "dražší maso v restauracích")]},
     {"id": "HOGS", "symbol": "HE=F", "nazev": "Prasata", "skupina": "zemědělství", "slova": r"\b(hogs?|pork|swine fever)\b",
-     "vyrobci": ["Čína", "EU", "USA", "Brazílie"], "uzly": [],
+     "vyrobci": ["Čína", "EU", "USA", "Brazílie", "Vietnam", "Rusko"], "uzly": [],
      "retez": [(1, r"meat/poultry/fish", +1, "producenti vepřového (část zpracovatelů prodělává)")]},
     {"id": "LUMBER", "symbol": "LBR=F", "nazev": "Řezivo", "skupina": "stavba", "slova": r"\b(lumber|timber|sawmill|wildfire)\b",
      "vyrobci": ["Kanada", "USA", "Rusko", "Švédsko"], "uzly": [],
@@ -158,6 +158,14 @@ VERIFIED_PRODUCERS = {
               "url": "https://apps.fas.usda.gov/psdonline/circulars/production.pdf", "rok": "2026/27",
               "podily": {"Čína": 0.171, "EU": 0.162, "Indie": 0.147, "Rusko": 0.107, "USA": 0.051, "Kanada": 0.044,
                          "Austrálie": 0.038, "Pákistán": 0.035, "Ukrajina": 0.032}, "overeno": "2026-10-17"},
+    "SUGAR": {"zdroj": "USDA FAS — Sugar: World Markets and Trade, květen 2026 (2026/27 předpověď, svět 186,1 mil. t)",
+              "url": "https://apps.fas.usda.gov/psdonline/circulars/sugar.pdf", "rok": "2026/27",
+              "podily": {"Brazílie": 0.228, "Indie": 0.181, "EU": 0.077, "Čína": 0.068, "Thajsko": 0.051, "USA": 0.043,
+                         "Pákistán": 0.037, "Rusko": 0.034}, "overeno": "2026-10-17"},
+    "HOGS": {"zdroj": "USDA FAS — Livestock and Poultry: World Markets and Trade, 9. 10. 2026 (vepřové, 2026)",
+             "url": "https://apps.fas.usda.gov/psdonline/circulars/livestock_poultry.pdf", "rok": "2026",
+             "podily": {"Čína": 0.495, "EU": 0.183, "USA": 0.104, "Brazílie": 0.041, "Vietnam": 0.034, "Rusko": 0.033},
+             "overeno": "2026-10-17"},
 }
 
 

@@ -165,3 +165,10 @@ def test_interrupted_transfer_is_retried_and_counted(db_env, monkeypatch):
     assert len(calls) == 2
     conn = sqlite3.connect(db_env / "t.db")
     assert conn.execute("SELECT requests FROM email_usage").fetchone()[0] == 2     # e-mail odešel dvakrát → evidováno 2×
+
+
+def test_us_cent_quotes_need_no_fx_download():
+    """Komoditní futures v amerických centech (USX, např. kukuřice ZC=F) se nepřevádějí přes neexistující kurz USX=X."""
+    from stockradar.sources.yahoo import fx_symbol, usd_factor
+    assert fx_symbol("USX") is None and usd_factor("USX") == 0.01
+    assert fx_symbol("GBp") == "GBP=X" and fx_symbol("USD") is None
