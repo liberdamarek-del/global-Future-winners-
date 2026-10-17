@@ -73,3 +73,8 @@
 {"day": "2026-10-17", "first_at": "2026-10-17T09:05:58Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:05:58Z", "purpose": "seznam souborů Fails-to-Deliver (výzkum E4)", "requests": 1}
 {"day": "2026-10-17", "first_at": "2026-10-17T09:05:59Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:05:59Z", "purpose": "seznam datových sad 13F (výzkum E4)", "requests": 1}
 {"day": "2026-10-17", "first_at": "2026-10-17T09:19:20Z", "host": "www.sec.gov", "last_at": "2026-10-17T09:19:20Z", "purpose": "ověření rozporu v centru: SOC (424B5 nabídka akcií)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T12:15:53Z", "host": "data.sec.gov", "last_at": "2026-10-17T12:15:53Z", "purpose": "ověření příčiny rakety BENF (seznam filingů)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T12:15:53Z", "host": "data.sec.gov", "last_at": "2026-10-17T12:15:53Z", "purpose": "ověření příčiny rakety KPLT (seznam filingů)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T12:15:53Z", "host": "data.sec.gov", "last_at": "2026-10-17T12:16:01Z", "purpose": "ověření příčiny rakety SAIQ (seznam filingů)", "requests": 2}
+{"day": "2026-10-17", "first_at": "2026-10-17T12:16:01Z", "host": "www.sec.gov", "last_at": "2026-10-17T12:16:01Z", "purpose": "ověření příčiny rakety BENF (8-K 23. 9.)", "requests": 1}
+{"day": "2026-10-17", "first_at": "2026-10-17T12:16:11Z", "host": "www.sec.gov", "last_at": "2026-10-17T12:16:11Z", "purpose": "ověření příčiny rakety KPLT (8-K 2. 10.)", "requests": 1}
