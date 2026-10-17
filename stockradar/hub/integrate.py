@@ -158,7 +158,8 @@ def fingerprint(conn, today: date) -> str:
               "SELECT MAX(id) FROM fund_runs", "SELECT MAX(id) FROM rocket_events", "SELECT MAX(id) FROM rocket_causes",
               "SELECT MAX(id) FROM causal_runs", "SELECT MAX(id) FROM model_runs", "SELECT COUNT(*) FROM predictions",
               "SELECT COUNT(*) FROM prediction_outcomes", "SELECT COUNT(*) FROM signal_outcomes",
-              "SELECT COUNT(*) FROM causal_outcomes", "SELECT MAX(id) FROM research_evidence", "SELECT COUNT(*) FROM lessons",
+              "SELECT COUNT(*) FROM causal_outcomes", "SELECT MAX(id) FROM research_evidence",
+              "SELECT COUNT(*) FROM research_outcomes", "SELECT COUNT(*) FROM lessons",
               "SELECT COUNT(*) FROM model_evaluations"):
         parts.append(str(conn.execute(q).fetchone()[0]))
     parts.append(json.dumps([tuple(r) for r in conn.execute("SELECT id, status, date_status, superseded_by FROM catalysts")]))

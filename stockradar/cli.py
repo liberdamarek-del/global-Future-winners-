@@ -146,8 +146,15 @@ def cmd_update(args) -> int:
     for w in result["warnings"]:
         print(f"  ! {w}")
     print(f"Data pro web: {web_dir()}")
+    from stockradar.discovery import cache as dcache
+    from stockradar.hub.feedback import evaluate_research
+    done = evaluate_research(conn, dcache.connect(), utcnow().date())
+    print(f"  {'Vyhodnocení výzkumu':<22} {len(done)} nových" + "".join(
+        f"\n    {d['symbol']}: {d['result']} ({d['in_direction_pct']:+.1f} % ve směru výzkumu)" for d in done))
+    if done:
+        export_state(conn, state_dir())
     _note(args, den_dat=result.get("data_day"), beh=result["run_id"], varovani=len(result["warnings"]),
-          kroky={k: str(v)[:60] for k, v in result["steps"].items()})
+          kroky={k: str(v)[:60] for k, v in result["steps"].items()}, vyzkum_vyhodnoceno=len(done))
     _refresh_hub(args, conn)
     _print_email_today(conn)
     return 0 if result["run_id"] else 1

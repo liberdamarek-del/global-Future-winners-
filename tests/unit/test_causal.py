@@ -180,3 +180,11 @@ def test_daily_shock_sees_moves_after_last_stock_day():
     assert after is not None and after[1] > 2.5 and after[2] == days[-1]
     assert before is None or abs(before[1]) < 2.0
     assert daily_shock(bars, days[-1] + 30) is None                        # stará data (> 5 dní) se nepoužijí
+
+
+def test_verified_producer_shares_have_primary_source():
+    for cid, v in CM.VERIFIED_PRODUCERS.items():
+        assert cid in CM.BY_ID and v["url"].startswith("https://") and 0 < sum(v["podily"].values()) <= 1
+        assert all(z in CM.BY_ID[cid]["vyrobci"] or share < 0.03 for z, share in v["podily"].items())   # ≥ 3 % je v seznamu
+    assert CM.producers_status("ALUMINIUM")["stav"].startswith("OVĚŘENO") and CM.producers_status("COCOA")["stav"] == CM.NEOVERENO
+    assert "IRONORE" in CM.producers_in("Floods hit iron ore mines in Iran")

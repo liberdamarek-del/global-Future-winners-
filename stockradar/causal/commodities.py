@@ -2,7 +2,7 @@
 
 Každý řetězec je HYPOTÉZA z ekonomické logiky („cena X roste → obor Y má dražší vstupy“). O tom, zda se dá použít
 k predikci, rozhoduje historický test v `chains.py` (učení / validace / zamčený test proti náhodným dvojicím).
-Výrobní země jsou NEOVĚŘENO, dokud u nich není zdroj (USGS, USDA, ICCO, EIA…) — slouží jen k přiřazení události
+Výrobní země jsou NEOVĚŘENO, dokud u nich není zdroj (USGS, USDA, ICCO, EIA… → VERIFIED_PRODUCERS) — slouží k přiřazení události
 (např. hurikán v Pobřeží slonoviny → kakao) a vždy se tak i zobrazí.
 
 `smer` = dopad na obor, když cena komodity ROSTE (+1 pomáhá, −1 škodí). Obory jsou vzory na názvy oborů v datech
@@ -64,7 +64,7 @@ COMMODITIES = [
                (2, r"containers/packaging|beverages", -1, "plechovky a obaly"),
                (2, r"aerospace|auto manufacturing|motor vehicles", -1, "hliník v letadlech a autech")]},
     {"id": "IRONORE", "symbol": "TIO=F", "nazev": "Železná ruda", "skupina": "kovy", "slova": r"\b(iron ore)\b",
-     "vyrobci": ["Austrálie", "Brazílie", "Čína", "Indie", "Rusko"], "uzly": [],
+     "vyrobci": ["Austrálie", "Brazílie", "Čína", "Indie", "Rusko", "Írán"], "uzly": [],
      "retez": [(1, r"metal mining|steel/iron ore", +1, "tržby těžařů rudy"),
                (2, r"marine transportation", +1, "objem námořní přepravy rudy")]},
     {"id": "STEEL", "symbol": "HRC=F", "nazev": "Ocel (US HRC)", "skupina": "kovy", "slova": r"\b(steel|tariff\w* on steel)\b",
@@ -84,12 +84,12 @@ COMMODITIES = [
      "retez": [(1, r"other metals and minerals|metal mining", +1, "tržby těžařů uranu"),
                (2, r"power generation|electric utilities", -1, "palivo jaderných elektráren (malý podíl nákladů)")]},
     {"id": "CORN", "symbol": "ZC=F", "nazev": "Kukuřice", "skupina": "zemědělství", "slova": r"\b(corn|maize|ethanol)\b",
-     "vyrobci": ["USA", "Čína", "Brazílie", "Argentina", "Ukrajina"], "uzly": [],
+     "vyrobci": ["USA", "Čína", "Brazílie", "Argentina", "Ukrajina", "Indie", "EU"], "uzly": [],
      "retez": [(1, r"farming/seeds/milling|agricultural chemicals", +1, "tržby farem a dodavatelů osiv a hnojiv"),
                (2, r"meat/poultry/fish", -1, "krmivo je hlavní náklad chovu"),
                (3, r"packaged foods|restaurants", -1, "dražší potraviny")]},
     {"id": "WHEAT", "symbol": "ZW=F", "nazev": "Pšenice", "skupina": "zemědělství", "slova": r"\b(wheat|grain export\w*|grain corridor)\b",
-     "vyrobci": ["Čína", "Indie", "Rusko", "USA", "EU", "Kanada", "Austrálie", "Ukrajina", "Argentina", "Kazachstán"],
+     "vyrobci": ["Čína", "Indie", "Rusko", "USA", "EU", "Kanada", "Austrálie", "Ukrajina", "Argentina", "Kazachstán", "Pákistán"],
      "uzly": ["Černé moře"],
      "retez": [(1, r"farming/seeds/milling", +1, "mlýny a obchodníci s obilím"),
                (2, r"packaged foods|specialty foods", -1, "mouka v pečivu a těstovinách"),
@@ -139,6 +139,34 @@ COMMODITIES = [
 ]
 
 BY_ID = {c["id"]: c for c in COMMODITIES}
+
+# Ověřené podíly hlavních výrobců (primární zdroj, rok dat). Komodita bez záznamu = výrobci NEOVĚŘENO.
+VERIFIED_PRODUCERS = {
+    "ALUMINIUM": {"zdroj": "USGS Mineral Commodity Summaries 2026 — Aluminum (výroba hutí, 2025 odhad)",
+                  "url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-aluminum.pdf", "rok": "2025e",
+                  "podily": {"Čína": 0.608, "Indie": 0.057, "Rusko": 0.053, "Kanada": 0.045, "SAE": 0.036,
+                             "Bahrajn": 0.022, "Austrálie": 0.020}, "overeno": "2026-10-17"},
+    "IRONORE": {"zdroj": "USGS Mineral Commodity Summaries 2026 — Iron Ore (těžba, použitelná ruda, 2025 odhad)",
+                "url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-iron-ore.pdf", "rok": "2025e",
+                "podily": {"Austrálie": 0.377, "Brazílie": 0.162, "Indie": 0.119, "Čína": 0.112, "Írán": 0.036,
+                           "Rusko": 0.033, "Kanada": 0.027}, "overeno": "2026-10-17"},
+    "CORN": {"zdroj": "USDA FAS — World Agricultural Production, říjen 2026 (Table 04, 2026/27 projekce)",
+             "url": "https://apps.fas.usda.gov/psdonline/circulars/production.pdf", "rok": "2026/27",
+             "podily": {"USA": 0.315, "Čína": 0.237, "Brazílie": 0.107, "Argentina": 0.043, "Indie": 0.039,
+                        "EU": 0.037, "Ukrajina": 0.025}, "overeno": "2026-10-17"},
+    "WHEAT": {"zdroj": "USDA FAS — World Agricultural Production, říjen 2026 (Table 02, 2026/27 projekce)",
+              "url": "https://apps.fas.usda.gov/psdonline/circulars/production.pdf", "rok": "2026/27",
+              "podily": {"Čína": 0.171, "EU": 0.162, "Indie": 0.147, "Rusko": 0.107, "USA": 0.051, "Kanada": 0.044,
+                         "Austrálie": 0.038, "Pákistán": 0.035, "Ukrajina": 0.032}, "overeno": "2026-10-17"},
+}
+
+
+def producers_status(commodity_id: str) -> dict:
+    """Stav výrobců pro kartu: OVĚŘENO se zdrojem a podíly, jinak NEOVĚŘENO (jen seznam pro přiřazení událostí)."""
+    v = VERIFIED_PRODUCERS.get(commodity_id)
+    if not v:
+        return {"stav": NEOVERENO}
+    return {"stav": f"OVĚŘENO ({v['zdroj']})", "podily": v["podily"], "url": v["url"], "rok": v["rok"], "overeno": v["overeno"]}
 BY_SYMBOL = {c["symbol"]: c for c in COMMODITIES}
 _PAT = {c["id"]: [(r, re.compile(p, re.I), s, why) for r, p, s, why in c["retez"]] for c in COMMODITIES}
 

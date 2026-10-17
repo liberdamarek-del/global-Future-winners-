@@ -216,3 +216,27 @@ def test_causal_industry_evidence_reaches_only_firms_with_own_sensitivity(conn, 
     assert "KAUZALNI" in by["SBLK"]["moduly"] and by["SBLK"]["postoj"] == "ROZPOR"
     assert "KAUZALNI" not in by["CCL"]["moduly"] and by["CCL"]["postoj"] != "ROZPOR"
     assert "KAUZALNI" in by["OLD"]["moduly"]                                      # starší běhy: celý obor jako dřív
+
+
+def test_research_is_scored_against_sp500_after_its_horizon(conn):
+    """Ruční výzkum (riziko ↓) se po uplynutí horizontu porovná s S&P 500 a jde do živé spolehlivosti role VÝZKUM."""
+    from stockradar.discovery.cache import Bars
+    rid = E.add_research(conn, entity_type="firma", entity="VLO", kind="riziko", direction=-1, horizon_days=30,
+                         summary="G7 uvolňuje zásoby", source="StockTitan", source_url="https://stocktitan.net/x",
+                         published_on="2026-10-06", now=NOW)
+    E.add_research(conn, entity_type="firma", entity="KMX", kind="katalyzator", direction=0, horizon_days=30,
+                   summary="prezentace", source="CarMax", source_url="https://x.example", published_on="2026-10-06", now=NOW)
+    start = date(2026, 10, 6).toordinal()
+    days = [start + i for i in range(0, 40)]
+    conn.executemany("INSERT INTO price_bars (symbol, date, close, volume, source, fetched_at) VALUES ('SPY', ?, ?, 0, 't', 't')",
+                     [(date.fromordinal(d).isoformat(), 100.0 + 0.1 * i) for i, d in enumerate(days)])
+    vlo = Bars("VLO", "USD", days, [200.0 - 1.0 * i for i in range(40)], [1.0] * 40)          # klesá → výzkum měl pravdu
+    load = lambda sym: vlo if sym == "VLO" else None
+    assert F.evaluate_research(conn, None, date(2026, 11, 1), load=load) == []                # horizont ještě neskončil
+    done = F.evaluate_research(conn, None, date(2026, 11, 10), load=load)
+    assert [(d["research_id"], d["result"]) for d in done] == [(rid, "HIT")] and done[0]["in_direction_pct"] > 0
+    assert F.evaluate_research(conn, None, date(2026, 11, 10), load=load) == []               # jednou na záznam
+    assert F.live_outcomes(conn)["VYZKUM"][0][1] > 0
+    assert "vyhodnoceno proti S&P 500 1" in F.reliability(conn)["VYZKUM"]["metrika"]
+    with pytest.raises(sqlite3.DatabaseError):
+        conn.execute("UPDATE research_outcomes SET result = 'MISS'")

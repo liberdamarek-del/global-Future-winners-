@@ -4,6 +4,23 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-17 · v0.15.0 — Ruční výzkum se vyhodnocuje proti cenám (zpětná vazba pro roli VÝZKUM)
+
+Důvod: týdenní zlepšení z `docs/ARCHITEKTURA_2026-10-07.md` (kap. 6, „ruční výzkum se zatím nevyhodnocuje proti cenám“).
+Role „Ruční výzkum se zdrojem“ byla vždy NEOVĚŘENO bez možnosti se ověřit; směrové záznamy (např. riziko u 8 rafinerií
+z 6. 10., horizont 120 dní) by po horizontu zůstaly bez výsledku.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `migrations/0011_research_outcomes.sql` | kniha `research_outcomes` (append-only): výnos akcie a S&P 500 (SPY) od prvního obchodního dne od zveřejnění do konce horizontu, nadvýnos ve směru výzkumu, HIT/MISS | `test_hub.py::test_research_is_scored_against_sp500_after_its_horizon` |
+| `hub/feedback.py` | `evaluate_research` (jen firmy se směrem ±1, jednou na záznam, čeká, dokud ceny nedosahují konce horizontu); role VYZKUM bere živé výsledky stejným pravidlem jako ostatní (≥ 30 v ≥ 6 týdnech); metrika ukazuje, kolik je vyhodnoceno a kdy končí první horizont | dtto |
+| `cli.py` (`update`) | krok „Vyhodnocení výzkumu“ po denní aktualizaci | celý `pytest` |
+| `hub/integrate.py`, `state_io.py` | otisk centra a export `state/` zahrnují `research_outcomes` | celý `pytest` |
+| `causal/commodities.py`, `causal/radar.py`, `web/index.html` | ověřené podíly výrobců z primárních zdrojů (`VERIFIED_PRODUCERS`): hliník a železná ruda — USGS Mineral Commodity Summaries 2026; kukuřice a pšenice — USDA FAS World Agricultural Production (říjen 2026); karta ukazuje stav OVĚŘENO se zdrojem a podíly; do seznamů doplněny země s podílem ≥ 3 % (železná ruda Írán, kukuřice Indie a EU, pšenice Pákistán) | `test_causal.py::test_verified_producer_shares_have_primary_source` |
+
+**Stav:** 8 směrových záznamů o firmách (rafinerie ↓ z 6. 10.; záznamy bez směru a o komoditách se nepočítají); první horizont
+končí 2027-02-03 → do té doby role VÝZKUM zůstává NEOVĚŘENO, ale už ví, kdy a jak se ověří.
+
 ## 2026-10-16 · v0.14.4 — Raketový deník: chyba dat „propad a návrat“; registr testů + vyhodnocení modelů
 
 Důvod: denní výzkum agenta 2026-10-16 — největší nová „raketa“ VWAV (+964 % za 21 dní) byla chyba dat: zpětný split

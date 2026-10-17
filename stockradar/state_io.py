@@ -26,6 +26,7 @@ TABLES = (
     "fund_runs",
     "rocket_events",
     "rocket_causes",
+    "research_outcomes",
     "model_evaluations",
     "signal_runs",
     "signal_forecasts",

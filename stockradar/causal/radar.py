@@ -179,7 +179,9 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             "stav": "PŘÍLEŽITOST" if (price_shock or news_spike) else
                     "SLEDOVAT (zprávy netýkají hlavních výrobců)" if news_attention else
                     "SLEDOVAT (výstraha bez potvrzení cenou nebo zprávami)",
-            "zaklad_smeru": basis, "vyrobci": c["vyrobci"], "vyrobci_stav": CM.NEOVERENO, "uzly": c["uzly"],
+            "zaklad_smeru": basis, "vyrobci": c["vyrobci"], "vyrobci_stav": CM.producers_status(cid)["stav"],
+            "vyrobci_podily": CM.producers_status(cid).get("podily"), "vyrobci_url": CM.producers_status(cid).get("url"),
+            "uzly": c["uzly"],
             "udalosti": gd[:4], "zpravy": pulse,
             "retez": chain[:14], "scenare": scenarios(ex, cid, w, sign),
         })

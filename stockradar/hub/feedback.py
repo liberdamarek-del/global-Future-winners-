@@ -3,7 +3,8 @@
 Zdroje (vždy mimo vzorek učení):
 1. zamčené testy (`model_evaluations`, split LOCKED_TEST — jednou na konfiguraci), test modelu raket, studie
    událostí smart money, mimo-vzorkový test energetického modelu;
-2. vyhodnocené ŽIVÉ predikce ze všech tří knih (`signal_outcomes`, `causal_outcomes`, `prediction_outcomes`).
+2. vyhodnocené ŽIVÉ predikce ze všech knih (`signal_outcomes`, `causal_outcomes`, `prediction_outcomes`) a ruční výzkum
+   po uplynutí horizontu (`research_outcomes`, od v0.15.0).
    Mají přednost, jakmile je jich aspoň LIVE_MIN_N v aspoň LIVE_MIN_WEEKS různých týdnech.
 
 Stav role: OVĚŘENO (t ≥ 2 správným směrem), CHYBA (t ≤ −2 = horší než náhoda), jinak NEOVĚŘENO.
@@ -14,6 +15,8 @@ import json
 import math
 import statistics
 from datetime import date
+
+from stockradar.timeutil import to_iso, utcnow
 
 LIVE_MIN_N, LIVE_MIN_WEEKS = 30, 6
 W_UNVERIFIED = 0.1
@@ -183,7 +186,57 @@ def _from_tests(conn) -> dict[str, dict]:
                                      metrika=f"TOP 5 porazilo S&P 500 v {_p(p)} případů (IC {oos.get('ic')})")
     else:
         out["ENERGIE:vyber"] = judge(None, typ="chybí", metrika="mimo-vzorkový test zatím není")
-    out["VYZKUM"] = judge(None, typ="živé výsledky", metrika="ruční výzkum se zatím nevyhodnocuje proti cenám")
+    n_dir, first_end = conn.execute(
+        "SELECT COUNT(*), MIN(date(published_on, '+' || horizon_days || ' days')) FROM research_evidence"
+        " WHERE entity_type = 'firma' AND direction != 0").fetchone()
+    n_done = conn.execute("SELECT COUNT(*) FROM research_outcomes").fetchone()[0]
+    out["VYZKUM"] = judge(None, typ="živé výsledky",
+                          metrika=f"směrových záznamů o firmách {n_dir}, vyhodnoceno proti S&P 500 {n_done}"
+                                  + (f"; první horizont končí {first_end}" if n_dir and not n_done and first_end else ""))
+    return out
+
+
+def evaluate_research(conn, cache_conn, today: date, *, load=None) -> list[dict]:
+    """Směrový ruční výzkum o firmách (riziko ↓ / příležitost ↑) po uplynutí horizontu: výnos akcie proti S&P 500 (SPY)
+    od prvního obchodního dne od zveřejnění zprávy do konce horizontu. Každý záznam jednou (append-only); dokud ceny
+    nedosahují konce horizontu, čeká. Dřív se výzkum proti cenám neměřil vůbec (ARCHITEKTURA 2026-10-07, kap. 6)."""
+    import bisect
+    if load is None:
+        from stockradar.discovery import cache as dcache
+        load = lambda sym: dcache.load_series(cache_conn, sym)
+    spy = conn.execute("SELECT date, close FROM price_bars WHERE symbol = 'SPY' ORDER BY date").fetchall()
+    if not spy:
+        return []
+    s_days = [date.fromisoformat(d).toordinal() for d, _ in spy]
+    s_close = [c for _, c in spy]
+    done = {r[0] for r in conn.execute("SELECT research_id FROM research_outcomes")}
+    out = []
+    for rid, sym, direction, horizon, published in conn.execute(
+            "SELECT id, entity, direction, horizon_days, published_on FROM research_evidence"
+            " WHERE entity_type = 'firma' AND direction != 0 ORDER BY id").fetchall():
+        start, end = date.fromisoformat(published).toordinal(), date.fromisoformat(published).toordinal() + horizon
+        if rid in done or end > today.toordinal() or s_days[-1] < end:
+            continue
+        bars = load(sym)
+        if bars is None or not bars.days or bars.days[-1] < end:
+            continue
+        i0, i1 = bisect.bisect_left(bars.days, start), bisect.bisect_right(bars.days, end) - 1
+        j0, j1 = bisect.bisect_left(s_days, start), bisect.bisect_right(s_days, end) - 1
+        if i0 >= len(bars.days) or i1 <= i0 or j0 >= len(s_days) or j1 <= j0 or bars.closes[i0] <= 0:
+            continue
+        ret = bars.closes[i1] / bars.closes[i0] - 1
+        bench = s_close[j1] / s_close[j0] - 1
+        row = {"research_id": rid, "symbol": sym, "direction": direction,
+               "start_day": date.fromordinal(bars.days[i0]).isoformat(), "end_day": date.fromordinal(bars.days[i1]).isoformat(),
+               "start_price": bars.closes[i0], "end_price": bars.closes[i1], "return_pct": round(ret * 100, 4),
+               "benchmark_return_pct": round(bench * 100, 4), "excess_return_pct": round((ret - bench) * 100, 4),
+               "in_direction_pct": round(direction * (ret - bench) * 100, 4),
+               "result": "HIT" if direction * (ret - bench) > 0 else "MISS",
+               "price_source": "Yahoo Finance (cache objevování) / SPY z price_bars"}
+        with conn:
+            conn.execute(f"INSERT INTO research_outcomes ({', '.join(row)}, recorded_at) VALUES ({', '.join('?' * len(row))}, ?)",
+                         (*row.values(), to_iso(utcnow())))
+        out.append(row)
     return out
 
 
@@ -216,6 +269,9 @@ def live_outcomes(conn) -> dict[str, list[tuple[int, float]]]:
         v = excess if excess is not None else ret
         if role and v is not None:
             out.setdefault(role, []).append((_week(made), v / 100))
+    for published, v in conn.execute("SELECT r.published_on, o.in_direction_pct FROM research_outcomes o"
+                                     " JOIN research_evidence r ON r.id = o.research_id"):
+        out.setdefault("VYZKUM", []).append((_week(published), v / 100))
     return out
 
 

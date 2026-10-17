@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-16 · **Verze:** v0.14.4 · **Schema DB:** v10 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-17 · **Verze:** v0.15.0 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -126,7 +126,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 174 testů prošlo 2026-10-16)
+## HOTOVO (ověřeno testy — 176 testů prošlo 2026-10-17)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -145,7 +145,7 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `sources/xtb.py` | Nabídka XTB: symbol na domácí burze, pak jméno firmy (CRH → CRH.UK, Lasertec → 6K8.DE); akcie / CFD / NE; cache `xtb_offer` 30 dní; po 5 chybách sítě stop | `tests/unit/test_xtb.py` (6) |
-| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (10) |
+| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (11) |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
 | `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (14) |
 | `hub/*`, `migrations/0008` | Centrum důkazů, spolehlivost rolí, pohled na firmu s rozpory a poučeními, registr modulů a zdrojů, deník běhů, ruční výzkum | `tests/unit/test_hub.py` (10) |
@@ -162,7 +162,7 @@
 |---|---|
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` (centrum se obnoví samo) + diag + výzkum (`research`) + web (10 dokumentů včetně `stav/prehled`), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
 | Živá zpětná vazba | Role se zatím hodnotí jen z testů; první živé výsledky 2026-10-09, spolehlivé po ~30 případech v 6 týdnech |
-| Vyhodnocení ručního výzkumu | Výzkum se ukládá a propojuje, ale zatím se neměří proti cenám (role VÝZKUM = NEOVĚŘENO) |
+| Vyhodnocení ručního výzkumu | v0.15.0: směrový výzkum o firmách se po horizontu měří proti S&P 500 (`research_outcomes`, krok v `update`); první horizont končí 2027-02-03, do té doby role VÝZKUM = NEOVĚŘENO |
 | Kauzální radar mezi sobotami | VYŘEŠENO 2026-10-11 (v0.11.0): šok komodity z denních cen k dni běhu |
 | Denní výzkum agenta + raketový deník | `trig_01TjbvgR2D2sxxoToNXQU3Sr`, každý den 14:13 (Praha): výzkum nových přístupů k agentům → `docs/agent_vyzkum/` (směry, zdroje, návrhy, reporty); raketový deník `python -m stockradar rakety` (v0.13.0) + ověření příčin u 5 největších nových raket |
 | Týdenní objevování + zlepšování | `trig_01FbMAHzeDTDMQMvqonAW29k`, sobota 9:41 (Praha): `system` + `discover --universe --download` (+ SEC, studie, rakety) + `smart-money` + `signals` (14 dní, 1 měsíc, 6 měsíců; bez nových cen přeskočí) + `update` + `causal` + `diag` + `hub` + jedno zlepšení kódu s testem + web (10 dokumentů) |
