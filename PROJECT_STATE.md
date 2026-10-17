@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-17 · **Verze:** v0.15.0 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-17 · **Verze:** v0.15.1 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -126,7 +126,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 177 testů prošlo 2026-10-17)
+## HOTOVO (ověřeno testy — 223 testů prošlo 2026-10-17; GitHub Actions `Testy` je spouští na každý push a PR)
 
 | Modul | Co dělá | Testy |
 |---|---|---|

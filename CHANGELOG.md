@@ -4,6 +4,24 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-17 · v0.15.1 — Automatické testy na každou změnu (GitHub Actions) a testy CLI, diagnostiky a orchestrace signálů
+
+Důvod: průzkum repozitáře 2026-10-17 — rutiny pushují přímo bez jakékoli kontroly (`.github/` neexistoval) a nejnižší
+pokrytí měly části, které rozhodují o stavu a zamčených testech: `cli.py` 11 %, `signals/run.py` 17 %, `diag.py` 0 %.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `.github/workflows/tests.yml` | `pytest` + pokrytí na každý push (i rutin) a pull request; Python 3.11 a 3.13; souhrn pokrytí v běhu | běh Actions |
+| `requirements-dev.txt` | `pytest-cov` | dtto |
+| `tests/unit/test_cli_commands.py` | CLI v procesu testu: zapojení všech příkazů, deník běhů (OK / CHYBA / PŘESKOČENO, výjimka se zapíše a propadne), čtecí příkazy se nezapisují, obnova ze state/ po ztrátě DB, research, hub, system, status, ledger, lessons, email | 16 testů |
+| `tests/unit/test_diag.py` | každá kontrola diagnostiky v OK i problémovém stavu (SPY, denní běh, zpožděná vyhodnocení, ceny predikcí, katalyzátory po termínu, cache objevování, SEC s e-mailem i bez, limit webových dokumentů, centrum) | 16 testů |
+| `tests/unit/test_signals_run.py` | výběr přes XTB (`pick_tradable`), pravidlo řazení 6 m, plošné varování trhu, katalyzátory z podání / studií / DB, důkaz „gap“, čištění NaN/∞ | 14 testů |
+
+**Výsledek:** 223 testů prošlo (dřív 177); pokrytí 60 % → 65 %; `cli.py` 59 %, `diag.py` 100 %, `signals/run.py` 35 %
+(`run`/`run_model` potřebují celý datový panel — zatím netestováno). Kódu aplikace se změna nedotkla.
+Zjištěno při psaní testů (neopraveno, mimo rozsah): v čerstvém kontejneru bez cache spadne `funds --no-download`
+(chybí tabulka `cusip_map`, vzniká až při stažení) a `signals --no-download` (prázdná data → `day_str(0)`).
+
 ## 2026-10-17 · v0.15.0 — Ruční výzkum se vyhodnocuje proti cenám (zpětná vazba pro roli VÝZKUM)
 
 Důvod: týdenní zlepšení z `docs/ARCHITEKTURA_2026-10-07.md` (kap. 6, „ruční výzkum se zatím nevyhodnocuje proti cenám“).
