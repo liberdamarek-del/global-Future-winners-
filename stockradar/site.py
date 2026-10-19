@@ -388,6 +388,8 @@ def _trim_card(c: dict) -> dict:
 
 def build_signals_doc(conn: sqlite3.Connection) -> dict | None:
     """Dokument stav/signaly — jak se modely testují (protokol, zamčený test, trh, mechanismy). Karty jsou v žebříčku."""
+    from stockradar.signals.calibration import live_calibration
+    live = live_calibration(conn)                       # experiment N-5: živá kalibrace a pokrytí (jen měření)
     models = {}
     for name, _ in SIGNAL_ANALYTICS:
         run = _latest_signal_run(conn, name)
@@ -405,6 +407,7 @@ def build_signals_doc(conn: sqlite3.Connection) -> dict | None:
             "kalibrace": {t: full.get("kalibrace", {}).get(t) for t in ("up5", "down5")},
             "dnes": full.get("dnes"), "mispricing_dukaz": full.get("mispricing_dukaz"), "vahy": full.get("vahy"),
             "vysledky_karet": full.get("vysledky_karet"), "insideri_sec_do": full.get("insideri_sec_do"),
+            "kalibrace_ziva": _trim_live_calibration(live.get(name)),
             "varovani": [_trim_card(c) for c in full.get("karty", []) if not c.get("poradi") and c.get("final") == "POKLES"][:5],
         }
         if "trh" not in models.get("_spolecne", {}):
@@ -413,6 +416,13 @@ def build_signals_doc(conn: sqlite3.Connection) -> dict | None:
                                        "nejsilnejsi_vazby": v.get("nejsilnejsi_vazby", [])[:4]}
                                        for k, v in (full.get("mechanismy") or {}).get("obdobi", {}).items()}}
     return {"modely": models} if models else None
+
+
+def _trim_live_calibration(c: dict | None) -> dict | None:
+    """Pro web: bez týdenní cesty ACI (ta je v příkazu `kalibrace`)."""
+    if not c:
+        return None
+    return {"spolehlivost": c["spolehlivost"], "pokryti": {k: v for k, v in c["pokryti"].items() if k != "tydny"}, "pozn": c["pozn"]}
 
 
 def _ledger_rocket(conn, ticker: str) -> dict | None:

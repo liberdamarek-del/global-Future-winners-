@@ -160,6 +160,30 @@ def cmd_update(args) -> int:
     return 0 if result["run_id"] else 1
 
 
+def _print_live_calibration(conn) -> None:
+    """Experiment N-5: živá kalibrace karet a pokrytí intervalu q20–q80 (statický × ACI)."""
+    from stockradar.signals.calibration import live_calibration
+    for model, c in live_calibration(conn).items():
+        s, k = c["spolehlivost"], c["pokryti"]
+        print(f"Kalibrace {model} (N-5): karet {s.get('karet')}, týdnů {s.get('tydnu')}; P(růst) průměr {s.get('predpoved_prumer')}"
+              f" × skutečně {s.get('skutecnost')}; Brier {s.get('brier')} (základ {s.get('brier_zaklad')}, dovednost {s.get('dovednost')});"
+              f" pokrytí q20–q80 statické {k.get('pokryti_staticke')} / ACI {k.get('pokryti_aci')} (cíl {k.get('cil')})")
+
+
+def cmd_kalibrace(args) -> int:
+    from datetime import date as _date
+    conn = _open()
+    _print_live_calibration(conn)
+    from stockradar.signals.calibration import live_calibration
+    for model, c in live_calibration(conn).items():
+        for w in c["pokryti"].get("tydny", []):
+            print(f"  {model} týden od {_date.fromordinal(w['tyden'] * 7 + 1)}: karet {w['karet']}, α {w['alfa']}, kvantil {w['kvantil']},"
+                  f" pokrytí statické {w['pokryti_staticke']} / ACI {w['pokryti_aci']}")
+        for b in c["spolehlivost"].get("tabulka", []):
+            print(f"  {model} koš {b['kos']}: karet {b['karet']}, předpověď {b['predpoved']}, skutečnost {b['skutecnost']}")
+    return 0
+
+
 def _print_email_today(conn) -> None:
     from stockradar.contact import usage_summary
     today = utcnow().date().isoformat()
@@ -390,6 +414,7 @@ def cmd_signals(args) -> int:
     export_state(conn, state_dir())
     sizes = write_signals_doc(conn, web_dir())
     print(f"Vyhodnoceno dřívějších karet: {len(evaluated)}; web: " + ", ".join(f"{k} {v // 1024} kB" for k, v in sizes.items()))
+    _print_live_calibration(conn)
     _note(args, behy=runs, vyhodnoceno=len(evaluated), xtb_dotazu=xsum["dotazu"], xtb_nedostupne=xsum["nedostupne"])
     _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
@@ -703,6 +728,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_status.add_argument("--days", type=int, default=45, help="horizont katalyzátorů (default 45 dní, §1)")
     p_status.set_defaults(func=cmd_status)
     sub.add_parser("ledger", help="historický register predikcí (§28)").set_defaults(func=cmd_ledger)
+    sub.add_parser("kalibrace", help="živá kalibrace karet a pokrytí intervalu (experiment N-5)").set_defaults(func=cmd_kalibrace)
     sub.add_parser("update", help="denní běh: ceny, vyhodnocení, učení, predikce, web (§54)").set_defaults(
         func=cmd_update)
     p_disc = sub.add_parser("discover", help="globální objevování vítězů, vzorů a sektorů (Growth Engine)")

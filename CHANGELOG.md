@@ -4,6 +4,21 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-19 · v0.15.1 — Experiment N-5: živá kalibrace karet a pokrytí intervalu (statický × ACI)
+
+Důvod: denní výzkum agenta (směr S2, návrh N-5, týdenní experiment) — 17. 10. se poprvé vyhodnotily živé karty;
+pravděpodobnosti na webu se dosud proti skutečnosti neměřily.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `signals/calibration.py` (nový) | Brier a dovednost proti základní četnosti, kterou běh znal předem (`zaklad.up5`); tabulka spolehlivosti po 10 p. b.; pokrytí intervalu q20–q80 (cíl 60 %) statické × ACI (Gibbs & Candès, krok 0,005 předem; kvantil jen z dřívějších týdnů) — jen měření, karty se nemění | `test_calibration.py` (2) |
+| `cli.py` | příkaz `python -m stockradar kalibrace`; souhrn i na konci `signals` | celý `pytest` |
+| `site.py` | dokument `stav/signaly` má u modelu `kalibrace_ziva` | celý `pytest` |
+
+**Start (1 týden, 65 karet 14 dní z 5. 10.):** předpověď P(+5 %) v průměru 0,30, skutečně 0,15; Brier 0,154 proti
+0,136 u základní četnosti (dovednost −0,13); interval q20–q80 pokryl 43 % (cíl 60 %). Jediný týden v klesajícím trhu —
+vyhodnocení až po 8 a 16 týdnech (kritérium v N-5).
+
 ## 2026-10-17 · v0.15.0 — Ruční výzkum se vyhodnocuje proti cenám (zpětná vazba pro roli VÝZKUM)
 
 Důvod: týdenní zlepšení z `docs/ARCHITEKTURA_2026-10-07.md` (kap. 6, „ruční výzkum se zatím nevyhodnocuje proti cenám“).
