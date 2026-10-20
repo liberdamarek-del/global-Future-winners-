@@ -4,6 +4,22 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-20 · v0.15.2 — Kauzální radar: zprávy o komoditě jen v tržním nebo výrobním smyslu
+
+Důvod: denní radar 20. 10. — platina dostala stav PŘÍLEŽITOST jen ze zpráv (5 nových příběhů, scénář „narušení
+nabídky“). Titulky byly o kontejnerové lodi „HMM Platinum“, o požáru lodi plující do Jižní Afriky (počítán jako zpráva
+z výrobní země) a o dostihovém koni „Platinum Attack“ — o kovu ani jeden.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `causal/events.py` | `relevant()`: příběh se do zprávového pulsu počítá, jen když titulek (bez názvu zdroje za „ - “) zmiňuje komoditu a zároveň tržní, výrobní nebo pracovní kontext (cena, trh, důl, těžba, nabídka, export, clo, úroda, sklizeň, rafinerie, závod, stávka, pracovníci…); dopravní a makro uzly kontext nepotřebují, přeprava bere i „ship/vessel“. Puls ukazuje i počet a ukázky vyřazených titulků (`mimo_tema_7d`, `mimo_tema_ukazky`) | `test_causal.py::test_news_pulse_ignores_headlines_where_commodity_word_is_a_name` |
+
+**Výsledek (běh #22):** platina 0 relevantních příběhů (dřív 5) → žádná příležitost; radar dnes 15 karet, 0 příležitostí.
+Kontrola vyřazených titulků: správně pryč např. bodnutí v kukuřičném bludišti, šlechtění pšenice, požár stáje; slova
+stávka/pracovníci a „ship“ u přepravy doplněna po první kontrole (stávka v dole Escondida, útok na loď v Černém moři se
+jinak ztrácely) — seznam slov je tedy upravený podle dnešních titulků, ne předem. Predikce #35 z běhu #20 (platina →
+drahé kovy ↑) zůstává v knize beze změny (append-only) a vyhodnotí se normálně.
+
 ## 2026-10-19 · v0.15.1 — Experiment N-5: živá kalibrace karet a pokrytí intervalu (statický × ACI)
 
 Důvod: denní výzkum agenta (směr S2, návrh N-5, týdenní experiment) — 17. 10. se poprvé vyhodnotily živé karty;

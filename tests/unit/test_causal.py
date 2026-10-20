@@ -188,3 +188,22 @@ def test_verified_producer_shares_have_primary_source():
         assert all(z in CM.BY_ID[cid]["vyrobci"] or share < 0.03 for z, share in v["podily"].items())   # ≥ 3 % je v seznamu
     assert CM.producers_status("ALUMINIUM")["stav"].startswith("OVĚŘENO") and CM.producers_status("COCOA")["stav"] == CM.NEOVERENO
     assert "IRONORE" in CM.producers_in("Floods hit iron ore mines in Iran")
+
+
+def test_news_pulse_ignores_headlines_where_commodity_word_is_a_name():
+    """Loď „HMM Platinum“ a kůň „Platinum Attack“ nejsou zprávy o platině (2026-10-20); název zdroje se nečte."""
+    off = ["HMM Platinum firefighting winds down, all 24 crew safe - WorldCargo News",
+           "Fire Aboard Brazil-Bound Ship Forces Diversion to South Africa - DatamarNews",
+           "Planets align for Platinum Attack - Opie gets the reins and the forecast is good - Lincoln Farms",
+           "Platinum Attack Wins G3 Sweynesse - Breednet", "Platinum jubilee fire drill at school - Mining Weekly"]
+    for t in off:
+        assert not events.relevant("PLATINUM", t, t.rsplit(" - ", 1)[1])
+    assert events.relevant("PLATINUM", "Strike halts Sibanye platinum mines in South Africa - Reuters", "Reuters")
+    assert events.relevant("USD", "Dollar index slides after Fed comments - CNBC", "CNBC")      # makro: kontext netřeba
+    heads = [{"datum": f"2026-10-{15 + i}", "titulek": t, "zdroj": t.rsplit(" - ", 1)[1]} for i, t in enumerate(off)]
+    fetch = lambda q, a, b: [h for h in heads if a <= date.fromisoformat(h["datum"]) < b]
+    p = events.news_pulse("PLATINUM", date(2026, 10, 20), fetch=fetch, pause=0)
+    assert p["pribehu_7d"] == 0 and p["u_vyrobcu_7d"] == 0 and p["mimo_tema_7d"] >= 4
+    assert events.relevant("COPPER", "BHP Escondida Workers Approve Deal, Averting Copper Strike - Bloomberg.com")
+    assert events.relevant("DRYBULK", "Drone attack sinks ship off Bulgaria's Black Sea coast, PM says - Al Jazeera")
+    assert not events.relevant("CORN", "2 stabbed inside massive California corn maze - New York Post")

@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-19 · **Verze:** v0.15.1 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-20 · **Verze:** v0.15.2 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -111,7 +111,7 @@
 | SIGNAL_6M (`5703f7e451f2ff54`) | zamčený test: AUC +40 % 0,68, −25 % 0,75; dolní desetina −25 % v 57 % (t −4,0); horní desetina bez výhody |
 | Dnes (data k 2026-10-02) | všechny: KOS, ACDC, PUMP, NESR, DK…; velké: DINO, MPC, VLO, TWLO, QXO…; riziko pádu: LWLG, BW, SUNE, FCUV, HUT…; MSFT 2 457. z 3 673 |
 | Vzorec uživatele (základna u supportu) | 1 412 případů: medián 3 m +1,5 % vs +2,1 % → bez výhody |
-| Firmy u příležitosti (v0.14.1, 2026-10-14) | jen firmy s VLASTNÍ citlivostí na komoditu (beta za 78 týdnů, stejný znak jako obor, \|t\| ≥ 2); dřív největší firmy oboru podle Nasdaq → DRYBULK ukazoval General Dynamics a výletní lodě (RCL, VIK). Teď FRO, SBLK, CDLR; kukuřice → maso žádná firma. Centrum dává důkaz radaru jen těmto firmám (rozpory 15 → 6). v0.14.3: samotné zprávy spustí scénář „narušení nabídky“ jen u hlavních výrobních zemí (zlatý důl v Súdánu → jen SLEDOVAT) |
+| Firmy u příležitosti (v0.14.1, 2026-10-14) | jen firmy s VLASTNÍ citlivostí na komoditu (beta za 78 týdnů, stejný znak jako obor, \|t\| ≥ 2); dřív největší firmy oboru podle Nasdaq → DRYBULK ukazoval General Dynamics a výletní lodě (RCL, VIK). Teď FRO, SBLK, CDLR; kukuřice → maso žádná firma. Centrum dává důkaz radaru jen těmto firmám (rozpory 15 → 6). v0.14.3: samotné zprávy spustí scénář „narušení nabídky“ jen u hlavních výrobních zemí (zlatý důl v Súdánu → jen SLEDOVAT). v0.15.2: zprávový puls počítá jen titulky, které komoditu zmiňují v tržním nebo výrobním smyslu (cena, důl, nabídka, export, stávka…; název zdroje se nečte) — loď „HMM Platinum“ a kůň „Platinum Attack“ 20. 10. spustily falešnou příležitost platina → těžaři (predikce z běhu #20 zůstává v knize) |
 
 ## Propojený systém (v0.10.0, 2026-10-07) — `python -m stockradar system`
 

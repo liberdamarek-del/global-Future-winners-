@@ -7,6 +7,7 @@ Přiřazení události ke komoditě přes výrobní země je NEOVĚŘENO, dokud 
 """
 
 import json
+import re
 import time
 import urllib.request
 from datetime import date, timedelta
@@ -29,6 +30,34 @@ SEARCH = {"BRENT": "oil", "WTI": "crude oil", "NATGAS": "natural gas", "DIESEL":
           "WHEAT": "wheat", "SOY": "soybean", "COFFEE": "coffee", "COCOA": "cocoa", "SUGAR": "sugar", "COTTON": "cotton",
           "ORANGEJUICE": "orange juice", "CATTLE": "cattle", "HOGS": "hog", "LUMBER": "lumber", "DRYBULK": "shipping",
           "USD": "dollar index"}
+# Titulek se počítá jen tehdy, když komoditu zmiňuje v tržním nebo výrobním smyslu (2026-10-20: „platina“ = loď
+# HMM Platinum a dostihový kůň Platinum Attack spustily scénář „narušení nabídky“). Název zdroje za „ - “ se nečte.
+CONTEXT = re.compile(r"\b(prices?|pricing|mines?|mining|miners?|supply|supplies|output|produc\w*|exports?|imports?|"
+                     r"exporters?|importers?|markets?|futures|demand|deficit|surplus|shortages?|smelters?|refiner\w*|"
+                     r"crops?|harvest\w*|plantations?|farm\w*|growers?|yields?|ounces?|tonnes?|tons|barrels?|bpd|"
+                     r"metals?|commodit\w*|inventor\w*|stockpiles?|shipments?|shipping|cargo(es)?|tankers?|freight|"
+                     r"pipelines?|plants?|facilit\w*|terminals?|oilfields?|wells?|rigs?|reactors?|opec|sanctions?|"
+                     r"tariffs?|bans?|embargo|quotas?|outbreak|herds?|livestock|"
+                     r"strikes?|workers|unions?|unionized|jobs|layoffs?)\b", re.I)
+# doprava: slovo „loď“ samo stačí (útok na loď je zpráva o přepravě); u kovů by „ship“ pustilo loď HMM Platinum
+EXTRA_WORDS = {"DRYBULK": r"\b(ships?|vessels?|bulkers?|bulk carriers?|freighters?)\b"}
+NO_CONTEXT = {"makro", "doprava"}
+
+
+def relevant(cid: str, title: str, source: str | None = None) -> bool:
+    """Zmiňuje titulek komoditu (její slova nebo hledaný výraz) spolu s tržním či výrobním kontextem?
+    Makro a dopravní uzly (dolarový index, přeprava) kontext nepotřebují — jejich výraz už je tržní."""
+    t = title or ""
+    if source and t.endswith(f" - {source}"):
+        t = t[: -len(source) - 3]
+    elif " - " in t:
+        t = t.rsplit(" - ", 1)[0]
+    c = CM.BY_ID[cid]
+    term = (SEARCH.get(cid) or "").lower()
+    extra = EXTRA_WORDS.get(cid)
+    if not (re.search(c["slova"], t, re.I) or (term and term in t.lower()) or (extra and re.search(extra, t, re.I))):
+        return False
+    return c["skupina"] in NO_CONTEXT or bool(CONTEXT.search(t))
 
 
 def _get(url: str, timeout: int = 30) -> bytes:
@@ -73,11 +102,13 @@ def news_pulse(cid: str, today: date, *, fetch=dnews.fetch_headlines, pause: flo
     query = f"\"{term}\" ({DISRUPT})" if " " in term else f"{term} ({DISRUPT})"
     windows = {"ted": (today - timedelta(days=7), today + timedelta(days=1)),
                "pred_mesicem": (today - timedelta(days=37), today - timedelta(days=29))}
-    got = {}
+    got, off = {}, {}
     for key, (a, b) in windows.items():
         try:
             # Google News u širokých dotazů časové okno ignoruje → titulky se filtrují podle data samy
-            got[key] = snews.stories([h for h in fetch(query, a, b) if a <= date.fromisoformat(h["datum"]) < b])
+            heads = [h for h in fetch(query, a, b) if a <= date.fromisoformat(h["datum"]) < b]
+            got[key] = snews.stories([h for h in heads if relevant(cid, h["titulek"], h.get("zdroj"))])
+            off[key] = snews.stories([h for h in heads if not relevant(cid, h["titulek"], h.get("zdroj"))])
         except Exception as exc:
             return {"stav": "DATA NEDOSTUPNÁ", "duvod": str(exc)[:120]}
         finally:
@@ -90,5 +121,6 @@ def news_pulse(cid: str, today: date, *, fetch=dnews.fetch_headlines, pause: flo
     # nabídky“ má smysl jen tam (2026-10-15: nálet na zlatý důl v Súdánu spustil scénář „zlato ↑“)
     at_producers = sum(1 for s in recent if cid in CM.producers_in(s.get("titulek") or ""))
     return {"stav": "AUTO (titulky Google News)", "pribehu_7d": len(recent), "pribehu_pred_mesicem": len(older),
-            "u_vyrobcu_7d": at_producers, "pozornost": round(ratio, 2), "titulky": [{k: s.get(k) for k in ("poprve", "titulek", "nejlepsi_zdroj", "kvalita",
+            "u_vyrobcu_7d": at_producers, "mimo_tema_7d": len(off["ted"]),
+            "mimo_tema_ukazky": [s["titulek"] for s in off["ted"][:3]], "pozornost": round(ratio, 2), "titulky": [{k: s.get(k) for k in ("poprve", "titulek", "nejlepsi_zdroj", "kvalita",
                                                                                "kopii", "url")} for s in top]}
