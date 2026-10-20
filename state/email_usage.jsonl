@@ -78,3 +78,9 @@
 {"day": "2026-10-17", "first_at": "2026-10-17T12:15:53Z", "host": "data.sec.gov", "last_at": "2026-10-17T12:16:01Z", "purpose": "ověření příčiny rakety SAIQ (seznam filingů)", "requests": 2}
 {"day": "2026-10-17", "first_at": "2026-10-17T12:16:01Z", "host": "www.sec.gov", "last_at": "2026-10-17T12:16:01Z", "purpose": "ověření příčiny rakety BENF (8-K 23. 9.)", "requests": 1}
 {"day": "2026-10-17", "first_at": "2026-10-17T12:16:11Z", "host": "www.sec.gov", "last_at": "2026-10-17T12:16:11Z", "purpose": "ověření příčiny rakety KPLT (8-K 2. 10.)", "requests": 1}
+{"day": "2026-10-20", "first_at": "2026-10-20T12:21:57Z", "host": "data.sec.gov", "last_at": "2026-10-20T12:21:57Z", "purpose": "ověření příčiny rakety SLN (seznam filingů)", "requests": 1}
+{"day": "2026-10-20", "first_at": "2026-10-20T12:21:58Z", "host": "data.sec.gov", "last_at": "2026-10-20T12:21:58Z", "purpose": "ověření příčiny rakety IRON (seznam filingů)", "requests": 1}
+{"day": "2026-10-20", "first_at": "2026-10-20T12:21:58Z", "host": "data.sec.gov", "last_at": "2026-10-20T12:21:58Z", "purpose": "ověření příčiny rakety HPK (seznam filingů)", "requests": 1}
+{"day": "2026-10-20", "first_at": "2026-10-20T12:22:04Z", "host": "www.sec.gov", "last_at": "2026-10-20T12:22:04Z", "purpose": "ověření příčiny rakety SLN (8-K 19. 10.)", "requests": 1}
+{"day": "2026-10-20", "first_at": "2026-10-20T12:22:04Z", "host": "www.sec.gov", "last_at": "2026-10-20T12:22:04Z", "purpose": "ověření příčiny rakety IRON (8-K 19. 10.)", "requests": 1}
+{"day": "2026-10-20", "first_at": "2026-10-20T12:22:04Z", "host": "www.sec.gov", "last_at": "2026-10-20T12:22:04Z", "purpose": "ověření příčiny rakety HPK (8-K 6. 10.)", "requests": 1}

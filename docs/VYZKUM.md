@@ -160,6 +160,11 @@ SIGNAL_1M, SIGNAL_6M, CAUSAL_CHAINS, INSIDER_X_6M; u opakovaného vyhodnocení t
 poslední; 3 testy E1 už evidované se nezdvojí); E2 už v registru byl. +111 testů → **592 celkem**. Varování 1 m
 q (BY) 0,038, varování 6 m 0,017 (prošla), nákup insiderů 0,22 a fondy 13F 0,56 (neprošly). Závěr se nemění.
 
+**Doplnění 2026-10-20 (síla přísného pravidla):** v registru 592 testů odpovídá q (BY) ≤ 0,10 prahu zhruba
+**t ≈ 3,4** (t 3,0 → q 0,24; t 3,5 → q 0,07; t 3,84 → q 0,03); q (BH) ≤ 0,10 by stačilo t ≈ 2,5. Hrubý odhad síly
+(normální aproximace): role se skutečným efektem t = 3 projde jen asi ve 34 %, t = 4 asi v 72 %. Přísné pravidlo
+tedy často přehlédne skutečné, ale menší efekty (Harvey–Liu 2020) — při vyhodnocení N-1 uvést i tuto sílu.
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |
