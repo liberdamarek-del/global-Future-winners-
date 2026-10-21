@@ -165,6 +165,13 @@ q (BY) 0,038, varování 6 m 0,017 (prošla), nákup insiderů 0,22 a fondy 13F 
 (normální aproximace): role se skutečným efektem t = 3 projde jen asi ve 34 %, t = 4 asi v 72 %. Přísné pravidlo
 tedy často přehlédne skutečné, ale menší efekty (Harvey–Liu 2020) — při vyhodnocení N-1 uvést i tuto sílu.
 
+**Doplnění 2026-10-21 (opakované nahlížení u živých výsledků, podklad pro návrh N-10):** centrum přepočítává živou
+spolehlivost rolí při každém běhu a dá OVĚŘENO, jakmile t ≥ 2 (od 30 případů v 6 týdnech). Simulace (20 000 opakování,
+týdenní průměry bez skutečného efektu, kontrola každý týden od 6. týdne): role aspoň jednou OVĚŘENO v **11,1 %**
+(týdny 6–16), **13,4 %** (6–26) a **16,5 %** (6–52); při jediném vyhodnocení na konci jen 3,2 / 2,8 / 2,4 %. Falešně
+OVĚŘENO je v průměru 3 % týdnů. Zatím se to nestalo (žádná role ještě nemá 6 týdnů živých dat; první kolem poloviny
+listopadu). Řešení podle Ramdas a kol. (arXiv 2210.01948): průběžně platný e-proces — návrh N-10, nic se nemění.
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |
