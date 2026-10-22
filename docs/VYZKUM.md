@@ -172,6 +172,24 @@ týdenní průměry bez skutečného efektu, kontrola každý týden od 6. týdn
 OVĚŘENO je v průměru 3 % týdnů. Zatím se to nestalo (žádná role ještě nemá 6 týdnů živých dat; první kolem poloviny
 listopadu). Řešení podle Ramdas a kol. (arXiv 2210.01948): průběžně platný e-proces — návrh N-10, nic se nemění.
 
+## N-10 · 2026-10-22 · Simulace: jak potvrzovat role z živých výsledků (nic se nemění)
+
+**Pravidla a scénáře dané předem** (skript `docs/agent_vyzkum/simulace/n10_2026-10-22.py`, semeno 20261022): týdenní
+průměry nezávislé N(μ, 1), 52 týdnů, kontrola od 6. týdne. SOUČASNÉ = t ≥ 2 kdykoli; E-PROCES = Bayesův faktor
+t-testu (normální prior na efekt, g = 0,25 primárně, g = 1 citlivost; Jeffreys na sd) ≥ 20 a průměr > 0; BODY = jen
+týdny 8, 16, 26, 52 s Bonferroniho prahem (t 2,84 / 2,49 / 2,39 / 2,31).
+
+| | μ = 0: falešně OVĚŘENO do 52 t. | μ = 0,3: OVĚŘENO do 26 t. | μ = 0,5: do 26 t. | μ = 0,5: medián týdne |
+|---|---|---|---|---|
+| Současné (t ≥ 2 každý týden) | **16,1 %** | 52 % | 82 % | 11 |
+| E-proces g = 0,25 / g = 1 | 0,9 / 1,3 % | 9 / 11 % | 32 / 34 % | 29 / 28 |
+| Kontrolní body (Bonferroni) | 3,9 % | 26 % | 62 % | 26 |
+
+**Závěr:** platné postupy drží falešná potvrzení pod 5 %, ale skutečný efekt potvrdí o 15–18 týdnů později —
+kritérium N-10 (zpoždění ≤ 4 týdny) nesplnil žádný. Současné pravidlo je rychlé právě proto, že v 1 ze 6 případů
+potvrdí roli bez efektu. Nic se nemění; další krok jen v simulaci: kontrola každé 4 týdny s rozložením α a jednostranný
+prior. Omezení: týdny jsou v simulaci nezávislé (skutečné mohou být závislé → současné pravidlo by bylo ještě horší).
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |
