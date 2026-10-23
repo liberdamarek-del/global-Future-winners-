@@ -4,6 +4,24 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-23 · v0.16.0 — Provoz na GitHubu bez Claude (Actions + Pages)
+
+Důvod: rozhodnutí uživatele 23. 10. 2026 — radar má běžet sám na serveru zdarma, denně se aktualizovat a učit a stránka se
+má otevřít v obyčejném prohlížeči (jako FXBOT). Části s AI (ruční ověřování zpráv, zlepšování kódu, výzkum agenta) se
+vypouštějí; týden souběhu s rutinami Claude; e-mail pro SEC v secretu GitHubu. Modely, ledger a centrum se nemění.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `.github/workflows/radar-denni.yml` (nový) | po–pá 22:47 Praha: `init` ze state/, `update`, `causal`, `rakety`, `diag`, `email`; stránka na GitHub Pages; cache `data/market_cache.db`; zpráva o běhu ve větvi `provoz-zprava` | běh na GitHubu |
+| `.github/workflows/radar-tyden.yml` (nový) | sobota 9:41 Praha: `discover --universe --download` → `smart-money` + `funds` → `signals`, `update`, `causal`, `diag`, pytest (3 joby po ≤ 6 h, DB mezi nimi jako artefakt) | běh na GitHubu |
+| `.github/workflows/radar-testy.yml` (nový) | `python -m pytest` při každé změně | — |
+| `tools/github_beh.py` (nový, nástroj provozu mimo balíček) | klíče běhů (večer od 21:30, sobota od 9:00 Praha), režim `provoz/github.json` (stin / ostry), sestavení stránky (odmítne data s e-mailovou adresou), kontrola v Chrome, souhrn a oznámení přes ntfy | `test_github_provoz.py` (15) |
+| `web/index.html` | mimo claude.ai načte `stav_*.json` a `provoz.json` vedle sebe a ukáže varování, když je po termínu další aktualizace; v Claude beze změny | kontrola v Chromiu na skutečných datech |
+| `provoz/github.json`, `requirements-provoz.txt`, `docs/GITHUB_PROVOZ.md` (nové) | režim stin; pytest a playwright jen pro testy a kontrolu stránky | — |
+
+**Výsledek:** stránka z dnešních dat (10 dokumentů z artefaktu) prošla kontrolou v Chromiu včetně šířky telefonu. Běh na
+serverech GitHubu (Yahoo, Nasdaq, xtb.com, SEC, Senát z datacentra) je NEOVĚŘENÝ do prvního běhu.
+
 ## 2026-10-20 · v0.15.2 — Kauzální radar: zprávy o komoditě jen v tržním nebo výrobním smyslu
 
 Důvod: denní radar 20. 10. — platina dostala stav PŘÍLEŽITOST jen ze zpráv (5 nových příběhů, scénář „narušení

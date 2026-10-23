@@ -1,0 +1,5 @@
+{
+ "rezim": "stin",
+ "od": "2026-10-23",
+ "poznamka": "v0.16.0: stin = GitHub Actions bezi vedle rutin Claude, zverejnuje stranku na GitHub Pages, nic necommituje; ostry = jediny zapisovatel state/. Prepnuti rozhoduje uzivatel (tyden soubehu, pak rutiny Claude vypnout)."
+}

@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-20 · **Verze:** v0.15.2 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-23 · **Verze:** v0.16.0 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -29,6 +29,20 @@
   vazby), paměť běhů a výsledků, žádné opakované výpočty bez důvodu, stavy HOTOVO/OVĚŘENO, ROZPRACOVÁNO, BLOKOVÁNO,
   NEOVĚŘENO, CHYBA; postup POZOROVAT → POCHOPIT → PROPOJIT → ANALYZOVAT → NAVRHNOUT → IMPLEMENTOVAT → OTESTOVAT →
   VYHODNOTIT. Zpráva [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md).
+
+- 2026-10-23: **provoz na GitHubu bez Claude** (GitHub Actions + GitHub Pages, [docs/GITHUB_PROVOZ.md](docs/GITHUB_PROVOZ.md)): denní
+  běh po–pá a týdenní objevování v sobotu běží samy zdarma, stránka v obyčejném prohlížeči; části s AI (ruční ověřování zpráv,
+  zlepšování kódu, výzkum agenta) se vypouštějí; týden souběhu s rutinami Claude (režim `stin` v `provoz/github.json`, GitHub nic
+  necommituje), pak rutiny Claude vypnout a režim `ostry`; e-mail pro SEC v secretu GitHubu `STOCKRADAR_CONTACT_EMAIL`.
+
+## Provoz na GitHubu (v0.16.0)
+
+| Položka | Stav |
+|---|---|
+| Workflows denní / týdenní / testy | ROZPRACOVÁNO — napsané a otestované lokálně (`test_github_provoz.py`), běh na GitHubu NEOVĚŘENO |
+| Stránka na GitHub Pages | ROZPRACOVÁNO — kontrola v Chromiu na dnešních datech prošla; zapnutí Pages udělá uživatel |
+| Dostupnost zdrojů z GitHubu (Yahoo, Nasdaq, xtb.com, SEC, Senát, openinsider) | NEOVĚŘENO |
+| Režim | `stin` od 2026-10-23 (souběh s rutinami Claude) |
 
 ## Stav analýz
 

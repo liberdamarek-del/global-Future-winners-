@@ -1,0 +1,4 @@
+# GitHub Actions (v0.16.0, docs/GITHUB_PROVOZ.md). Radar sám běží jen se standardní knihovnou Pythonu;
+# tohle je pro testy a pro kontrolu stránky ve skutečném prohlížeči před zveřejněním.
+pytest>=8,<9
+playwright==1.56.0

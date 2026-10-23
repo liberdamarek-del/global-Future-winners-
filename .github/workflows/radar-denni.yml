@@ -1,0 +1,205 @@
+# Radar na GitHub Actions (v0.16.0, rozhodnutí uživatele 2026-10-23, docs/GITHUB_PROVOZ.md): denní běh po–pá večer
+# (dřív rutina Claude „denní aktualizace radaru“ + automatická část raketového deníku), pak stránka na GitHub Pages.
+# Ruční výzkum se zdroji, zlepšování kódu a výzkum agenta tu NEBĚŽÍ (potřebují AI; uživatel je vypustil).
+#
+# Cron je v UTC a GitHub plánované běhy zpožďuje nebo zahazuje: sloty pro letní i zimní čas + záložní slot; běh se
+# spustí, jen když pro daný večer ještě neproběhl (značka v cache, tools/github_beh.py plan).
+# Režim provoz/github.json: "stin" = nic se necommituje (zapisují rutiny Claude), "ostry" = commit state/.
+# Cache data/market_cache.db (ceny ~13 000 firem, SEC, studie, XTB, snímky raketového deníku) se přenáší mezi běhy.
+name: Radar denní běh
+
+on:
+  schedule:
+    - cron: "47 20 * * 1-5"   # 22:47 Praha v letním čase
+    - cron: "47 21 * * 1-5"   # 22:47 Praha v zimním čase
+    - cron: "17 1 * * 2-6"    # záložní slot (předchozí večer)
+  workflow_dispatch:
+    inputs:
+      vynutit:
+        description: "Spustit, i když dnešní běh už proběhl"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: radar-provoz
+  cancel-in-progress: false
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      bezet: ${{ steps.rozhodnuti.outputs.bezet }}
+      denni: ${{ steps.klice.outputs.denni }}
+      rezim: ${{ steps.klice.outputs.rezim }}
+      hotovo: ${{ steps.hotovo.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            tools/github_beh.py
+            provoz/github.json
+          sparse-checkout-cone-mode: false
+      - id: klice
+        run: |
+          python3 tools/github_beh.py plan
+          python3 tools/github_beh.py rezim
+      - id: hotovo
+        uses: actions/cache/restore@v6
+        with:
+          path: .znacka
+          key: radar-beh-denni-${{ steps.klice.outputs.denni }}
+          lookup-only: true
+      - id: rozhodnuti
+        env:
+          VYNUTIT: ${{ github.event_name == 'workflow_dispatch' && inputs.vynutit }}
+          HOTOVO: ${{ steps.hotovo.outputs.cache-hit }}
+        run: |
+          bezet=false
+          if [ "$HOTOVO" != "true" ] || [ "$VYNUTIT" = "true" ]; then bezet=true; fi
+          echo "bezet=$bezet" >> "$GITHUB_OUTPUT"; echo "beh: $bezet"
+
+  beh:
+    needs: plan
+    if: needs.plan.outputs.bezet == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      stranka: ${{ steps.kontrola.outcome }}
+    env:
+      BEH_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      STRANKA_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      STOCKRADAR_CONTACT_EMAIL: ${{ secrets.STOCKRADAR_CONTACT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-provoz.txt
+      - run: pip install -r requirements-provoz.txt
+      - name: Cache dat (ceny, SEC, studie, XTB, snímky)
+        uses: actions/cache/restore@v6
+        with:
+          path: data/market_cache.db
+          key: radar-data-${{ github.run_id }}
+          restore-keys: radar-data-
+      - name: Databáze ze state/
+        run: |
+          mkdir -p data zprava
+          rm -f data/stockradar.db
+          python -m stockradar init | tee zprava/beh.txt
+
+      - name: Update (ceny, vyhodnocení, učení modelu, predikce, web)
+        id: update
+        run: python -m stockradar update 2>&1 | tee -a zprava/beh.txt
+      - name: Kauzální radar
+        id: causal
+        continue-on-error: true
+        run: python -m stockradar causal 2>&1 | tee -a zprava/beh.txt
+      - name: Raketový deník (snímek trhu, rakety, příčiny z titulků = AUTO)
+        id: rakety
+        continue-on-error: true
+        run: python -m stockradar rakety 2>&1 | tee -a zprava/beh.txt
+      - name: Diagnostika (jen hlásí)
+        continue-on-error: true
+        run: |
+          python -m stockradar diag 2>&1 | tee zprava/diag.txt
+          python -m stockradar email --days 1 2>&1 | tee zprava/email.txt
+
+      - name: Souhrn
+        if: always()
+        run: python tools/github_beh.py souhrn denni | tee zprava/souhrn.md
+
+      - name: Uložit do repozitáře (jen ostrý režim)
+        if: needs.plan.outputs.rezim == 'ostry' && steps.update.outcome == 'success'
+        run: |
+          git add state/
+          if git diff --cached --quiet; then echo "nic nového k uložení"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "GitHub: denní radar $(date -u +%F)" -m "Běh: $BEH_URL"
+          for i in 1 2 3 4; do
+            git pull -q --rebase origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep $((2 ** i))
+          done
+          exit 1
+
+      - name: Sestavit stránku
+        if: steps.update.outcome == 'success'
+        run: python tools/github_beh.py stranka --beh-url "$BEH_URL" --behy-url "${{ github.server_url }}/${{ github.repository }}/actions"
+      - name: Kontrola stránky v prohlížeči
+        id: kontrola
+        if: steps.update.outcome == 'success'
+        run: |
+          kontrola() { python tools/github_beh.py kontrola-prohlizec _site --dom zprava/stranka.html 2>&1 | tee -a zprava/kontrola.txt; }
+          kontrola || { echo "Chrome nešel, instaluji Chromium"; python -m playwright install --with-deps chromium > /dev/null && kontrola; }
+      - uses: actions/upload-pages-artifact@v5
+        if: steps.kontrola.outcome == 'success'
+        with:
+          path: _site
+
+      - name: Uložit cache dat
+        if: always() && hashFiles('data/market_cache.db') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: data/market_cache.db
+          key: radar-data-${{ github.run_id }}
+      - name: Značka hotového běhu
+        if: steps.kontrola.outcome == 'success' && needs.plan.outputs.hotovo != 'true'
+        run: mkdir -p .znacka && date -u > .znacka/hotovo
+      - if: steps.kontrola.outcome == 'success' && needs.plan.outputs.hotovo != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .znacka
+          key: radar-beh-denni-${{ needs.plan.outputs.denni }}
+
+      - name: Oznámení na telefon (jen se secretem NTFY_TEMA)
+        if: steps.kontrola.outcome == 'success'
+        env:
+          NTFY_TEMA: ${{ secrets.NTFY_TEMA }}
+        run: python tools/github_beh.py oznam denni 2>&1 | tee -a zprava/oznameni.txt
+      - name: Oznámení o selhání
+        if: failure() || steps.causal.outcome == 'failure' || steps.rakety.outcome == 'failure'
+        env:
+          NTFY_TEMA: ${{ secrets.NTFY_TEMA }}
+        run: mkdir -p zprava && python tools/github_beh.py oznam-chyba denni 2>&1 | tee -a zprava/oznameni.txt
+
+      - name: Zpráva o běhu (větev provoz-zprava)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          KROKY: "update=${{ steps.update.outcome }} causal=${{ steps.causal.outcome }} rakety=${{ steps.rakety.outcome }} stranka=${{ steps.kontrola.outcome }}"
+        run: |
+          mkdir -p zprava
+          { echo "beh: $BEH_URL"; echo "workflow: $GITHUB_WORKFLOW"; echo "druh: denni"; echo "stav jobu: $JOB_STATUS"; echo "kroky: $KROKY";
+            echo "cache: $(du -h data/market_cache.db 2>/dev/null | cut -f1)"; date -u; } > zprava/README.txt
+          if grep -R -l -E "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}" zprava/ >/dev/null 2>&1; then
+            sed -i -E "s/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<e-mail>/g" zprava/* ; fi
+          cd zprava && git init -q && git checkout -q -b provoz-zprava && git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Zpráva o běhu $GITHUB_RUN_ID (denni, $JOB_STATUS)"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" provoz-zprava || echo "zprávu se nepodařilo uložit"
+
+  stranka:
+    needs: beh
+    if: always() && needs.beh.outputs.stranka == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.nasazeni.outputs.page_url }}
+    steps:
+      - id: nasazeni
+        uses: actions/deploy-pages@v5

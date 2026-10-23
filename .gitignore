@@ -13,3 +13,8 @@ venv/
 
 # Tajné klíče k datovým API
 .env
+
+# GitHub Actions: stránka, zprávy o běhu, značky (tools/github_beh.py)
+_site/
+zprava/
+.znacka/

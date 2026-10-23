@@ -361,7 +361,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
   const BINDING = {FIRM: ["pevná", "ok"], FRAMEWORK: ["rámcová", "warn"], OPTION: ["opce", "warn"], PENDING: ["čeká na schválení", "warn"], NEOVERENO: ["neověřeno", "warn"]};
   const RANK = {raketa: "jen šance na raketu", asymetrie: "raketa minus propad", pomer: "poměr raketa / propad", vydrzi: "raketa, která vydrží", vydrzi_asym: "vydrží minus propad"};
 
-  let A = null, P = null, R = null, D = null, S = null, G = null, filt = "";
+  let A = null, P = null, R = null, D = null, S = null, G = null, filt = "", PROVOZ = null;
   // Každá sekce ukazuje nejvýš 10 firem (rozhodnutí uživatele 2026-10-11); delší záznamy (výsledky, celý řetězec) jdou rozbalit.
   const TOP = 10, MORE = {}, MORE_RENDER = {};
   const cut = (list, key) => (MORE[key] ? list : list.slice(0, TOP));
@@ -378,8 +378,13 @@ details.fold[open] > summary { margin-bottom: 10px; }
   function renderTop() {
     if (!A) return;
     const bad = Object.entries(A.kroky || {}).filter(([, v]) => /^CHYBA/.test(String(v)));
+    const pv = PROVOZ || {};                               // GitHub Pages copy only (tools/web_stranka.py, v0.16.0)
+    const late = pv.dalsi_aktualizace_do && Date.now() > Date.parse(pv.dalsi_aktualizace_do);
     $("status").innerHTML = `<span>Aktualizováno <b class="num">${esc(praha(A.aktualizovano))}</b></span><span>Ceny do <span class="num">${esc(den(A.den_dat))}</span></span><span>verze ${esc(A.verze_aplikace)}</span>` +
-      (bad.length ? `<span class="chip err">${esc(bad.map(([k]) => k).join(", "))}: chyba</span>` : `<span class="chip ok">dnešní běh v pořádku</span>`);
+      (bad.length ? `<span class="chip err">${esc(bad.map(([k]) => k).join(", "))}: chyba</span>` : `<span class="chip ok">dnešní běh v pořádku</span>`) +
+      (pv.popis ? `<span>${esc(pv.popis)}</span>` : "") +
+      (late ? `<div class="notice" style="flex-basis: 100%">Data jsou starší, než by měla být: poslední plánovaný běh asi neproběhl nebo selhal.`
+        + (pv.behy_url ? ` <a href="${esc(pv.behy_url)}" target="_blank" rel="noopener">Zkontrolovat běhy</a>` : "") + `</div>` : "");
     $("warnings").innerHTML = (A.varovani || []).filter((w) => !/^DATA STALE/.test(w)).slice(0, 3).map((w) => `<div class="notice">${esc(w)}</div>`).join("");
   }
 
@@ -893,9 +898,34 @@ details.fold[open] > summary { margin-bottom: 10px; }
 
   function renderAll() { renderTop(); renderEnergy(); renderChain(); renderSources(); renderPreds(); }
 
+  // ---------------------------------------------------------------- GitHub Pages copy (v0.16.0, docs/GITHUB_PROVOZ.md):
+  // outside claude.ai the same documents lie next to the page as stav_<name>.json (tools/web_stranka.py)
+  const SETTERS = {
+    aktualni: (d) => { A = d; renderAll(); }, predikce: (d) => { P = d; renderPreds(); }, retezec: (d) => { R = d; renderChain(); },
+    objevy: (d) => { D = d; renderDiscovery(); }, smartmoney: (d) => { S = d; renderSmart(); }, signaly: (d) => { G = d; renderSignals(); },
+    zebricek: (d) => { Z = d; renderRanking(); }, zebricek6m: (d) => { Z6 = d; renderRanking(); }, kauzalni: (d) => { K = d; renderRanking(); },
+    prehled: (d) => { HP = d; renderSystem(); renderRanking(); },
+  };
+  let loadedAt = 0;
+  async function loadWeb() {
+    const get = (name) => fetch(`${name}.json?t=${Date.now()}`, {cache: "no-store"}).then((r) => r.ok ? r.json() : null).catch(() => null);
+    PROVOZ = await get("provoz");
+    const docs = await Promise.all(Object.keys(SETTERS).map((n) => get("stav_" + n).then((d) => [n, d])));
+    if (!docs.find(([n, d]) => n === "aktualni" && d)) { $("status").innerHTML = "<span>Data se nepodařilo načíst. Obnov stránku.</span>"; return; }
+    for (const [n, d] of docs) if (d) SETTERS[n](d);
+    loadedAt = Date.now();
+  }
+  async function bootWeb() {
+    await loadWeb();
+    const refresh = () => { if (document.visibilityState === "visible" && Date.now() - loadedAt > 30 * 60 * 1000) loadWeb(); };
+    document.addEventListener("visibilitychange", refresh);
+    setInterval(refresh, 30 * 60 * 1000);
+  }
+
   (async function boot() {
     const cl = window.claude;
-    const db = cl ? await cl.use("db") : null;
+    if (!cl) { await bootWeb(); return; }
+    const db = await cl.use("db");
     if (!db) {
       $("status").innerHTML = "<span>Data se načítají jen v aplikaci Claude nebo na claude.ai po přihlášení.</span>";
       return;

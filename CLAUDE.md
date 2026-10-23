@@ -50,6 +50,15 @@ Webový přehled: artifact v `web/dashboard.json` (stránka `web/index.html`, da
   zjištění. Neobchází blokace webů, nepíše do veřejných diskusí, nevydává se za člověka; o schválení žádá jen u
   nevratných kroků, peněz nebo nových oprávnění.
 
+## Provoz na GitHubu (rozhodnutí uživatele 2026-10-23, v0.16.0)
+
+Denní běh a týdenní objevování běží i na GitHub Actions (`.github/workflows/radar-denni.yml`, `radar-tyden.yml`) a stránka
+na GitHub Pages (`tools/github_beh.py`; `web/index.html` slouží artefaktu i Pages). Režim `provoz/github.json`: `stin` =
+GitHub nic necommituje (zapisují rutiny níže), `ostry` = GitHub je jediný zapisovatel state/ a rutiny Claude musí být
+vypnuté. Uživatel rozhodl: týden souběžně, pak `ostry` a rutiny vypnout; části s AI (ruční výzkum, zlepšování kódu,
+výzkum agenta) se v automatickém provozu vypouštějí. E-mail pro SEC je v secretu `STOCKRADAR_CONTACT_EMAIL`.
+Popis: `docs/GITHUB_PROVOZ.md`.
+
 ## Denní úloha (rutina, po–pá večer)
 
 1. `git pull origin ccr-07430f55-or3jhd`, pak `python -m stockradar init` a `python -m stockradar update`
