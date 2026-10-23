@@ -71,6 +71,16 @@ u 120 největších týdenních raket za 2 roky čte titulky Google News a pří
 — **do modelu se nedostávají** a internet se u jednotlivých raket ručně neověřuje (výjimky v `lessons`: ABVX, AEMD,
 SharpLink). Okno 14 dní se samostatně nehledá.
 
+**Stav 2026-10-23: rozšířeno (v0.17.0, zadání uživatele: proč akcie vyletěla nebo spadla, proč se hýbal sektor).**
+Deník sleduje i **propady** (zrcadlově −20 / −23 / −29 / −33 %) a **jednodenní skoky** (+25 % za den); ke každému pohybu sám
+přidá **podání u SEC** v okně pohybu (submissions API, typ podání a body 8-K, odkaz — obsah se nečte → „SEC: typ podání“,
+pořád jen kvalifikovaný odhad); bod 4b „co bude po raketě“ se teď **měří** — živě 5 / 20 / 60 obchodních dní po pohybu proti
+S&P 500 (`move_outcomes`) a jednou týdně historická studie 5 let se stejnými pravidly (`move_studies`; skupiny podle směru,
+jednodenního skoku, objemu, velikosti a podání SEC — ne podle kódů příčin H-R1, ty mají jen živé pohyby). H-R1 se tím
+nevyhodnocuje: vyhodnocení až s ≥ 30 ověřenými příčinami v každé skupině a zápisem do `docs/testy_hypotez.jsonl`. Denně
+přibyl přehled trhu a sektorů (`market_days`). Ruční ověření: u 5 nejsilnějších nových pohybů dne (rakety i propady)
+nejdřív podívat na podání SEC, které deník už našel (odkaz), pak primární zdroj → `--pricina`.
+
 **Stav 2026-10-13: postaveno (v0.13.0, `python -m stockradar rakety`).** Plán:
 1. Denně jeden dotaz na Nasdaq screener (už ho používáme) → snímek cen všech amerických akcií — ve 14:13 (Praha); večer v 22:47 screener ještě ukazuje předchozí den, kontrola shodných cen snímek přeskočí (ověřeno 2026-10-13); spolu s týdenními
    cenami z Yahoo → rakety ≥ +30 % za 5, ≥ +40 % za 10 a ≥ +50 % za 21 obchodních dní (likvidní, cena ≥ 1 USD).

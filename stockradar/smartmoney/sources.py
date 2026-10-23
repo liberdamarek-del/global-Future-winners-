@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -24,7 +25,10 @@ from stockradar import contact
 from stockradar.timeutil import to_iso, utcnow
 
 UA = {"User-Agent": "Mozilla/5.0"}
-INSIDER_URL = "https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/{y}q{q}_form345.zip"
+# SEC od sady 2026Q2 zveřejňuje ve složce datastandardsinnovation, starší sady zůstaly ve structureddata (stránka SEC
+# „Insider Transactions Data Sets“, ověřeno 2026-10-23; první týdenní běh na GitHubu dostal u 2026Q2/Q3 chybu 404).
+INSIDER_URLS = ("https://www.sec.gov/files/datastandardsinnovation/data/insider-transactions-data-sets/{y}q{q}_form345.zip",
+                "https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/{y}q{q}_form345.zip")
 KEEP_CODES = {"P", "A", "M"}  # nákup na trhu, přidělení (odměna), uplatnění opce
 # Prodej (S) se ukládá jen u osoby, která ve stejném souboru tutéž firmu koupila (P): pozná se tak „nákup a hned
 # prodej“ (např. zaměstnanecký plán ESPP — koupí se slevou, druhý den prodá), což není aktivní nákup.
@@ -100,6 +104,20 @@ def parse_insider_zip(raw: bytes) -> list[tuple]:
     return out + [t for t in sales if (t[7], t[4]) in buyers]
 
 
+def fetch_insider_zip(y: int, q: int, *, get=None) -> bytes:
+    """Sada Form 3/4/5 za kvartál: nejdřív nová složka SEC, při 404 stará. Každý pokus se eviduje (contact.http_get)."""
+    get = get or (lambda url: contact.http_get(url, "insider transakce Form 4 (strukturovaná data SEC)", timeout=180))
+    last = None
+    for template in INSIDER_URLS:
+        try:
+            return get(template.format(y=y, q=q))
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            last = exc
+    raise last
+
+
 def fetch_insiders(cache_conn, *, start: tuple[int, int] = (2021, 4), end: date | None = None, log=print) -> dict:
     end = end or utcnow().date()
     done = {r[0] for r in cache_conn.execute("SELECT quarter FROM insider_done")}
@@ -113,9 +131,8 @@ def fetch_insiders(cache_conn, *, start: tuple[int, int] = (2021, 4), end: date 
         recent = (y, q) >= ((end.year, (end.month - 1) // 3) if end.month > 3 else (end.year - 1, 4))
         if key not in done or recent:
             try:
-                raw = contact.http_get(INSIDER_URL.format(y=y, q=q), "insider transakce Form 4 (strukturovaná data SEC)",
-                                       timeout=180)
-            except Exception as exc:  # kvartál ještě nezveřejněn (404)
+                raw = fetch_insider_zip(y, q)
+            except Exception as exc:  # kvartál ještě nezveřejněn (404 v obou složkách)
                 log(f"SEC insider {key}: {str(exc)[:80]}")
             else:
                 rows = parse_insider_zip(raw)

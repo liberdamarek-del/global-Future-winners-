@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-23 · **Verze:** v0.16.0 · **Schema DB:** v11 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-23 · **Verze:** v0.17.0 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -34,14 +34,16 @@
   běh po–pá a týdenní objevování v sobotu běží samy zdarma, stránka v obyčejném prohlížeči; části s AI (ruční ověřování zpráv,
   zlepšování kódu, výzkum agenta) se vypouštějí; týden souběhu s rutinami Claude (režim `stin` v `provoz/github.json`, GitHub nic
   necommituje), pak rutiny Claude vypnout a režim `ostry`; e-mail pro SEC v secretu GitHubu `STOCKRADAR_CONTACT_EMAIL`.
+- 2026-10-23 (2): **analyzovat, proč akcie vyletěly nebo spadly** (i +100 % za den) a proč se hýbal sektor, co po pohybu
+  následuje — ne je kupovat; nejdřív projít existující kód a nestavět nic dvakrát (v0.17.0: rozšířený raketový deník).
 
 ## Provoz na GitHubu (v0.16.0)
 
 | Položka | Stav |
 |---|---|
-| Workflows denní / týdenní / testy | ROZPRACOVÁNO — napsané a otestované lokálně (`test_github_provoz.py`), běh na GitHubu NEOVĚŘENO |
-| Stránka na GitHub Pages | ROZPRACOVÁNO — kontrola v Chromiu na dnešních datech prošla; zapnutí Pages udělá uživatel |
-| Dostupnost zdrojů z GitHubu (Yahoo, Nasdaq, xtb.com, SEC, Senát, openinsider) | NEOVĚŘENO |
+| Workflows denní / týdenní / testy | OVĚŘENO — denní i týdenní běh na GitHubu prošly (23. 10.); v týdenním chyběly ceny S&P 500 → nic do ledgeru, signály spadly — opraveno v0.17.0 (`ceny`), ověří příští sobota |
+| Stránka na GitHub Pages | OVĚŘENO — zapnutá, po každém běhu projde kontrolou v Chromiu |
+| Dostupnost zdrojů z GitHubu | OVĚŘENO 23. 10.: Yahoo (13 097 řad), Nasdaq, SEC, ClinicalTrials.gov, Senát (305 výkazů), openinsider, **xtb.com (63 dotazů, 0 chyb)**; Sněmovna NEOVĚŘENO (chyběl `pdftotext`, doplněn v0.17.0); SEC sady Form 4 2026Q2/Q3 v nové složce (opraveno v0.17.0) |
 | Režim | `stin` od 2026-10-23 (souběh s rutinami Claude) |
 
 ## Stav analýz
@@ -140,7 +142,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 179 testů prošlo 2026-10-19)
+## HOTOVO (ověřeno testy — 212 testů prošlo 2026-10-23)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -151,7 +153,7 @@
 | `universe.py` | Výzkum: uzly řetězce, firmy, dohody, katalyzátory se zdroji; API pro denní výzkum | `test_universe.py` |
 | `model.py` | 9 faktorů, učení vah z historie (IC, bez look-ahead), kalibrace, test mimo vzorek, verze modelu | `test_model.py` |
 | `update.py` | Denní běh: ceny → vyhodnocení → učení → skóre → predikce → snapshot → export → web | `test_update_pipeline.py` |
-| `site.py` | Data pro web (10 dokumentů `stav/*` včetně `zebricek`, limit 170 kB kvůli serveru; v každé sekci nejvýš 10 firem — `WEB_TOP`) | `test_update_pipeline.py`, `test_discovery_pipeline.py` |
+| `site.py` | Data pro web (11 dokumentů `stav/*` včetně `zebricek` a od v0.17.0 `pohyby`, limit 170 kB kvůli serveru; v každé sekci nejvýš 10 firem — `WEB_TOP`) | `test_update_pipeline.py`, `test_discovery_pipeline.py` |
 | `web/index.html` | Webový přehled (artifact s db): hlavní stránka = žebříček se záložkami, ostatní v „Další analýzy“ | syntax check; vykreslení desktop/mobil (Playwright); čtení dat ověřeno na úrovni `view` |
 | `cli.py` | + `update`, `discover`, `sources`, `email`, `diag` | `tests/end_to_end/test_cli.py` |
 | `contact.py`, `migrations/0004` | E-mail jen pro SEC, evidence každého použití (nemazatelná) | `tests/unit/test_sources.py` |
@@ -166,7 +168,9 @@
 | `causal/memo.py` | Paměť výpočtů (týdenní řady, citlivosti) podle otisku dat; `signals` bez nových dat se přeskočí | `test_hub.py`, ostrý běh (56 s → 0,5 s, shodný výsledek) |
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 | `hub/multitest.py`, `docs/testy_hypotez.jsonl` | Experiment N-1: registr testů hypotéz (592 testů: E1–E4, celá studie smart money, všechna vyhodnocení modelů) + přísné pravidlo (t ≥ 3, BY q ≤ 0,10) vedle stávajícího; 2026-10-15 prošla jen varování 1 m a 6 m, nákup insiderů už ne (q 0,24); vyhodnocení 2027-01-06 | `tests/unit/test_multitest.py` (5) |
-| `discovery/diary.py`, `migrations/0010` | Raketový deník: denní snímek Nasdaq, rakety 5 / 10 / 21 dní s kontrolou dat (vč. „propad a návrat“ u napůl upravených splitů, v0.14.4), AUTO příčina, ověřené příčiny z primárních zdrojů (`python -m stockradar rakety`) | `tests/unit/test_diary.py` (8) |
+| `discovery/diary.py`, `migrations/0010`, `0012` | Raketový deník: denní snímek Nasdaq, rakety **a propady** 1 / 5 / 10 / 21 dní (v0.17.0) s kontrolou dat (vč. „propad a návrat“ u napůl upravených splitů, v0.14.4), AUTO příčina, ověřené příčiny z primárních zdrojů (`python -m stockradar rakety`) | `tests/unit/test_diary.py` (8), `test_moves.py` |
+| `discovery/moves.py`, `sources/sec.py` (submissions) | v0.17.0: podání u SEC ke každému pohybu (typ podání a body 8-K, odkaz), výsledek 5 / 20 / 60 dní proti S&P 500, historická studie 5 let se stejnými pravidly (týdně), shoda AUTO / SEC s ověřenými příčinami | `tests/unit/test_moves.py` |
+| `discovery/market_day.py` | v0.17.0: denní přehled trhu a sektorů (pohyb vážený hodnotou, šíře, tahouni, komodity s vazbou z kauzálního radaru, titulky AUTO) → `market_days`, web `stav/pohyby` | `tests/unit/test_moves.py` |
 | `sources/sec13f.py`, `discovery/bestideas.py`, `migrations/0009` | Fondy 13F (výzkum E4): čtvrtletní sady SEC → nejsilnější sázky správců, studie událostí, aktuální sázky na malé firmy do centra (`python -m stockradar funds`) | `tests/unit/test_sec13f.py` (7), `test_hub.py` |
 | `sources/usaspending.py`, `discovery/contracts.py` | Výzkumný nástroj E3: federální zakázky USA → studie událostí (výsledek NEOVĚŘENO, do modelu nezapojeno) | `tests/unit/test_contracts.py` (4) |
 
@@ -189,7 +193,7 @@
 | Co | Proč | Co je potřeba |
 |---|---|---|
 | GDELT (světové zprávy) | HTTP 429 ze sdílené adresy serveru | jiný server nebo jiný bezplatný zdroj; zatím Google News RSS |
-| xtb.com (nabídka brokera) | od 2026-10-11 firewall F5 odmítá dotazy z našeho serveru (HTTP 403) | používá se poslední známé ověření s datem; nové firmy bez ověření do žebříčku nejdou (14 dní: 56, 1 měsíc: 50, 6 měsíců: 21 přeskočeno); zkoušet každý týden |
+| xtb.com (nabídka brokera) ze serveru Claude | od 2026-10-11 firewall F5 odmítá dotazy z našeho serveru (HTTP 403); **z GitHubu funguje** (23. 10.: 63 dotazů, 0 chyb) | po přepnutí na režim `ostry` se ověřuje z GitHubu; do té doby poslední známé ověření s datem |
 | Tržní kapitalizace mimo USA a data výsledků z Yahoo | `quote`/`quoteSummary` vyžadují crumb, odsud HTTP 401/429 | US firmy: kapitalizace ze SEC (akcie × cena); ostatní odhad z obratu |
 
 ## NEOVĚŘENO

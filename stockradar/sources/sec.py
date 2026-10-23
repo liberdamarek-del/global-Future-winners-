@@ -6,6 +6,8 @@ Co se stahuje (vše hromadně, aby bylo dotazů málo — každý se eviduje v e
                                      tržby, čistý zisk, počet akcií, hotovost
   * full-index master.gz             seznam všech filingů za kvartál s PŘESNÝM datem podání (1 dotaz = 1 kvartál)
                                      8-K, 10-Q/10-K, emise (S-1/S-3/424B), aktivisté (13D)
+  * submissions/CIK….json            podání jedné firmy včetně čísel bodů 8-K (v0.17.0: jen u velkých pohybů akcie,
+                                     1 dotaz na pohyb — raketový deník)
 
 Bez look-ahead: hodnota kvartálu se smí použít až od data podání 10-Q/10-K (sec_filings), viz fundamentals.py.
 """
@@ -19,6 +21,8 @@ from stockradar.timeutil import to_iso, utcnow
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 FRAME_URL = "https://data.sec.gov/api/xbrl/frames/{tax}/{tag}/{unit}/{period}.json"
 INDEX_URL = "https://www.sec.gov/Archives/edgar/full-index/{year}/QTR{q}/master.gz"
+SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"     # podání jedné firmy (aspoň poslední rok)
+DOC_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/{doc}"
 
 # (náš ukazatel, taxonomie, XBRL tag, jednotka, okamžik?) — u tržeb se bere první dostupný tag v tomto pořadí
 FRAMES = [
@@ -178,4 +182,33 @@ def refresh(cache_conn, *, start: date = date(2021, 1, 1), end: date | None = No
     out["index"] = fetch_index(cache_conn, start=start, end=end, log=log)
     out["rocni"] = fetch_annual(cache_conn, log=log)
     out["stav"] = "DONE"
+    return out
+
+
+def fetch_submissions(cik: int, *, get=None) -> dict:
+    """Podání jedné firmy (EDGAR submissions API). Pole `filings.recent` je sloupcové: accessionNumber, filingDate,
+    acceptanceDateTime, form, items (body 8-K, např. "2.02,9.01"), primaryDocument, primaryDocDescription …"""
+    get = get or (lambda url: contact.http_get(url, "podání firmy k velkému pohybu akcie (submissions)", timeout=60))
+    return json.loads(get(SUBMISSIONS_URL.format(cik=int(cik))))
+
+
+def recent_filings(payload: dict, cik: int) -> list[dict]:
+    """Sloupce `filings.recent` → řádky s odkazem na primární dokument."""
+    rec = (payload.get("filings") or {}).get("recent") or {}
+    forms = rec.get("form") or []
+
+    def col(name: str, i: int):
+        values = rec.get(name) or []
+        return values[i] if i < len(values) else None
+
+    out = []
+    for i, form in enumerate(forms):
+        acc, day = col("accessionNumber", i), col("filingDate", i)
+        if not acc or not day:
+            continue
+        doc = col("primaryDocument", i)
+        out.append({"form": form, "datum": day, "items": col("items", i) or "", "prijato": col("acceptanceDateTime", i),
+                    "popis": (col("primaryDocDescription", i) or "")[:80],
+                    "url": DOC_URL.format(cik=int(cik), acc=acc.replace("-", ""), doc=doc) if doc else
+                    f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc.replace('-', '')}/"})
     return out

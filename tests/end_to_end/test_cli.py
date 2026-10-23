@@ -61,3 +61,11 @@ def test_causal_without_stock_prices_is_blocked(tmp_path):
     assert not (tmp_path / "web" / "stav_kauzalni.json").exists()
     assert not (tmp_path / "state" / "causal_runs.jsonl").exists() or \
         not (tmp_path / "state" / "causal_runs.jsonl").read_text(encoding="utf-8").strip()
+
+
+def test_signals_without_spy_are_blocked(tmp_path):
+    """První týdenní běh na GitHubu (2026-10-23): databáze ze state/ nemá ceny S&P 500 → signály nic nepočítají a
+    řeknou, co spustit (dřív spadly na IndexError v market_view)."""
+    run(tmp_path, "init")
+    out = run(tmp_path, "signals", "--no-download", "--no-news", code=1)
+    assert "BLOKOVÁNO" in out and "ceny" in out

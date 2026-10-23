@@ -156,6 +156,7 @@ def fingerprint(conn, today: date) -> str:
     parts = [today.isoformat(), __version__]
     for q in ("SELECT MAX(id) FROM signal_runs", "SELECT MAX(id) FROM discovery_runs", "SELECT MAX(id) FROM smart_money_runs",
               "SELECT MAX(id) FROM fund_runs", "SELECT MAX(id) FROM rocket_events", "SELECT MAX(id) FROM rocket_causes",
+              "SELECT MAX(id) FROM move_sec",
               "SELECT MAX(id) FROM causal_runs", "SELECT MAX(id) FROM model_runs", "SELECT COUNT(*) FROM predictions",
               "SELECT COUNT(*) FROM prediction_outcomes", "SELECT COUNT(*) FROM signal_outcomes",
               "SELECT COUNT(*) FROM causal_outcomes", "SELECT MAX(id) FROM research_evidence",

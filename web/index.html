@@ -204,12 +204,26 @@ details.fold[open] > summary { margin-bottom: 10px; }
   </section>
 
   <details class="more" id="dalsi">
-    <summary><span class="moretitle">Další analýzy a historie</span> <span class="small muted">jak se modely testují, rakety, výsledky predikcí, smart money, energie, sektory, zdroje a e-mail</span></summary>
+    <summary><span class="moretitle">Další analýzy a historie</span> <span class="small muted">proč se akcie a sektory hýbou, jak se modely testují, rakety, výsledky predikcí, smart money, energie, sektory, zdroje a e-mail</span></summary>
     <div class="moregrid">
     <nav class="jump" aria-label="Sekce">
-      <a href="#signaly">Testy signálů</a><a href="#rakety">Rakety</a><a href="#smart">Smart money</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
+      <a href="#pohyby">Proč se hýbou</a><a href="#signaly">Testy signálů</a><a href="#rakety">Rakety</a><a href="#smart">Smart money</a><a href="#vysledky">Výsledky</a><a href="#energie">Energie</a>
       <a href="#model">Jak se model učí</a><a href="#sektory">Vítězové a sektory</a><a href="#system">Stav systému</a><a href="#zdroje">Zdroje a e-mail</a>
     </nav>
+
+  <section class="panel" id="pohyby" aria-labelledby="h-pm">
+    <header><h2 id="h-pm">Proč se akcie a sektory hýbou</h2><span class="small muted">Co se stalo, proč (podle zdroje) a co obvykle následovalo. Není to doporučení k nákupu ani prodeji.</span></header>
+    <div id="pm-market" style="display:grid;gap:14px"><div class="empty">Přehled trhu se objeví po denním běhu raketového deníku.</div></div>
+    <div class="subtabs" role="tablist" aria-label="Směr pohybu">
+      <button type="button" class="tab" id="pm-up" data-pm="rakety" aria-selected="true">Rakety</button>
+      <button type="button" class="tab" id="pm-down" data-pm="propady" aria-selected="false">Propady</button>
+    </div>
+    <p class="small muted" id="pm-rules"></p>
+    <div class="cards" id="pm-list"><div class="empty">Deník se objeví po denním běhu.</div></div>
+    <div class="seg" id="pm-more"></div>
+    <details class="fold"><summary>Co obvykle následuje — historie 5 let</summary><div id="pm-hist" style="display:grid;gap:14px"></div></details>
+    <details class="fold"><summary>Co následovalo u pohybů z deníku a jak spolehlivé jsou příčiny</summary><div id="pm-live" style="display:grid;gap:14px"></div></details>
+  </section>
 
   <section class="panel" id="signaly" aria-labelledby="h-sig">
     <header><h2 id="h-sig">Jak se testují signály (14 dní a 1 měsíc)</h2><span class="small muted" id="sig-run">Pravděpodobnosti místo ceny · model umí říct NEVÍM</span></header>
@@ -896,6 +910,88 @@ details.fold[open] > summary { margin-bottom: 10px; }
       ${(e.detail || []).length ? `<details class="small"><summary>Podle účelu</summary><ul class="facts">${e.detail.map((r) => `<li>${esc(den(r.day))} · ${esc(r.host)} · ${esc(r.purpose)}: ${fmt(r.requests, 0)}×</li>`).join("")}</ul></details>` : ""}`;
   }
 
+  // ---------------------------------------------------------------- Proč se akcie a sektory hýbou (v0.17.0, stav/pohyby)
+  let PM = null, PMDIR = "rakety";
+  MORE_RENDER.pm = () => renderMoves();
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-pm]");
+    if (!b) return;
+    PMDIR = b.dataset.pm;
+    renderMoves();
+  });
+  const WIN = {"1d": "za den", "5d": "za týden", "10d": "za 2 týdny", "21d": "za měsíc"};
+  const SRC = {"OVĚŘENO": ["ověřeno", "ok"], "SEC": ["podání u SEC", "acc"], "NEOVĚŘENO": ["neověřený zdroj", "warn"], "AUTO": ["z titulků, neověřeno", "warn"]};
+  const lg = (v) => Math.abs(Math.log1p(v));
+  function bigMove(r) {
+    const ws = String(r.okna || "").split(",").filter((k) => !nil((r.pohyb || {})[k]));
+    return ws.reduce((best, k) => (best === null || lg(r.pohyb[k]) > lg(r.pohyb[best]) ? k : best), null);
+  }
+  function moveCard(r) {
+    const k = bigMove(r);
+    const c = r.pricina || {};
+    const src = SRC[c.zdroj];
+    const cause = c.kod ? `<b>${esc(c.popis || c.kod)}</b> <span class="chip ${src ? src[1] : ""}">${esc(src ? src[0] : "")}</span>${c.text ? `<div class="small">${c.url ? `<a href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.text)}</a>` : esc(c.text)}</div>` : ""}`
+      : '<span class="muted">příčina zatím neznámá</span>';
+    const sec = r.sec && r.sec.stav === "OK" ? ((r.sec.podani || []).length ? `<ul class="facts small">${r.sec.podani.map((f) => `<li>${esc(den(f.datum))}: <a href="${url(f.url)}" target="_blank" rel="noopener">${esc(f.co)}</a></li>`).join("")}</ul>`
+      : '<span class="small muted">V okně pohybu žádné podání u SEC.</span>') : r.sec && r.sec.stav === "BEZ_CIK" ? '<span class="small muted">Firma není v seznamu SEC.</span>' : "";
+    const heads = (r.titulky || []).filter((h) => h.titulek).map((h) => `<li>${esc(h.titulek)} <span class="muted">${esc(den(h.datum))}</span></li>`).join("");
+    const after = Object.entries(r.potom || {}).map(([h, o]) => `<span class="chip">po ${esc(h.replace("d", " dnech"))}: <span class="${cls(o.vynos)}">${sgn(o.vynos, 0)}</span>${nil(o.proti_trhu) ? "" : `, proti trhu ${sgn(o.proti_trhu, 0)}`}</span>`).join(" ");
+    return `<div class="card"><div class="head"><span><span class="tick">${esc(r.ticker)}</span> <span class="small muted">${esc(r.nazev || "")}</span></span>
+      <span class="num ${cls(k ? r.pohyb[k] : 0)}"><b>${k ? sgn(r.pohyb[k] * 100, 0) : "–"}</b> <span class="small muted">${esc(WIN[k] || "")}</span></span></div>
+      <div class="small muted">${esc(den(r.zacatek))} → ${esc(den(r.konec))} · cena ${fmt(r.cena, 2)} USD${nil(r.objem) ? "" : ` · objem ${fmt(r.objem, 1)}× běžný`}${nil(r.mcap) ? "" : ` · hodnota ${fmt(r.mcap / 1e9, 2)} mld. USD`}</div>
+      <div>${cause}</div>${sec}${heads ? `<details class="small"><summary>Titulky (automaticky, neověřeno)</summary><ul class="facts">${heads}</ul></details>` : ""}
+      ${after ? `<div class="small">Co následovalo: ${after}</div>` : ""}</div>`;
+  }
+  function histTable(rows, title, note) {
+    if (!(rows || []).length) return "";
+    const cell = (x) => !x || !x.n ? '<td class="r muted">–</td>' : `<td class="r num"><span class="${cls(x.median_proti_trhu)}">${sgn(x.median_proti_trhu, 1)}</span><div class="small muted">dál ${pct(x.pokracovalo)}</div></td>`;
+    return `<div class="tablewrap"><h3>${esc(title)}</h3><table><thead><tr><th>Skupina</th><th class="r">5 dní</th><th class="r">20 dní</th><th class="r">60 dní</th></tr></thead><tbody>
+      ${rows.map((g) => `<tr><td>${esc(g.skupina)} <span class="small muted">(${fmt(g.pohybu, 0)})</span>${g.maly_vzorek ? ' <span class="chip warn">malý vzorek</span>' : ""}</td>${cell(g["5d"])}${cell(g["20d"])}${cell(g["60d"])}</tr>`).join("")}</tbody></table>
+      <p class="small muted">${esc(note)}</p></div>`;
+  }
+  function renderMoves() {
+    if (!PM) return;
+    $("pm-up").setAttribute("aria-selected", String(PMDIR === "rakety"));
+    $("pm-down").setAttribute("aria-selected", String(PMDIR === "propady"));
+    const T = PM.trh;
+    if (T && T.trh) {
+      const m = T.trh;
+      const ctx = [m.sp500 ? `S&P 500 ${sgn(m.sp500.zmena * 100, 1)}` : "", m.vix ? `VIX ${fmt(m.vix.hodnota, 1)} (${sgn(m.vix.zmena * 100, 0)})` : ""].filter(Boolean).join(" · ");
+      const sectors = (T.sektory || []).map((s) => `<span class="chip"><span>${esc(s.nazev)}</span> <span class="${cls(s.zmena)}">${sgn(s.zmena * 100, 1)}</span></span>`).join(" ");
+      const inds = (T.obory || []).slice(0, 6).map((g) => `<div class="card"><div class="head"><b>${esc(g.nazev)}</b><span class="num ${cls(g.zmena)}"><b>${sgn(g.zmena * 100, 1)}</b></span></div>
+        <ul class="facts">${(g.vysvetleni || []).map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+        <div class="small">Táhli: ${(g.tahouni || []).map((x) => `<b>${esc(x.ticker)}</b> <span class="${cls(x.zmena)}">${sgn(x.zmena * 100, 1)}</span>`).join(", ")}</div>
+        ${(g.pohyby_dne || []).length ? `<div class="small muted">V deníku dnes: ${g.pohyby_dne.map((x) => esc(x.ticker)).join(", ")}</div>` : ""}
+        ${(g.titulky || {}).titulky && g.titulky.titulky.length ? `<details class="small"><summary>Titulky (automaticky, neověřeno)</summary><ul class="facts">${g.titulky.titulky.map((h) => `<li>${h.url ? `<a href="${url(h.url)}" target="_blank" rel="noopener">${esc(h.titulek)}</a>` : esc(h.titulek)}</li>`).join("")}</ul></details>` : ""}</div>`).join("");
+      const comm = (T.komodity || []).map((c) => `${esc(c.nazev)} <span class="${cls(c.zmena)}">${sgn(c.zmena * 100, 1)}</span>`).join(", ");
+      const days = (PM.trh_dny || []).map((d) => `<tr><td class="num">${esc(den(d.den))}</td><td class="r num ${cls(d.zmena)}">${sgn(d.zmena * 100, 1)}</td><td class="r num">${pct(d.rostlo)}</td><td class="small">${esc((d.nahoru || []).join(", "))}</td><td class="small">${esc((d.dolu || []).join(", "))}</td></tr>`).join("");
+      $("pm-market").innerHTML = `<div class="stats">${stat("Trh USA " + den(T.den), `<span class="${cls(m.zmena)}">${sgn(m.zmena * 100, 2)}</span>`, `vážený hodnotou ${fmt(m.firem, 0)} firem nad 300 mil. USD`)}
+          ${stat("Rostlo firem", pct(m.rostlo), ctx)}${stat("Velké pohyby v deníku", `${fmt((T.pohybu_v_deniku || {}).rakety, 0)} ↑ / ${fmt((T.pohybu_v_deniku || {}).propady, 0)} ↓`, "rakety / propady za den")}</div>
+        <div><span class="label">Sektory za den</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${sectors}</div></div>
+        ${comm ? `<p class="small">Výrazné pohyby komodit a dolaru: ${comm}</p>` : ""}
+        <h3>Obory s největším pohybem proti trhu</h3><div class="cards">${inds}</div>
+        ${days ? `<details class="fold"><summary>Předchozí obchodní dny (${fmt((PM.trh_dny || []).length, 0)})</summary><div class="tablewrap"><table><thead><tr><th>Den</th><th class="r">Trh</th><th class="r">Rostlo</th><th>Nejvíc nahoru</th><th>Nejvíc dolů</th></tr></thead><tbody>${days}</tbody></table></div></details>` : ""}
+        <p class="small muted">${esc((T.poznamky || []).join(" "))}</p>`;
+    }
+    const rules = (PM.pravidla || {})[PMDIR] || {};
+    const cnt = PM.pocty || {};
+    $("pm-rules").textContent = `${PMDIR === "rakety" ? "Raketa" : "Propad"}: ${Object.entries(rules).map(([k, v]) => `${sgn(v * 100, 0)} ${WIN[k] || k}`).join(", ")} (likvidní akcie USA od 1 USD). Za ${cnt.za_dni || 30} dní: ${fmt(cnt.rakety_za_obdobi, 0)} raket a ${fmt(cnt.propady_za_obdobi, 0)} propadů. Příčina: ověřeno ručně > podání u SEC (typ podání, obsah nečten) > titulky (automaticky).`;
+    const list = PM[PMDIR] || [];
+    $("pm-list").innerHTML = cut(list, "pm").map(moveCard).join("") || `<div class="empty">Za posledních ${cnt.za_dni || 30} dní žádné.</div>`;
+    $("pm-more").innerHTML = moreBtn("pm", list.length);
+    const H = PM.historie;
+    const hk = H && (H.skupiny || {})[PMDIR];
+    $("pm-hist").innerHTML = hk ? `${histTable(hk.tabulka, `${PMDIR === "rakety" ? "Po raketě" : "Po propadu"}: medián výnosu proti S&P 500`, `Medián výnosu proti S&P 500 po 5 / 20 / 60 obchodních dnech; „dál“ = jak často cena šla dál stejným směrem; v závorce počet pohybů. Údaje ${(H.obdobi || []).map(den).join(" – ")}, ${fmt(hk.pohybu, 0)} pohybů ve ${fmt(hk.dni_s_pohyby, 0)} dnech. Spočteno ${praha(H.spocitano)}.`)}
+        <div class="tablewrap"><h3>Po 20 dnech proti trhu podle roku</h3><table><thead><tr><th>Rok</th><th class="r">Pohybů</th><th class="r">Medián proti trhu</th></tr></thead><tbody>${(hk.podle_roku || []).map((y) => `<tr><td class="num">${y.rok}</td><td class="r num">${fmt(y.pohybu, 0)}</td><td class="r num ${cls(y.median_20d_proti_trhu)}">${sgn(y.median_20d_proti_trhu, 1)}</td></tr>`).join("")}</tbody></table></div>
+        <ul class="facts small">${(H.poznamky || []).map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : '<div class="empty">Historická studie se spočítá při nejbližším denním běhu (jednou týdně).</div>';
+    const L = (PM.vysledky || {})[PMDIR];
+    const ag = PM.shoda_pricin || {};
+    const agl = (k, label) => ag[k] && ag[k].z ? `<li>${esc(label)}: shoda s ručně ověřenou příčinou ${fmt(ag[k].shoda, 0)} z ${fmt(ag[k].z, 0)} (${pct(ag[k].podil)})</li>` : `<li>${esc(label)}: zatím bez srovnání s ověřenými příčinami</li>`;
+    const measured = L ? (L.skupiny || []).filter((g, i) => i === 0 || ["5d", "20d", "60d"].some((h) => (g[h] || {}).n)).slice(0, 9) : [];
+    $("pm-live").innerHTML = `${L ? histTable(measured, `Pohyby z deníku (${fmt(L.pohybu, 0)}): výsledek proti S&P 500`, "Měří se samo 5, 20 a 60 obchodních dní po posledním dni pohybu; skupiny podle nejlepší dostupné příčiny (jen ty, kde už je výsledek).") : ""}
+      <ul class="facts small">${agl("SEC", "Podání u SEC (typ podání)")}${agl("AUTO", "Titulky (automaticky)")}</ul>`;
+  }
+
   function renderAll() { renderTop(); renderEnergy(); renderChain(); renderSources(); renderPreds(); }
 
   // ---------------------------------------------------------------- GitHub Pages copy (v0.16.0, docs/GITHUB_PROVOZ.md):
@@ -904,7 +1000,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     aktualni: (d) => { A = d; renderAll(); }, predikce: (d) => { P = d; renderPreds(); }, retezec: (d) => { R = d; renderChain(); },
     objevy: (d) => { D = d; renderDiscovery(); }, smartmoney: (d) => { S = d; renderSmart(); }, signaly: (d) => { G = d; renderSignals(); },
     zebricek: (d) => { Z = d; renderRanking(); }, zebricek6m: (d) => { Z6 = d; renderRanking(); }, kauzalni: (d) => { K = d; renderRanking(); },
-    prehled: (d) => { HP = d; renderSystem(); renderRanking(); },
+    prehled: (d) => { HP = d; renderSystem(); renderRanking(); }, pohyby: (d) => { PM = d; renderMoves(); },
   };
   let loadedAt = 0;
   async function loadWeb() {
@@ -941,6 +1037,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     db.doc("stav/zebricek6m").onSnapshot((s) => { if (s.exists) { Z6 = s.data(); renderRanking(); } }, fail);
     db.doc("stav/kauzalni").onSnapshot((s) => { if (s.exists) { K = s.data(); renderRanking(); } }, fail);
     db.doc("stav/prehled").onSnapshot((s) => { if (s.exists) { HP = s.data(); renderSystem(); renderRanking(); } }, fail);
+    db.doc("stav/pohyby").onSnapshot((s) => { if (s.exists) { PM = s.data(); renderMoves(); } }, fail);
   })();
 })();
 </script>

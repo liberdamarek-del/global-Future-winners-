@@ -1,6 +1,7 @@
 """Data pro webový přehled (artifact čte dokumenty stav/aktualni, stav/predikce, stav/retezec)."""
 
 import json
+import math
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -561,6 +562,92 @@ def write_signals_doc(conn: sqlite3.Connection, web_dir: Path) -> dict[str, int]
     return sizes
 
 
+def _move_row(conn: sqlite3.Connection, e: dict, outcomes: dict) -> dict:
+    from stockradar.discovery import moves
+    auto = json.loads(e["auto_json"]) if e.get("auto_json") else {}
+    sec = conn.execute("SELECT status, filings_json FROM move_sec WHERE event_id = ?", (e["id"],)).fetchone()
+    filings = json.loads(sec["filings_json"]) if sec else []
+    best = moves.best_cause(conn, e)
+    return {
+        "id": e["id"], "ticker": e["symbol"], "nazev": e["name"], "smer": e["direction"] or 1, "okna": e["windows"],
+        "pohyb": {k: e[f"move_{k}"] for k in ("1d", "5d", "10d", "21d") if e.get(f"move_{k}") is not None},
+        "zacatek": e["start_day"], "konec": e["end_day"], "cena": e["price"], "obrat": e["turnover_usd"],
+        "mcap": e["market_cap_usd"], "objem": e.get("rel_volume"),
+        "pricina": {**best, "popis": moves.LABEL.get(best["kod"]) if best["kod"] else None},
+        "sec": None if sec is None else {"stav": sec["status"], "podani": [
+            {"datum": f["datum"], "co": moves.describe(f), "url": f["url"]} for f in filings[-4:]]},
+        "titulky": [{"datum": h.get("datum"), "titulek": h.get("titulek")} for h in (auto.get("titulky") or [])[:2]],
+        "auto": auto.get("hlavni_pricina"),
+        "potom": {f"{h}d": {"vynos": o[0], "proti_trhu": round(o[0] - o[1], 2) if o[1] is not None else None}
+                  for h, o in sorted(outcomes.get(e["id"], {}).items())},
+    }
+
+
+def build_pohyby_doc(conn: sqlite3.Connection, *, days: int = 30, limit: int = 40) -> dict | None:
+    """Raketový deník na webu (v0.17.0): rakety a propady s příčinou, co následovalo, historie a přehled trhu."""
+    from stockradar.discovery import diary, market_day, moves
+    try:
+        events = [dict(r) for r in conn.execute("SELECT * FROM rocket_events ORDER BY end_day DESC, id DESC")]
+    except sqlite3.OperationalError:
+        return None
+    errors = {r[0] for r in conn.execute("SELECT event_id FROM rocket_causes WHERE cause_code = 'CHYBA_DAT'")}
+    outcomes: dict[int, dict] = {}
+    for r in conn.execute("SELECT event_id, horizon, return_pct, spy_return_pct FROM move_outcomes"):
+        outcomes.setdefault(r[0], {})[r[1]] = (r[2], r[3])
+    since = (utcnow().date() - timedelta(days=days)).isoformat()
+    recent = [e for e in events if e["end_day"] >= since and e["id"] not in errors]
+
+    def strength(e):          # síla v logaritmech: raketa +100 % = propad −50 %
+        mv = [e.get(f"move_{k}") for k in e["windows"].split(",") if e.get(f"move_{k}") is not None]
+        return max((abs(math.log1p(x)) for x in mv if x > -1), default=0)
+
+    def pick(direction):
+        return sorted((e for e in recent if (e["direction"] or 1) == direction),
+                      key=lambda e: (e["end_day"], strength(e)), reverse=True)[:limit]
+
+    study = conn.execute("SELECT run_at, data_through, result_json FROM move_studies ORDER BY id DESC LIMIT 1").fetchone()
+    days_ = market_day.recent(conn, days=10)
+    doc = {
+        "aktualizovano": to_iso(utcnow()),
+        "pravidla": {"rakety": {k: v[1] for k, v in diary.UP.items()}, "propady": {k: round(v[1], 3) for k, v in diary.DOWN.items()},
+                     "obrat_min_usd": diary.MIN_TURNOVER, "cena_min_usd": diary.MIN_PRICE},
+        "pocty": {"rakety": sum(1 for e in events if (e["direction"] or 1) > 0), "propady": sum(1 for e in events if e["direction"] == -1),
+                  "za_dni": days, "rakety_za_obdobi": sum(1 for e in recent if (e["direction"] or 1) > 0),
+                  "propady_za_obdobi": sum(1 for e in recent if e["direction"] == -1)},
+        "rakety": [_move_row(conn, e, outcomes) for e in pick(1)],
+        "propady": [_move_row(conn, e, outcomes) for e in pick(-1)],
+        "vysledky": moves.live_stats(conn),
+        "shoda_pricin": moves.cause_agreement(conn),
+        "historie": None if study is None else {"spocitano": study["run_at"], "data_do": study["data_through"],
+                                                **json.loads(study["result_json"])},
+        "trh": days_[0] if days_ else None,
+        "trh_dny": [{"den": d["den"], "zmena": d["trh"]["zmena"], "rostlo": d["trh"]["rostlo"],
+                     "sp500": (d["trh"].get("sp500") or {}).get("zmena"),
+                     "nahoru": [s["nazev"] for s in d["sektory"][:2]], "dolu": [s["nazev"] for s in d["sektory"][-2:]]}
+                    for d in days_],
+    }
+    while _size(doc) > DOC_LIMIT and (doc["rakety"] or doc["propady"]):    # zkrátit seznamy, dokument ale zůstane
+        for key in ("rakety", "propady"):
+            doc[key] = doc[key][:max(0, len(doc[key]) - 5)]
+    return doc
+
+
+def _size(doc: dict) -> int:
+    return len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode())
+
+
+def write_pohyby_doc(conn: sqlite3.Connection, web_dir: Path) -> int:
+    doc = build_pohyby_doc(conn)
+    if doc is None:
+        return 0
+    web_dir.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
+    if len(text.encode()) > DOC_LIMIT:
+        raise ValueError(f"dokument pohyby má {len(text.encode()) // 1024} kB — překračuje limit db dokumentu")
+    (web_dir / "stav_pohyby.json").write_text(text, encoding="utf-8")
+    return len(text.encode())
+
+
 def build_prehled_doc(res: dict, limit: int = DOC_LIMIT) -> dict:
     """Dokument stav/prehled — propojený pohled centra (hub.integrate.refresh): spolehlivost rolí, stav modulů a zdrojů,
     deník běhů, kontroly a pohled na každou firmu (zkrácené klíče kvůli limitu dokumentu).
@@ -628,6 +715,9 @@ def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[s
     causal = build_causal_doc(conn)
     if causal is not None:
         docs["kauzalni"] = causal
+    moves_doc = build_pohyby_doc(conn)
+    if moves_doc is not None:
+        docs["pohyby"] = moves_doc
     for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:

@@ -26,6 +26,10 @@ TABLES = (
     "fund_runs",
     "rocket_events",
     "rocket_causes",
+    "move_sec",
+    "move_outcomes",
+    "move_studies",
+    "market_days",
     "research_outcomes",
     "model_evaluations",
     "signal_runs",
@@ -95,8 +99,6 @@ def restore_state(conn: sqlite3.Connection, state_dir: Path) -> dict[str, int]:
                 counts[table] = 0
                 continue
             columns = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
-            sql = (f"INSERT INTO {table} ({', '.join(columns)}) "
-                   f"VALUES ({', '.join('?' for _ in columns)})")
             n = 0
             for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if not line.strip():
@@ -105,7 +107,10 @@ def restore_state(conn: sqlite3.Connection, state_dir: Path) -> dict[str, int]:
                 unknown = set(record) - set(columns)
                 if unknown:
                     raise RuntimeError(f"{path.name}:{line_no}: neznámé sloupce {sorted(unknown)}")
-                conn.execute(sql, [record.get(c) for c in columns])
+                # sloupec přidaný pozdější migrací ve starém exportu chybí → jeho výchozí hodnota z migrace (v0.17.0)
+                cols = [c for c in columns if c in record]
+                conn.execute(f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({', '.join('?' for _ in cols)})",
+                             [record[c] for c in cols])
                 n += 1
             counts[table] = n
         conn.commit()

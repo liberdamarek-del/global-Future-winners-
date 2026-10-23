@@ -7,12 +7,12 @@ import argparse
 import json
 import os
 import sys
-from datetime import timedelta
+from datetime import date, timedelta
 
 from stockradar import __version__
 from stockradar.catalysts import date_text, upcoming_catalysts
 from stockradar.companies import latest_xtb_check
-from stockradar.config import XTB_CHECK_MAX_AGE, db_path, state_dir, web_dir
+from stockradar.config import BENCHMARK_SYMBOL, XTB_CHECK_MAX_AGE, db_path, state_dir, web_dir
 from stockradar.data_quality import freshness_label
 from stockradar.db import open_db, schema_version
 from stockradar.enums import label
@@ -133,6 +133,34 @@ def cmd_snapshot(args) -> int:
     return 0
 
 
+def _spy_age(conn) -> int | None:
+    """Kolik dní je stará poslední cena S&P 500 (SPY) v price_bars; None = chybí úplně."""
+    last = conn.execute("SELECT MAX(date) FROM price_bars WHERE symbol = ?", (BENCHMARK_SYMBOL,)).fetchone()[0]
+    return (utcnow().date() - date.fromisoformat(last)).days if last else None
+
+
+def cmd_ceny(args) -> int:
+    """Jen ceny sledovaných firem, S&P 500 a kurzů (Yahoo) do price_bars — bez učení a predikcí.
+    Na GitHubu se databáze skládá ze state/, kde ceny nejsou (jsou to stažitelná data): bez SPY by objevování,
+    smart money i signály nic nezapsaly do ledgeru (první týdenní běh 2026-10-23)."""
+    from stockradar.ingest import update_prices
+
+    conn = _open()
+    age = _spy_age(conn)
+    if args.jen_kdyz_chybi and age is not None and age <= 4:
+        print(f"Ceny: SPY je {age} dní staré — stahování přeskočeno.")
+        _note(args, preskoceno=True, spy_dni=age)
+        return 0
+    res = update_prices(conn)
+    age = _spy_age(conn)
+    print(f"Ceny (Yahoo): {res['requested'] - len(res['errors'])}/{res['requested']} symbolů, chyb {len(res['errors'])};"
+          f" SPY {'chybí' if age is None else f'{age} dní staré'}")
+    for e in res["errors"][:5]:
+        print(f"  ! {e}")
+    _note(args, symbolu=res["requested"], chyb=len(res["errors"]), spy_dni=age)
+    return 0 if age is not None and age <= 4 else 1
+
+
 def cmd_update(args) -> int:
     from stockradar.update import run_update
 
@@ -250,8 +278,6 @@ def cmd_discover(args) -> int:
 
 def cmd_smart_money(args) -> int:
     """Smart money: insideři (SEC Form 4), politici (Sněmovna, Senát), 13D/13G, buybacky → test + aktuální signály."""
-    from datetime import date
-
     from stockradar.discovery import cache as dcache
     from stockradar.smartmoney import report, sources
     from stockradar.smartmoney import store as sm_store
@@ -283,8 +309,6 @@ def cmd_smart_money(args) -> int:
 
 def cmd_funds(args) -> int:
     """Nejsilnější sázky fondů (SEC 13F, výzkum E4): nové čtvrtletní sady → studie událostí + aktuální seznam."""
-    from datetime import date
-
     from stockradar.discovery import bestideas
     from stockradar.discovery import cache as dcache
     from stockradar.sources import sec13f
@@ -321,11 +345,11 @@ def cmd_funds(args) -> int:
 
 
 def cmd_rakety(args) -> int:
-    """Raketový deník: denní snímek trhu → rakety 5 / 10 / 21 dní → AUTO příčina; zápis ověřené příčiny (--pricina)."""
-    from datetime import date
-
+    """Raketový deník: denní snímek trhu → rakety a propady 1 / 5 / 10 / 21 dní → příčina (SEC, AUTO z titulků) →
+    co následovalo; denní přehled trhu a sektorů; historická studie jednou týdně. Zápis ověřené příčiny (--pricina)."""
     from stockradar.discovery import cache as dcache
-    from stockradar.discovery import diary, news
+    from stockradar.discovery import diary, market_day, moves, news
+    from stockradar.site import write_pohyby_doc
 
     conn = _open()
     if args.pricina:
@@ -333,7 +357,8 @@ def cmd_rakety(args) -> int:
                                  summary=args.text, source=args.zdroj, source_url=args.url, published_on=args.datum,
                                  scheduled=None if args.predem is None else bool(args.predem), pre_signals=args.predzvesti)
         export_state(conn, state_dir())
-        print(f"Příčina #{cid} zapsána k raketě #{args.pricina}")
+        write_pohyby_doc(conn, web_dir())
+        print(f"Příčina #{cid} zapsána k pohybu #{args.pricina}")
         _note(args, pricina=cid)
         _refresh_hub(args, conn, None)
         return 0
@@ -344,16 +369,34 @@ def cmd_rakety(args) -> int:
     found, stats = diary.scan(cconn)
     new = diary.record_new(conn, found, today=date.today(), auto=None if args.bez_zprav else news.explain_event,
                            top_auto=args.zpravy, log=log)
-    export_state(conn, state_dir())
     print(f"Řad {stats['rad']}, přeskočeno kvůli splitu / chybě dat {stats['split_nebo_chyba']}, starých {stats['stara_data']};"
-          f" raket {stats['raket']}, nových epizod {len(new)}")
+          f" raket {stats['raket']}, propadů {stats['propadu']}, nových epizod {len(new)}")
     for r in new[:15]:
-        m = {k: v for k, v in r["moves"].items() if v is not None}
+        m = {k: v for k, v in r["moves"].items() if v is not None and k in r["okna"]}
         auto = (r.get("auto") or {}).get("hlavni_pricina") or "–"
-        print(f"  #{r['id']} {r['symbol']:<6} {(r['nazev'] or '')[:40]:<40} " + " ".join(f"{k} {v * 100:+.0f} %" for k, v in m.items())
-              + f" · AUTO: {auto}")
-    _note(args, raket=stats["raket"], novych=len(new), snimek=snap.get("stav"), split=stats["split_nebo_chyba"])
+        print(f"  #{r['id']} {'↑' if r['smer'] > 0 else '↓'} {r['symbol']:<6} {(r['nazev'] or '')[:36]:<36} "
+              + " ".join(f"{k} {v * 100:+.0f} %" for k, v in m.items()) + f" · AUTO: {auto}")
+    sec_res = {"stav": "VYPNUTO"} if args.bez_sec else moves.attach_sec(conn, cconn, log=log)
+    print("Podání u SEC:", sec_res)
+    outc = moves.record_outcomes(conn, cconn)
+    print("Co následovalo (5 / 20 / 60 dní):", outc)
+    brief = market_day.run(conn, cconn, fetch=None if args.bez_zprav else news.fetch_headlines, log=log)
+    print("Přehled trhu a sektorů:", brief)
+    study = None if args.bez_historie else moves.history_study(conn, cconn, force=args.historie_znovu, log=log)
+    if study:
+        g = study["skupiny"]
+        print(f"Historická studie: {study['pohybu']} pohybů {study.get('obdobi')}; raket {g.get('rakety', {}).get('pohybu')},"
+              f" propadů {g.get('propady', {}).get('pohybu')}")
+    else:
+        print("Historická studie: beze změny (přepočet jednou týdně, --historie-znovu vynutí)")
+    export_state(conn, state_dir())
+    size = write_pohyby_doc(conn, web_dir())
+    print(f"Web stav_pohyby.json: {size // 1024} kB")
+    _note(args, raket=stats["raket"], propadu=stats["propadu"], novych=len(new), snimek=snap.get("stav"),
+          split=stats["split_nebo_chyba"], sec=sec_res.get("zapsano"), sec_dotazu=sec_res.get("dotazu"),
+          vysledku=outc.get("zapsano"), prehled=brief.get("stav"), studie=bool(study))
     _refresh_hub(args, conn, cconn)
+    _print_email_today(conn)
     return 0
 
 
@@ -369,6 +412,12 @@ def cmd_signals(args) -> int:
     conn = _open()
     cconn = dcache.connect()
     log = lambda m: print(f"  {m}", flush=True)
+    age = _spy_age(conn)
+    if age is None or age > 7:            # trh, drift a vyhodnocení stojí na S&P 500 (pád 2026-10-23 bez SPY)
+        print(f"Signály BLOKOVÁNO: ceny S&P 500 (SPY) {'chybí' if age is None else f'jsou {age} dní staré'}"
+              " — nejdřív `python -m stockradar ceny` (nebo `update`); nic se nezapsalo.")
+        _note(args, blokovano="chybí ceny S&P 500")
+        return 1
     if not args.force:                    # neopakovat výpočet bez důvodu (stejná data, stejná verze, žádný nový vstup)
         from stockradar.hub.registry import signals_unchanged
         why = signals_unchanged(conn, cconn, srun.MODELS)
@@ -748,12 +797,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_sm = sub.add_parser("smart-money", help="nákupy insiderů, politiků, velké podíly a buybacky: test + signály")
     p_sm.add_argument("--no-download", action="store_true", help="nestahovat nová data (jen analýza)")
     p_sm.set_defaults(func=cmd_smart_money)
-    p_rk = sub.add_parser("rakety", help="raketový deník: rakety za 5 / 10 / 21 dní + příčiny (AUTO z titulků, ověřené ručně)")
+    p_ce = sub.add_parser("ceny", help="jen ceny sledovaných firem, S&P 500 a kurzů (bez učení a predikcí)")
+    p_ce.add_argument("--jen-kdyz-chybi", action="store_true", help="stáhnout jen, když SPY chybí nebo je starší 4 dnů")
+    p_ce.set_defaults(func=cmd_ceny)
+    p_rk = sub.add_parser("rakety", help="raketový deník: rakety a propady 1 / 5 / 10 / 21 dní, příčiny (SEC, titulky, ručně), co následovalo, přehled trhu")
     p_rk.add_argument("--bez-snimku", action="store_true", help="nestahovat denní snímek Nasdaq")
     p_rk.add_argument("--bez-zprav", action="store_true", help="bez automatické příčiny z titulků")
-    p_rk.add_argument("--zpravy", type=int, default=10, help="u kolika největších nových raket hledat titulky (výchozí 10)")
-    p_rk.add_argument("--pricina", type=int, default=None, help="ID rakety, ke které se zapisuje ověřená příčina")
-    p_rk.add_argument("--kod", default=None, help="kód příčiny (FDA, CLINICAL, ACQUISITION, EARNINGS, CONTRACT, …, JINE, CHYBA_DAT)")
+    p_rk.add_argument("--zpravy", type=int, default=30, help="u kolika největších nových pohybů hledat titulky (výchozí 30)")
+    p_rk.add_argument("--bez-sec", action="store_true", help="bez dotazů na podání u SEC")
+    p_rk.add_argument("--bez-historie", action="store_true", help="bez týdenní historické studie")
+    p_rk.add_argument("--historie-znovu", action="store_true", help="přepočítat historickou studii hned")
+    p_rk.add_argument("--pricina", type=int, default=None, help="ID pohybu (rakety / propadu), ke kterému se zapisuje ověřená příčina")
+    p_rk.add_argument("--kod", default=None, help="kód příčiny (FDA, CLINICAL, ACQUISITION, EARNINGS, CONTRACT, FINANCING, LEGAL, DELISTING, …, JINE, CHYBA_DAT)")
     p_rk.add_argument("--predem", type=int, choices=(0, 1), default=None, help="1 = termín byl znám předem, 0 = nebyl")
     p_rk.add_argument("--predzvesti", default=None, help="co bylo vidět předem (fakta)")
     p_rk.add_argument("--text", default=None, help="shrnutí příčiny: FAKT se zdrojem")
@@ -807,7 +862,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 # Příkazy, které se zapisují do deníku (`system_runs`): mění data nebo kontrolují systém. Čistě čtecí příkazy
 # (status, ledger, system, email…) a obnova ze state/ se nezapisují — deník nemá měnit stav jen tím, že se díváme.
-JOURNALED = {"update", "discover", "smart-money", "funds", "rakety", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
+JOURNALED = {"update", "ceny", "discover", "smart-money", "funds", "rakety", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
              "seed-lessons"}
 
 

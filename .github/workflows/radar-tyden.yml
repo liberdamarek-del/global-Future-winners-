@@ -5,6 +5,8 @@
 #   objevovani  discover --universe --download (seznamy firem, 5 let cen ~13 000 firem, SEC, ClinicalTrials, model raket)
 #   smartmoney  smart-money + funds (SEC Form 4, Sněmovna, Senát, 13D/13G, buybacky, 13F)
 #   signaly     signals + update + causal + diag + stránka
+# Ceny S&P 500 a sledovaných firem (price_bars) nejsou ve state/, proto se po založení databáze stáhnou krokem `ceny`
+# (v0.17.0: první běh 2026-10-23 bez nich nezapsal do ledgeru nic a signály spadly).
 # Pracovní databáze (data/stockradar.db) jde mezi joby jako artefakt; cache dat (data/market_cache.db) přes cache
 # GitHubu a ukládá se i po selhání, takže další běh pokračuje ve stahování. Režim jako v radar-denni.yml.
 name: Radar týdenní objevování
@@ -93,6 +95,9 @@ jobs:
           restore-keys: radar-data-
       - name: Databáze ze state/
         run: mkdir -p data zprava && rm -f data/stockradar.db && python -m stockradar init | tee zprava/objevovani.txt
+      - name: Ceny S&P 500 a sledovaných firem (bez nich se nic nezapíše do ledgeru)
+        continue-on-error: true
+        run: python -m stockradar ceny 2>&1 | tee -a zprava/objevovani.txt
       - name: Globální objevování (seznamy, ceny, SEC, studie, rakety, model raket)
         run: python -m stockradar discover --universe --download 2>&1 | tee -a zprava/objevovani.txt
       - name: Uložit cache dat (i po selhání - další běh pokračuje)
@@ -135,7 +140,12 @@ jobs:
           key: radar-data-${{ github.run_id }}-smartmoney
           restore-keys: radar-data-
       - name: Databáze (z předchozího kroku, jinak ze state/)
-        run: mkdir -p data zprava && python -m stockradar init | tee zprava/smartmoney.txt
+        run: |
+          mkdir -p data zprava && python -m stockradar init | tee zprava/smartmoney.txt
+          python -m stockradar ceny --jen-kdyz-chybi 2>&1 | tee -a zprava/smartmoney.txt || echo "ceny se nepodařilo stáhnout"
+      - name: pdftotext pro výkazy Sněmovny (PDF)
+        continue-on-error: true
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils > /dev/null && pdftotext -v 2>&1 | head -1
       - name: Smart money (SEC Form 4, Sněmovna, Senát, 13D/13G, buybacky)
         id: sm
         continue-on-error: true
@@ -194,7 +204,9 @@ jobs:
           key: radar-data-${{ github.run_id }}-signaly
           restore-keys: radar-data-
       - name: Databáze (z předchozího kroku, jinak ze state/)
-        run: mkdir -p data zprava && python -m stockradar init | tee zprava/signaly.txt
+        run: |
+          mkdir -p data zprava && python -m stockradar init | tee zprava/signaly.txt
+          python -m stockradar ceny --jen-kdyz-chybi 2>&1 | tee -a zprava/signaly.txt || echo "ceny se nepodařilo stáhnout"
       - name: Signály 14 dní, 1 měsíc, 6 měsíců
         id: signaly
         continue-on-error: true

@@ -111,7 +111,7 @@ jobs:
         id: causal
         continue-on-error: true
         run: python -m stockradar causal 2>&1 | tee -a zprava/beh.txt
-      - name: Raketový deník (snímek trhu, rakety, příčiny z titulků = AUTO)
+      - name: Raketový deník (snímek trhu, rakety a propady, podání SEC, co následovalo, přehled sektorů)
         id: rakety
         continue-on-error: true
         run: python -m stockradar rakety 2>&1 | tee -a zprava/beh.txt

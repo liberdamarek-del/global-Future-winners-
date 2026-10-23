@@ -1,4 +1,4 @@
-"""Co raketě předcházelo podle zpráv (§6 růstová mapa, §15 text mining) — Google News RSS, zdarma.
+"""Co raketě (od v0.17.0 i propadu) předcházelo podle zpráv (§6 růstová mapa, §15 text mining) — Google News RSS, zdarma.
 
 Pro každou událost: titulky v okně [T0 − 30 dní, konec + 3 dny], rozdělené na „před T0“ a „během růstu“.
 Příčina se určuje automaticky podle klíčových slov v titulcích → vždy označeno AUTO (z titulků), dokud ji
@@ -22,11 +22,14 @@ RSS = {
 CAUSES = [
     ("ACQUISITION", "převzetí / fúze",
      r"\b(acquir\w*|acquisition|buyout|takeover|merger|to be bought|deal to buy|tender offer|go(ing)? private)\b|TOB|買収|経営統合|合併|完全子会社|ＭＢＯ|MBO", False),
-    ("FDA", "regulatorní schválení (FDA/EMA)",
-     r"\b(FDA|EMA|approv\w*|clearance|PDUFA|breakthrough therapy|fast track|reimbursement)\b|承認|認可", True),
-    ("CLINICAL", "klinická data", r"\b(trial|phase [123i]+|topline|study (results|data)|efficacy|endpoint)\b|治験|臨床試験", False),
+    ("FDA", "regulatorní rozhodnutí (FDA/EMA)",
+     r"\b(FDA|EMA|approv\w*|clearance|PDUFA|breakthrough therapy|fast track|reimbursement|complete response letter|CRL|"
+     r"refus\w* to file|clinical hold)\b|承認|認可", True),
+    ("CLINICAL", "klinická data",
+     r"\b(trial|phase [123i]+|topline|study (results|data)|efficacy|endpoint|fail(s|ed)? to meet)\b|治験|臨床試験", False),
     ("EARNINGS", "výsledky / výhled",
-     r"\b(earnings|quarter(ly)?|revenue|results|guidance|outlook|profit|beats?|sales)\b|上方修正|決算|増益|増収|業績|最高益|黒字", True),
+     r"\b(earnings|quarter(ly)?|revenue|results|guidance|outlook|profit|beats?|sales|miss(es|ed)?|forecast cut|"
+     r"lower(s|ed)? (its )?(guidance|forecast|outlook)|profit warning)\b|上方修正|下方修正|決算|増益|増収|減益|業績|最高益|黒字|赤字", True),
     ("CONTRACT", "kontrakt / zakázka / partnerství",
      r"\b(contract|award(ed)?|order|partnership|agreement|deal with|collaboration|supply)\b|契約|受注|提携|協業|連携|採用", False),
     ("ACTIVIST", "aktivista / nový velký akcionář",
@@ -42,7 +45,15 @@ CAUSES = [
     ("ANALYST", "doporučení analytika", r"\b(upgrade[sd]?|price target|initiat\w* coverage|overweight|outperform)\b|格上げ|目標株価", False),
     ("AI", "AI / datová centra", r"\b(AI|artificial intelligence|data cent(er|re)s?|nvidia|gpu)\b|生成ＡＩ|ＡＩ|データセンター|半導体", False),
     ("PRODUCT", "nový produkt / technologie", r"\b(launch\w*|unveil\w*|new product|breakthrough|patent|prototype)\b|新製品|発売|特許", False),
-    ("FINANCING", "financování / emise", r"\b(offering|private placement|raises \$|financing|dilution)\b|増資|新株予約権|第三者割当", False),
+    ("FINANCING", "financování / emise", r"\b(offering|private placement|raises \$|financing|dilution|priced? .{0,30}shares|"
+     r"at-the-market|ATM program|warrants?)\b|増資|新株予約権|第三者割当", False),
+    # v0.17.0: raketový deník sleduje i propady (zadání uživatele 2026-10-23)
+    ("LEGAL", "žaloba / vyšetřování / short report",
+     r"\b(lawsuit|class action|investigation|subpoena|probe|SEC charges|fraud|short seller|short report|restatement|"
+     r"accounting (issue|irregularit\w*)|whistleblower)\b|訴訟|調査|不正", False),
+    ("DELISTING", "vyřazení z burzy / bankrot / ztráta financí",
+     r"\b(delist\w*|bankruptcy|chapter 11|going concern|deficiency notice|non-compliance|insolven\w*|default\w*|"
+     r"restructuring support)\b|上場廃止|破産|民事再生", False),
 ]
 _COMPILED = [(code, label, re.compile(pat, re.I), sched) for code, label, pat, sched in CAUSES]
 STRIP = re.compile(r"\b(inc|corp|corporation|co|ltd|limited|plc|holdings?|group|common stock|class [ab]|ordinary shares|"
@@ -92,7 +103,8 @@ def search_plan(name: str | None, symbol: str | None) -> tuple[str | None, str, 
 
 
 EXPLAINER = re.compile(r"\b(why|what's behind|here's why|soar\w*|surg\w*|jump\w*|skyrocket\w*|rall\w*|pop\w*|"
-                       r"spik\w*|rocket\w*|doubl\w*|tripl\w*)\b|急騰|急伸|ストップ高|Ｓ高|大幅高|続伸", re.I)
+                       r"spik\w*|rocket\w*|doubl\w*|tripl\w*|plung\w*|plummet\w*|tumbl\w*|sink\w*|sank|crash\w*|"
+                       r"slump\w*|tank\w*|nosediv\w*|collaps\w*)\b|急騰|急伸|ストップ高|Ｓ高|大幅高|続伸|急落|ストップ安|大幅安", re.I)
 
 
 def classify(headlines: list[dict]) -> list[dict]:

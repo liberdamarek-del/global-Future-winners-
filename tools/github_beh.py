@@ -36,7 +36,7 @@ WEB_DATA = ROOT / "data" / "web"
 NOTE = ROOT / "zprava" / "oznameni.json"
 MODES = ("stin", "ostry")
 DOCS = ("aktualni", "predikce", "retezec", "objevy", "smartmoney", "signaly", "zebricek", "zebricek6m", "kauzalni",
-        "prehled")
+        "prehled", "pohyby")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 DAILY_AT = time(22, 47)          # po–pá večer v Praze (dřív rutina Claude „denní aktualizace radaru“)
 WEEKLY_AT = time(9, 41)          # sobota ráno v Praze (týdenní objevování)
@@ -219,6 +219,7 @@ def summary(kind: str) -> dict:
         firms = ((z.get(h) or {}).get("firmy") or [])[:3]
         if firms:
             lines.append(f"Žebříček {label}: " + ", ".join(str(f.get("ticker")) for f in firms))
+    lines += moves_lines(_doc("pohyby"))
     em = a.get("email") or {}
     today = datetime.now(timezone.utc).date().isoformat()
     used = sum(int(d.get("requests") or 0) for d in em.get("detail") or [] if d.get("day") == today)
@@ -227,6 +228,27 @@ def summary(kind: str) -> dict:
         lines.append("CHYBA v krocích: " + ", ".join(bad))
     title = {"tyden": "Radar: týdenní objevování", "denni": "Radar: denní běh"}.get(kind, "Radar")
     return {"title": title + (" – chyba" if bad else ""), "lines": lines, "priority": 4 if bad else 3, "poslat": True}
+
+
+def moves_lines(doc: dict | None) -> list[str]:
+    """Trh a největší pohyb dne z raketového deníku (v0.17.0) — jedna dvě věty pro telefon."""
+    if not doc:
+        return []
+    out = []
+    m = (doc.get("trh") or {})
+    if m.get("trh"):
+        obory = m.get("obory") or []
+        lead = f"; nejvíc {obory[0]['nazev']} {obory[0]['zmena'] * 100:+.1f} %" if obory else ""
+        out.append(f"Trh USA {m['den']}: {m['trh']['zmena'] * 100:+.1f} %{lead}")
+    for key, word in (("rakety", "raketa"), ("propady", "propad")):
+        rows = [r for r in doc.get(key) or [] if r.get("konec") == m.get("den")]
+        if rows:
+            r = rows[0]
+            k = max((w for w in str(r.get("okna") or "").split(",") if (r.get("pohyb") or {}).get(w) is not None),
+                    key=lambda w: abs(r["pohyb"][w]), default=None)
+            cause = (r.get("pricina") or {}).get("popis") or "příčina neznámá"
+            out.append(f"Největší {word}: {r['ticker']} {r['pohyb'][k] * 100:+.0f} % ({cause})" if k else f"{word}: {r['ticker']}")
+    return out
 
 
 def post(msg: dict) -> int:

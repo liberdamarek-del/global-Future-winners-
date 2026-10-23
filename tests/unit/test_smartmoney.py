@@ -160,3 +160,27 @@ def test_control_group_does_not_depend_on_other_events():
     for k in range(2, 9):  # jiné události měřené mezi tím nesmí změnit kontrolu pro S1
         m.controls(f"S{k}", day - k)
     assert m.controls("S1", day) == first and first
+
+
+def test_insider_zip_tries_new_sec_folder_then_old():
+    """SEC zveřejňuje sady od 2026Q2 ve složce datastandardsinnovation, starší ve structureddata (ověřeno 2026-10-23)."""
+    import urllib.error
+
+    from stockradar.smartmoney import sources as S
+    asked = []
+
+    def get(url):
+        asked.append(url)
+        if "datastandardsinnovation" in url:
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        return b"zip"
+
+    assert S.fetch_insider_zip(2025, 4, get=get) == b"zip"
+    assert ["datastandardsinnovation" in u for u in asked] == [True, False] and asked[0].endswith("2025q4_form345.zip")
+    asked.clear()
+    assert S.fetch_insider_zip(2026, 3, get=lambda u: asked.append(u) or b"new") == b"new" and len(asked) == 1
+
+
+def test_market_view_without_spy_is_unverified():
+    from stockradar.signals.regime import Regime, Series, market_view
+    assert market_view(Regime(Series([], [])), 740000)["stav"] == "NEOVĚŘENO"

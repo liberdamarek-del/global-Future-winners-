@@ -23,10 +23,15 @@ raket z titulků zůstávají označené AUTO / neověřené. Kdykoli to jde ud�
 * `state/` (git) = zdroj pravdy; každý běh si z něj sestaví `data/stockradar.db` (`init` po smazání staré DB).
 * `data/market_cache.db` (ceny ~13 000 firem, SEC, studie, insideři, 13F, XTB, snímky raketového deníku) a paměť
   kauzálního radaru `data/cache_kauzalni.pkl` se přenáší cache GitHubu (`radar-data-<běh>`; obnoví se nejnovější). Ukládá se i po selhání, takže přerušené stahování pokračuje.
-  První běh na GitHubu začíná s prázdnou cache: stáhne všechno znovu (hodiny), raketový deník potřebuje 5 / 10 / 21 dní
-  vlastních snímků, než najde rakety (v Claude je historie v jeho kontejneru). Kauzální radar bez cen akcií hlásí
+  První běh na GitHubu začíná s prázdnou cache: stáhne všechno znovu (hodiny; 23. 10. 13 097 řad za ~73 min). Raketový deník
+  bere ceny z Yahoo v cache + vlastní denní snímky Nasdaq (od v0.17.0 i propady, podání u SEC, výsledky a přehled trhu;
+  v režimu `stin` se jeho nové záznamy nezachovají a podání u SEC se doplňují každý večer znovu, nejvýš 60 dotazů). Kauzální radar bez cen akcií hlásí
   BLOKOVÁNO a nic nezapíše (první denní běh 23. 10.), dokud první sobotní objevování cache nenaplní.
 * Mezi joby týdenního běhu jde `data/stockradar.db` jako artefakt (3 dny).
+* Ceny sledovaných firem a S&P 500 (`price_bars`) ve state/ nejsou: týdenní běh je proto po `init` stáhne příkazem
+  `python -m stockradar ceny` (v0.17.0). První sobotní běh 23. 10. bez nich nezapsal do ledgeru nic (objevování ani smart
+  money) a signály spadly; signály teď bez SPY hlásí BLOKOVÁNO.
+* Výkazy Sněmovny jsou PDF → job smart money instaluje `pdftotext` (poppler-utils).
 * E-mail pro SEC: secret `STOCKRADAR_CONTACT_EMAIL` → proměnná prostředí, kterou čte `stockradar.contact` (v logu je
   maskovaný, do gitu ani na stránku se nedostane; `tools/github_beh.py stranka` odmítne zveřejnit data s e-mailovou adresou
   a zpráva o běhu adresy nahrazuje `<e-mail>`). Každé použití se dál eviduje v `email_usage`.

@@ -4,6 +4,43 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-23 · v0.17.0 — Proč se akcie a sektory hýbou: propady, podání u SEC, co následovalo, přehled trhu
+
+Důvod: zadání uživatele 23. 10. 2026 — nekupovat akcie, které udělaly +100 %, ale analyzovat, **proč** vyletěly (nebo
+spadly), co následuje po pohybu a proč se hýbal celý sektor; nejdřív projít kód a nic nestavět dvakrát. Inventura: raketový
+deník (`diary.py`) sledoval jen rakety 5 / 10 / 21 dní, příčina byla jen AUTO z titulků (44 ze 75 raket žádnou neměly; kde ji
+měly a příčina je ručně ověřená, souhlasila v 6 z 10), co
+následovalo, se neměřilo, propady ani jednodenní skoky chyběly, deník nebyl na webu a denní pohled na sektory neexistoval
+(objevování má jen 6měsíční sektorové vlny a `summarize_causes` jen „udrželo se po 3 měsících“ u týdenních raket z historie).
+Proto se rozšiřuje existující deník a jeho tabulka, žádný paralelní modul pro rakety.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `migrations/0012_pohyby.sql` (schéma v12) | `rocket_events` + `direction` (+1 raketa / −1 propad, staré záznamy +1), `move_1d`, `rel_volume`; nové append-only tabulky `move_sec`, `move_outcomes`, `move_studies`, `market_days` | `test_moves.py` |
+| `state_io.py` | nové tabulky ve `state/`; obnova staršího exportu bez nových sloupců vezme výchozí hodnotu z migrace (dřív by spadla na NOT NULL) | `test_moves.py::test_web_doc_and_old_state_restore` |
+| `discovery/diary.py` | jedna funkce `detect_at` pro živý deník i historii; okna 1 / 5 / 10 / 21 dní (raketa +25 / +30 / +40 / +50 %), propady zrcadlově v logaritmech (−20 / −23 / −29 / −33 %, stejně jako zrcadlové propady v objevování); epizoda = firma + směr; objem dne proti běžnému; pořadí podle síly v logaritmech. **Oprava chyby z v0.13.0:** epizoda končila po 21 kalendářních dnech, ale měsíční okno (21 obchodních ≈ 30 kalendářních dní) ten samý skok obsahuje ještě týden poté → stejná raketa by se zapsala podruhé; nově je to stejný příběh, dokud všechna splněná okna začínají před koncem předchozí epizody (`same_story`; v živých datech od 13. 10. se to ještě nestihlo projevit) | `test_diary.py`, `test_moves.py::test_monthly_window_does_not_record_the_same_jump_twice` |
+| `discovery/news.py` | nové kódy LEGAL (žaloba, vyšetřování, short report, oprava účetnictví) a DELISTING (bankrot, going concern, upozornění burzy); FDA/EARNINGS/CLINICAL/FINANCING i se slovy propadů (CRL, miss, profit warning, offering priced…) a vysvětlující slovesa propadů (plunge, tumble, sink…) | `test_moves.py`, ruční kontrola titulků |
+| `sources/sec.py` | `fetch_submissions` + `recent_filings` (EDGAR submissions API, pole ověřena 2026-10-23) — jen u velkých pohybů, 1 dotaz na pohyb, evidováno v `email_usage` | `test_moves.py::test_attach_sec_one_request_per_move` |
+| `discovery/moves.py` (nový) | (1) podání u SEC v okně pohybu s čísly bodů 8-K (2.02 výsledky, 1.01 smlouva, 3.02 prodej akcií, 3.01 burza, 4.02 oprava účetnictví…) → příčina „SEC: typ podání“ (obsah se nečte); (2) výsledek 5 / 20 / 60 obchodních dní po pohybu proti S&P 500; (3) historická studie 5 let se stejnými pravidly — co obvykle následovalo podle směru, jednodenního skoku, objemu, velikosti firmy a podání u SEC (jednou týdně; popis, ne předpověď; survivorship bias uveden); pořadí důvěry příčiny OVĚŘENO > SEC > AUTO; shoda AUTO a SEC s ověřenými příčinami | `test_moves.py` (11) |
+| `discovery/market_day.py` (nový) | denní přehled trhu a sektorů ze snímku Nasdaq: pohyb trhu, sektorů a oborů vážený hodnotou (firmy nad 300 mil. USD), šíře, kdo pohyb táhl (podíl 3 firem), výrazné pohyby komodit a dolaru (z ≥ 2) s vazbou z kauzálního radaru (hypotéza), pohyby z deníku v oboru, titulky o tahounech 2 oborů (AUTO, nejvýš 2 dotazy) | `test_moves.py::test_market_day_explains_sector_move` |
+| `cli.py rakety` | snímek → rakety i propady → AUTO u 30 nejsilnějších (dřív 10) → podání u SEC (nejvýš 60 dotazů za běh) → výsledky → přehled trhu → historie (týdně); `--bez-sec`, `--bez-historie`, `--historie-znovu`; píše `stav_pohyby.json` | `test_cli.py` |
+| `site.py`, `web/index.html` | nový dokument `stav/pohyby` a sekce „Proč se akcie a sektory hýbou“ (první v Další analýzy): trh a sektory dne, obory s vysvětlením, rakety / propady (10 + Zobrazit všech) s příčinou a odkazem na podání SEC, co následovalo, historie 5 let, živé výsledky a spolehlivost příčin | `test_moves.py`, kontrola v Chromiu |
+| `hub/evidence.py`, `hub/integrate.py`, `hub/registry.py` | centrum zná propady a příčinu ze SEC (kontext, směr 0); otisk vstupů i s `move_sec` | `test_diary.py::test_hub_shows_rockets_as_context_but_not_data_errors` |
+| `tools/github_beh.py` | stránka publikuje i `stav_pohyby.json`; oznámení na telefon: trh dne a největší raketa / propad s příčinou | `test_github_provoz.py` |
+
+**Opravy z prvního týdenního běhu na GitHubu (23. 10., běh 39899471371):**
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `cli.py` (nový příkaz `ceny`), `radar-tyden.yml` | databáze ze state/ nemá ceny (price_bars nejsou ve state/) → objevování nezapsalo kandidáty ani predikce raket, smart money nezapsalo signály („Chybí cena S&P 500“) a signály spadly; nyní se po založení databáze stáhnou ceny sledovaných firem, S&P 500 a kurzů (`ceny`, v dalších jobech `--jen-kdyz-chybi`) | `test_cli.py::test_signals_without_spy_are_blocked` |
+| `cli.py signals`, `signals/regime.py` | bez cen S&P 500 hlásí BLOKOVÁNO a nic nezapíše (dřív `IndexError` v `market_view`); `market_view` bez SPY vrací NEOVĚŘENO | `test_smartmoney.py::test_market_view_without_spy_is_unverified` |
+| `smartmoney/sources.py` | SEC přesunula čtvrtletní sady Form 3/4/5 od 2026Q2 do složky `datastandardsinnovation` (ověřeno na stránce SEC 2026-10-23) → nejdřív nová složka, při 404 stará (dřív 2026Q2 a Q3 chyběly) | `test_smartmoney.py::test_insider_zip_tries_new_sec_folder_then_old` |
+| `radar-tyden.yml` | `pdftotext` (poppler-utils) pro výkazy Sněmovny — na GitHubu chyběl (Sněmovna VYPNUTO) | běh na GitHubu |
+
+**Výsledek:** 212 testů prošlo lokálně. Z prvního týdenního běhu ověřeno: stažení 13 097 řad z Yahoo (~73 min), SEC (835 tis.
+podání v indexu), ClinicalTrials.gov, Senát (305 výkazů) a **xtb.com z GitHubu funguje** (63 dotazů, 0 chyb — ze serveru Claude
+je od 11. 10. blokované). Běh nového deníku na skutečných datech: viz další záznam.
+
 ## 2026-10-23 · v0.16.0 — Provoz na GitHubu bez Claude (Actions + Pages)
 
 Důvod: rozhodnutí uživatele 23. 10. 2026 — radar má běžet sám na serveru zdarma, denně se aktualizovat a učit a stránka se

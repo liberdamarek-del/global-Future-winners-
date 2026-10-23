@@ -123,6 +123,8 @@ def market_view(reg: Regime, day: int, *, step: int = 14, h: int = 10) -> dict:
     jen jedno za období (každých 14 dní, okna se nepřekrývají). Znaky trhu proto nejsou v modelu jednotlivých akcií:
     pro S&P 500 je za 4 roky jen ~100 nezávislých dvoutýdnů a jen pár epizod (např. růst sazeb hlavně 2022)."""
     spy = reg.spy
+    if not spy.days:
+        return {"stav": "NEOVĚŘENO", "duvod": "chybí ceny S&P 500 (SPY)"}
     rows = []
     d = day - step
     while d > spy.days[0] + 300:

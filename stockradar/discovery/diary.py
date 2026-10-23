@@ -1,17 +1,21 @@
-"""Raketový deník (zadání uživatele 2026-10-13): rakety za 5 / 10 / 21 obchodních dní → ověřená příčina z internetu.
+"""Raketový deník (zadání uživatele 2026-10-13, propady a jednodenní skoky od v0.17.0 — zadání 2026-10-23):
+velké pohyby akcií za 1 / 5 / 10 / 21 obchodních dní → příčina (SEC, titulky, ruční ověření) → co následovalo.
 
 Data: týdenní ceny z Yahoo (cache objevování) + denní snímek Nasdaq screeneru (1 dotaz denně, všechny americké akcie:
 poslední závěr, změna, objem). Z „poslední cena − změna“ je i předchozí závěr → kontrola návaznosti: když nesedí na cenu
 z Yahoo o víc než 25 %, jde skoro jistě o split nebo chybu dat (poučení CHYBA-DAT-REVERSE-SPLIT) a firma se přeskočí.
 
-Raketa: ≥ +30 % za 5, ≥ +40 % za 10 nebo ≥ +50 % za 21 obchodních dní; likvidní (medián obratu 20 dní ≥ 1 mil. USD) a
-cena ≥ 1 USD. Epizoda = jedna firma v okně 21 kalendářních dní (týdenní a měsíční raketa téže firmy je jeden příběh).
+Raketa: ≥ +25 % za 1, ≥ +30 % za 5, ≥ +40 % za 10 nebo ≥ +50 % za 21 obchodních dní. Propad: zrcadlově v logaritmech
+(−20 % / −23 % / −29 % / −33 %, stejně jako zrcadlové propady v objevování). Likvidní (medián obratu 20 dní ≥ 1 mil. USD)
+a cena ≥ 1 USD (u propadu cena na začátku okna). Epizoda = jedna firma a jeden směr v okně 21 kalendářních dní
+(týdenní a měsíční raketa téže firmy je jeden příběh; raketa a pak propad jsou dva).
 Příčina: AUTO z titulků Google News (neověřeno) → ruční ověření z primárního zdroje (8-K, tisková zpráva, FDA, SEC)
 v tabulce `rocket_causes`. Příčina je známá až po pohybu, proto sama nic nepředpovídá — slouží ke studiu předzvěstí
 a toho, co následuje po raketě (hypotéza H-R1, docs/agent_vyzkum/README.md).
 """
 
 import json
+import math
 import statistics
 from datetime import date, datetime, timedelta, timezone
 
@@ -19,7 +23,9 @@ from stockradar.discovery import cache as dcache
 from stockradar.discovery import news
 from stockradar.timeutil import to_iso, utcnow
 
-WINDOWS = {"5d": (5, 0.30), "10d": (10, 0.40), "21d": (21, 0.50)}
+UP = {"1d": (1, 0.25), "5d": (5, 0.30), "10d": (10, 0.40), "21d": (21, 0.50)}
+DOWN = {k: (n, 1 / (1 + th) - 1) for k, (n, th) in UP.items()}      # −20 % / −23 % / −29 % / −33 %
+WINDOWS = {1: UP, -1: DOWN}
 MIN_TURNOVER, MIN_PRICE = 1_000_000, 1.0
 MAX_GAP = 0.25                 # nesoulad předchozího závěru se snímkem → split / chyba dat
 EPISODE_DAYS = 21
@@ -119,24 +125,52 @@ def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list,
     return d, c, v, None
 
 
-def detect(days, closes, volumes) -> dict | None:
-    """Splněná okna k poslednímu dni řady (nebo None)."""
-    n = len(closes)
-    if n < 22 or closes[-1] < MIN_PRICE:
+def detect_at(days, closes, volumes, i: int, direction: int = 1) -> dict | None:
+    """Splněná okna jednoho směru ke dni `i` (nebo None). Stejná funkce slouží živému deníku (poslední den) i historické
+    studii (každý den) — pravidla jsou tak v obou stejná."""
+    if i < 21 or closes[i] <= 0:
         return None
-    turn = statistics.median(closes[i] * volumes[i] for i in range(n - 20, n))
-    if turn < MIN_TURNOVER:
-        return None
-    moves, hit, start = {}, [], None
-    for name, (k, th) in WINDOWS.items():
-        base = closes[-1 - k]
-        moves[name] = closes[-1] / base - 1 if base > 0 else None
-        if moves[name] is not None and moves[name] >= th:
+    moves, hit, k_max, starts = {}, [], 0, {}
+    for name, (k, th) in WINDOWS[direction].items():
+        base = closes[i - k]
+        moves[name] = closes[i] / base - 1 if base > 0 else None
+        m = moves[name]
+        if m is not None and (m >= th if direction > 0 else m <= th):
             hit.append(name)
-            start = days[-1 - k]                      # nejdelší splněné okno určuje začátek
+            starts[name] = days[i - k]
+            k_max = k                                 # nejdelší splněné okno určuje začátek
     if not hit:
         return None
-    return {"okna": hit, "moves": moves, "start": start, "end": days[-1], "cena": closes[-1], "obrat": turn}
+    if (closes[i] if direction > 0 else closes[i - k_max]) < MIN_PRICE:
+        return None
+    turn = statistics.median(closes[j] * volumes[j] for j in range(i - 19, i + 1))
+    if turn < MIN_TURNOVER:
+        return None
+    usual = statistics.median(volumes[j] for j in range(i - 20, i))
+    return {"smer": direction, "okna": hit, "moves": moves, "start": days[i - k_max], "starty": starts, "end": days[i],
+            "cena": closes[i], "obrat": turn, "rel_objem": volumes[i] / usual if usual > 0 else None}
+
+
+def same_story(hit: dict, last_end: int | None) -> bool:
+    """Patří detekce k předchozí epizodě stejného směru? Ano do 21 kalendářních dní od jejího konce — a i později, dokud
+    všechna splněná okna ještě začínají před jejím koncem (21 obchodních dní je ~30 kalendářních: měsíční okno by jinak
+    tentýž skok po 22 dnech zapsalo podruhé)."""
+    if last_end is None:
+        return False
+    if hit["end"] - last_end <= EPISODE_DAYS:
+        return True
+    starts = list((hit.get("starty") or {}).values()) or [hit["start"]]
+    return all(s < last_end for s in starts)
+
+
+def detect(days, closes, volumes, direction: int = 1) -> dict | None:
+    """Splněná okna k poslednímu dni řady (nebo None)."""
+    return detect_at(days, closes, volumes, len(closes) - 1, direction)
+
+
+def strength(r: dict) -> float:
+    """Velikost pohybu v logaritmech (raketa +100 % = propad −50 %) přes splněná okna — pořadí pro titulky a web."""
+    return max(abs(math.log1p(r["moves"][k])) for k in r["okna"] if r["moves"].get(k) is not None and r["moves"][k] > -1)
 
 
 def glitch(closes, *, lookback: int = 40, drop: float = 0.2, back: float = 0.3, within: int = 5) -> bool:
@@ -152,7 +186,7 @@ def glitch(closes, *, lookback: int = 40, drop: float = 0.2, back: float = 0.3, 
 
 
 def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]:
-    """Rakety ke dni posledního snímku (americké akcie)."""
+    """Rakety a propady ke dni posledního snímku (americké akcie)."""
     cache_conn.executescript(SNAP_SCHEMA)
     snaps: dict[str, list[tuple]] = {}
     for day, sym, close, prev, vol in cache_conn.execute(
@@ -162,7 +196,7 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
     from stockradar.discovery.study import anomalous
     from stockradar.discovery.winners import adjust_reverse_splits
     meta = {r[0]: (r[1], r[2], r[3]) for r in cache_conn.execute("SELECT symbol, name, market_cap_usd, industry FROM securities")}
-    stats = {"rad": 0, "split_nebo_chyba": 0, "stara_data": 0, "fondy": 0, "raket": 0}
+    stats = {"rad": 0, "split_nebo_chyba": 0, "stara_data": 0, "fondy": 0, "raket": 0, "propadu": 0}
     found = []
     for bars in dcache.iter_series(cache_conn):
         sym = bars.symbol
@@ -181,21 +215,25 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
         if problem:
             stats["split_nebo_chyba" if "split" in problem else "stara_data"] += 1
             continue
-        hit = detect(d, c, v)
-        if hit:
-            found.append({"symbol": sym, "nazev": name, "mcap": cap, **hit})
-    stats["raket"] = len(found)
-    found.sort(key=lambda r: -max(x for x in r["moves"].values() if x is not None))
+        for direction in (1, -1):
+            hit = detect(d, c, v, direction)
+            if hit:
+                found.append({"symbol": sym, "nazev": name, "mcap": cap, "obor": industry, **hit})
+    stats["raket"] = sum(1 for r in found if r["smer"] > 0)
+    stats["propadu"] = len(found) - stats["raket"]
+    found.sort(key=lambda r: -strength(r))
     return found, stats
 
 
 def record_new(conn, found: list[dict], *, today: date, auto=None, top_auto: int = 10, log=print) -> list[dict]:
-    """Zapíše nové epizody (firma bez rakety v posledních 21 dnech); u prvních `top_auto` příčinu z titulků (AUTO)."""
+    """Zapíše nové epizody (firma bez pohybu stejného směru v posledních 21 dnech); u prvních `top_auto` (podle síly
+    pohybu) příčinu z titulků (AUTO)."""
     new = []
     for r in found:
-        end = date.fromordinal(r["end"])
-        if conn.execute("SELECT 1 FROM rocket_events WHERE symbol = ? AND end_day >= ?",
-                        (r["symbol"], (end - timedelta(days=EPISODE_DAYS)).isoformat())).fetchone():
+        r.setdefault("smer", 1)
+        last = conn.execute("SELECT MAX(end_day) FROM rocket_events WHERE symbol = ? AND direction = ?",
+                            (r["symbol"], r["smer"])).fetchone()[0]
+        if same_story(r, date.fromisoformat(last).toordinal() if last else None):
             continue
         new.append(r)
     for i, r in enumerate(new):
@@ -209,14 +247,17 @@ def record_new(conn, found: list[dict], *, today: date, auto=None, top_auto: int
         with conn:
             cur = conn.execute(
                 "INSERT INTO rocket_events (symbol, name, detected_on, start_day, end_day, windows, move_5d, move_10d, move_21d,"
-                " price, turnover_usd, market_cap_usd, auto_cause, auto_json, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " price, turnover_usd, market_cap_usd, auto_cause, auto_json, recorded_at, direction, move_1d, rel_volume)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (r["symbol"], r["nazev"], today.isoformat(), date.fromordinal(r["start"]).isoformat(),
                  date.fromordinal(r["end"]).isoformat(), ",".join(r["okna"]), m.get("5d"), m.get("10d"), m.get("21d"),
                  r["cena"], r["obrat"], r["mcap"], (info or {}).get("kod"),
-                 json.dumps(_slim(info), ensure_ascii=False) if info else None, to_iso(utcnow())))
+                 json.dumps(_slim(info), ensure_ascii=False) if info else None, to_iso(utcnow()),
+                 r["smer"], m.get("1d"), r.get("rel_objem")))
         r["id"] = cur.lastrowid
         r["auto"] = info
-    log(f"Raketový deník: {len(found)} raket, nových epizod {len(new)}")
+    up = sum(1 for r in found if r.get("smer", 1) > 0)
+    log(f"Raketový deník: {up} raket, {len(found) - up} propadů, nových epizod {len(new)}")
     return new
 
 
@@ -231,7 +272,7 @@ def _slim(info: dict) -> dict:
 
 def record_cause(conn, event_id: int, *, code: str, status: str, summary: str, source: str, source_url: str,
                  published_on: str, scheduled: bool | None = None, pre_signals: str | None = None) -> int:
-    """Ověřená (nebo výslovně neověřená) příčina rakety z primárního zdroje."""
+    """Ověřená (nebo výslovně neověřená) příčina rakety / propadu z primárního zdroje."""
     if code not in CODES:
         raise ValueError(f"kód příčiny musí být jeden z {sorted(CODES)}")
     if conn.execute("SELECT 1 FROM rocket_events WHERE id = ?", (event_id,)).fetchone() is None:
@@ -247,7 +288,7 @@ def record_cause(conn, event_id: int, *, code: str, status: str, summary: str, s
 
 
 def recent(conn, *, days: int = 30, today: date | None = None) -> list[dict]:
-    """Rakety posledních `days` dní s poslední zapsanou příčinou (pro centrum, web a report)."""
+    """Rakety a propady posledních `days` dní s poslední zapsanou příčinou (pro centrum, web a report)."""
     since = ((today or utcnow().date()) - timedelta(days=days)).isoformat()
     out = []
     for r in conn.execute("SELECT * FROM rocket_events WHERE end_day >= ? ORDER BY end_day DESC, id DESC", (since,)):

@@ -76,8 +76,8 @@ Popis: `docs/GITHUB_PROVOZ.md`.
    --zdroj "…" --url https://… --text "FAKT: … ÚSUDEK (neověřeno): …"`.
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
-   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek, zebricek6m, kauzalni, prehled)
-   s `if_version` (URL v `web/dashboard.json`).
+   `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek, zebricek6m, kauzalni, prehled,
+   pohyby) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
@@ -88,6 +88,10 @@ Popis: `docs/GITHUB_PROVOZ.md`.
 Zadání uživatele 2026-10-13: dlouhodobě a samostatně zkoumat nové přístupy k agentům (plánování, paměť, nástroje,
 experimenty, učení ze zpětné vazby, sebehodnocení) a převádět je na měřitelné návrhy pro Stock Radar; plus raketový
 deník (rakety za týden / 14 dní / měsíc → ověřená příčina z internetu → předzvěsti a „co bude po raketě“ pro model).
+Od v0.17.0 (zadání 2026-10-23: proč akcie vyletěla nebo spadla a proč se hýbal sektor) deník sleduje i propady a jednodenní
+skoky, ke každému pohybu sám přidá podání u SEC (typ podání), měří co následovalo (5 / 20 / 60 dní), jednou týdně počítá
+historickou studii a denně přehled trhu a sektorů (`python -m stockradar rakety`, web `stav/pohyby`). Ruční ověření příčiny
+(`--pricina`) zůstává nejvyšší úrovní důvěry; propady se ověřují stejně jako rakety.
 Přesný postup, schéma a kritéria: `docs/agent_vyzkum/README.md`. Evidence: `smery.json`, `zdroje.jsonl`,
 `navrhy.jsonl` (jen přidávat), `reporty/RRRR-MM-DD.md`; formát hlídá `tests/unit/test_agent_research.py`.
 Každý běh vychází z předchozích záznamů, neopakuje stejná zjištění (URL / klíč), výslovně píše „nic nového“, když nic

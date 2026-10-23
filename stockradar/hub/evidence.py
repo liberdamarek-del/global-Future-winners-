@@ -137,9 +137,11 @@ def from_funds(conn) -> list[dict]:
 
 
 def from_rocket_diary(conn, today: date) -> list[dict]:
-    """Raketový deník: nedávné rakety (kontext — pohyb už proběhl) s ověřenou nebo AUTO příčinou."""
+    """Raketový deník: nedávné rakety a propady (kontext — pohyb už proběhl) s nejlepší dostupnou příčinou
+    (OVĚŘENO > SEC typ podání > AUTO z titulků). Směr 0: co se stalo, není předpověď."""
     try:
         from stockradar.discovery.diary import recent
+        from stockradar.discovery.moves import LABEL, best_cause
         rows = recent(conn, days=30, today=today)
     except sqlite3.OperationalError:
         return []
@@ -147,15 +149,26 @@ def from_rocket_diary(conn, today: date) -> list[dict]:
     for r in rows:
         if (r.get("pricina") or {}).get("cause_code") == "CHYBA_DAT":      # falešná raketa (split, chyba dat) do centra nepatří
             continue
-        moves = ", ".join(f"{k} {_thr(r[f'move_{k}'])}" for k in ("5d", "10d", "21d") if r[f"move_{k}"] is not None
+        moves = ", ".join(f"{k} {_thr(r[f'move_{k}'])}" for k in ("1d", "5d", "10d", "21d") if r.get(f"move_{k}") is not None
                           and k in r["windows"].split(","))
         c = r.get("pricina")
-        cause = (f"příčina ({c['status']}): {c['summary'][:160]}" if c else
-                 f"příčina AUTO z titulků: {r['auto_cause']}" if r["auto_cause"] else "příčina zatím neověřena")
+        try:
+            best = best_cause(conn, r)
+        except sqlite3.OperationalError:
+            best = {"zdroj": None}
+        if c:
+            cause = f"příčina ({c['status']}): {c['summary'][:160]}"
+        elif best.get("zdroj") == "SEC":
+            cause = f"podání u SEC ({LABEL.get(best['kod'], best['kod'])}): {best['text']}"
+        elif r["auto_cause"]:
+            cause = f"příčina AUTO z titulků: {r['auto_cause']}"
+        else:
+            cause = "příčina zatím neověřena"
+        kind = "propad" if (r.get("direction") or 1) < 0 else "raketa"
         out.append(_ev(r["symbol"], modul="RAKETY_DENIK", druh="kontext", smer=0, horizont=30, nazev=r["name"],
-                       zdroj=f"rocket_events #{r['id']}", url=c["source_url"] if c else None, data_do=r["end_day"],
+                       zdroj=f"rocket_events #{r['id']}", url=c["source_url"] if c else best.get("url"), data_do=r["end_day"],
                        stav=(c["status"] if c else "AUTO"),
-                       text=f"raketa {moves} (do {r['end_day']}); {cause}"))
+                       text=f"{kind} {moves} (do {r['end_day']}); {cause}"))
     return out
 
 
