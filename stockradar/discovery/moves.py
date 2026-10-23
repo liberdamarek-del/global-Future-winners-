@@ -24,7 +24,7 @@ from stockradar.discovery import diary, news
 from stockradar.timeutil import to_iso, utcnow
 
 HORIZONS = (5, 20, 60)
-STUDY_VERSION = "2"                  # 2: + neupravené zpětné splity vyřazeny (FRGT)
+STUDY_VERSION = "3"                  # 2–3: + neupravené zpětné splity vyřazeny (FRGT)
 STUDY_EVERY_DAYS = 7
 SEC_LIMIT = 60                       # nejvýš tolik dotazů na SEC za běh (nové pohyby; zbytek příště)
 MIN_GROUP = 30                       # menší skupina historie = MALÝ VZOREK
@@ -362,7 +362,7 @@ def scan_history(cache_conn, spy, *, symbols: set[str] | None = None, log=print)
                 # akcií tenhle vzor prakticky nenastává, chyba dat by ale zkreslila „co následovalo“
                 if hit is None or diary.same_story(hit, last[direction] if last[direction] > 0 else None) or \
                         is_bad_tick(c, i) or diary.glitch(c[max(0, i - 41):i + 6], lookback=46) or \
-                        (direction > 0 and diary.unadjusted_split(c, v, i)):
+                        (direction > 0 and diary.unadjusted_split(c, v, i, until=min(n - 1, i + 5))):
                     continue
                 last[direction] = d[i]
                 s0 = _spy_at(spy, d[i])

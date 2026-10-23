@@ -939,7 +939,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     return `<div class="card"><div class="head"><span><span class="tick">${esc(r.ticker)}</span> <span class="small muted">${esc(r.nazev || "")}</span></span>
       <span class="num ${cls(k ? r.pohyb[k] : 0)}"><b>${k ? sgn(r.pohyb[k] * 100, 0) : "–"}</b> <span class="small muted">${esc(WIN[k] || "")}</span></span></div>
       <div class="small muted">${esc(den(r.zacatek))} → ${esc(den(r.konec))} · cena ${fmt(r.cena, 2)} USD${nil(r.objem) ? "" : ` · objem ${fmt(r.objem, 1)}× běžný`}${nil(r.mcap) ? "" : ` · hodnota ${fmt(r.mcap / 1e9, 2)} mld. USD`}</div>
-      <div>${cause}</div>${sec}${heads ? `<details class="small"><summary>Titulky (automaticky, neověřeno)</summary><ul class="facts">${heads}</ul></details>` : ""}
+      <div>${cause}</div>${r.split_podezreni ? '<div><span class="chip warn">v podáních je změna práv akcionářů — možná zpětný split, pohyb může být chyba dat</span></div>' : ""}${sec}${heads ? `<details class="small"><summary>Titulky (automaticky, neověřeno)</summary><ul class="facts">${heads}</ul></details>` : ""}
       ${after ? `<div class="small">Co následovalo: ${after}</div>` : ""}</div>`;
   }
   function histTable(rows, title, note) {

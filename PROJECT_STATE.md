@@ -142,7 +142,7 @@
 | Zdroje BLOKOVÁNO | GDELT (HTTP 429), xtb.com (HTTP 403 od 2026-10-11); cukr Yahoo od 2026-10-07 vrací (27 komodit; zamčený test řetězců zůstává z 2026-10-06 podle protokolu) |
 | Týden 2026-10-11 | objevování #6 (12 173 firem, 61 zemí, 5 predikcí raket WATCH: SATL, IAU.TO, ANNX, EQ, 8377.T), smart money #4 (10 signálů), signály #18–#20 (data k 2026-10-09), ledger +7 dní: 4 HIT / 2 MISS vůči S&P 500 |
 
-## HOTOVO (ověřeno testy — 212 testů prošlo 2026-10-23)
+## HOTOVO (ověřeno testy — 216 testů prošlo 2026-10-23)
 
 | Modul | Co dělá | Testy |
 |---|---|---|
@@ -169,7 +169,7 @@
 | `smartmoney/*`, `migrations/0005` | Smart money: zdroje (SEC, Sněmovna, Senát), typy transakcí, event study, skóre, aktuální signály ověřené ve Form 4, ledger, web | `tests/unit/test_smartmoney.py` (8) |
 | `hub/multitest.py`, `docs/testy_hypotez.jsonl` | Experiment N-1: registr testů hypotéz (592 testů: E1–E4, celá studie smart money, všechna vyhodnocení modelů) + přísné pravidlo (t ≥ 3, BY q ≤ 0,10) vedle stávajícího; 2026-10-15 prošla jen varování 1 m a 6 m, nákup insiderů už ne (q 0,24); vyhodnocení 2027-01-06 | `tests/unit/test_multitest.py` (5) |
 | `discovery/diary.py`, `migrations/0010`, `0012` | Raketový deník: denní snímek Nasdaq, rakety **a propady** 1 / 5 / 10 / 21 dní (v0.17.0) s kontrolou dat (vč. „propad a návrat“ u napůl upravených splitů, v0.14.4), AUTO příčina, ověřené příčiny z primárních zdrojů (`python -m stockradar rakety`) | `tests/unit/test_diary.py` (8), `test_moves.py` |
-| `discovery/moves.py`, `sources/sec.py` (submissions) | v0.17.0: podání u SEC ke každému pohybu (typ podání a body 8-K, odkaz), výsledek 5 / 20 / 60 dní proti S&P 500, historická studie 5 let se stejnými pravidly (týdně), shoda AUTO / SEC s ověřenými příčinami | `tests/unit/test_moves.py` |
+| `discovery/moves.py`, `sources/sec.py` (submissions) | v0.17.0: podání u SEC ke každému pohybu (typ podání a body 8-K, odkaz), výsledek 5 / 20 / 60 dní proti S&P 500, historická studie 5 let se stejnými pravidly (týdně; výsledky v [docs/VYZKUM.md](docs/VYZKUM.md) E5), shoda AUTO / SEC s ověřenými příčinami; ověřeno během na GitHubu 23. 10. (60 dotazů SEC bez chyby) | `tests/unit/test_moves.py` |
 | `discovery/market_day.py` | v0.17.0: denní přehled trhu a sektorů (pohyb vážený hodnotou, šíře, tahouni, komodity s vazbou z kauzálního radaru, titulky AUTO) → `market_days`, web `stav/pohyby` | `tests/unit/test_moves.py` |
 | `sources/sec13f.py`, `discovery/bestideas.py`, `migrations/0009` | Fondy 13F (výzkum E4): čtvrtletní sady SEC → nejsilnější sázky správců, studie událostí, aktuální sázky na malé firmy do centra (`python -m stockradar funds`) | `tests/unit/test_sec13f.py` (7), `test_hub.py` |
 | `sources/usaspending.py`, `discovery/contracts.py` | Výzkumný nástroj E3: federální zakázky USA → studie událostí (výsledek NEOVĚŘENO, do modelu nezapojeno) | `tests/unit/test_contracts.py` (4) |

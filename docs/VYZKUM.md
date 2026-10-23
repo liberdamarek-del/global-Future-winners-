@@ -190,6 +190,35 @@ kritérium N-10 (zpoždění ≤ 4 týdny) nesplnil žádný. Současné pravidl
 potvrdí roli bez efektu. Nic se nemění; další krok jen v simulaci: kontrola každé 4 týdny s rozložením α a jednostranný
 prior. Omezení: týdny jsou v simulaci nezávislé (skutečné mohou být závislé → současné pravidlo by bylo ještě horší).
 
+## E5 · 2026-10-23 · Co následuje po velkém pohybu akcie (popisná studie, ne test hypotézy)
+
+- **Zadání uživatele:** analyzovat, proč akcie vyletěla nebo spadla a co po tom následuje — ne je kupovat.
+- **Postup:** `discovery/moves.py` `history_study` — stejná pravidla jako živý raketový deník (`diary.detect_at`:
+  raketa +25 % za den / +30 % za 5 / +40 % za 10 / +50 % za 21 obchodních dní, propad zrcadlově −20 / −23 / −29 / −33 %,
+  likvidní akcie USA od 1 USD, epizoda = firma a směr), ceny z cache objevování (5 let), výsledek po 5 / 20 / 60 obchodních
+  dnech proti S&P 500, skupiny podle typu podání u SEC v okně pohybu (kvartální index), objemu a velikosti firmy.
+  Bez t-statistik a bez výběru — jen popis, proto se do `docs/testy_hypotez.jsonl` nezapisuje.
+- **Výsledek (běh na GitHubu 23. 10., 12 234 raket a 15 142 propadů, 11/2021–10/2026; medián výnosu proti S&P 500):**
+
+| Skupina | 5 dní | 20 dní | 60 dní | Šlo dál stejným směrem (60 dní) |
+|---|---|---|---|---|
+| Rakety — všechny | −2,3 % | −6,9 % | −15,0 % | 37 % |
+| Rakety s emisí akcií | −5,2 % | −13,9 % | −29,4 % | 26 % |
+| Rakety s výsledky (10-Q/10-K) | −1,4 % | −3,7 % | −9,3 % | 43 % |
+| Rakety malých firem (pod 300 mil. USD) | −4,9 % | −15,1 % | −30,7 % | 23 % |
+| Propady — všechny | −1,6 % | −4,8 % | −12,6 % | 60 % |
+| Propady s emisí akcií | −4,7 % | −11,5 % | −26,8 % | 72 % |
+| Propady s výsledky (10-Q/10-K) | −1,0 % | −2,5 % | −7,9 % | 55 % |
+| Propady malých firem | −3,8 % | −11,7 % | −26,2 % | 74 % |
+
+- **Čtení:** po raketě akcie v mediánu dál zaostává za trhem (vyfoukne se), po propadu většinou padá dál — nejvíc u
+  emisí akcií a malých firem; u velkých firem a pohybů s výsledky je pokračování i obrat slabší. V souladu s literaturou
+  (efekt MAX — Bali, Cakici a Whitelaw 2011; drift po zprávách — Chan 2003).
+- **Slabá místa:** seznam firem je dnešní (zkrachovalé chybí → skutečnost byla po propadech a u malých firem ještě horší);
+  pohyby se shlukují v čase (nejsou nezávislé); medián neříká nic o chvostu (pár raket vyrostlo dál o stovky procent);
+  velikost je dnešní tržní hodnota; neupravené splity v datech Yahoo jsou částečně vyřazené (FRGT, DKI), ne úplně.
+- **Verdikt:** POPIS (ne předpověď a ne obchodní pravidlo). Do modelu jen přes nový pokus se zamčeným testem.
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |

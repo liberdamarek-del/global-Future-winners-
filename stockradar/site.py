@@ -578,6 +578,8 @@ def _move_row(conn: sqlite3.Connection, e: dict, outcomes: dict) -> dict:
             {"datum": f["datum"], "co": moves.describe(f), "url": f["url"]} for f in filings[-4:]]},
         "titulky": [{"datum": h.get("datum"), "titulek": h.get("titulek")} for h in (auto.get("titulky") or [])[:2]],
         "auto": auto.get("hlavni_pricina"),
+        # bod 8-K 3.03 / 5.03 (změna práv akcionářů / stanov) v okně pohybu = často zpětný split → ověřit, zda pohyb není chyba dat
+        "split_podezreni": any(i.strip() in ("3.03", "5.03") for f in filings for i in (f.get("items") or "").split(",")),
         "potom": {f"{h}d": {"vynos": o[0], "proti_trhu": round(o[0] - o[1], 2) if o[1] is not None else None}
                   for h, o in sorted(outcomes.get(e["id"], {}).items())},
     }

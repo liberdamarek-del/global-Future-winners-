@@ -282,6 +282,9 @@ def test_reverse_split_with_low_volume_is_not_a_rocket():
     vols = [8_000_000.0] * 35 + [600_000.0] * 5                                          # objem v kusech klesl
     assert D.detect(days, closes, vols) is not None and D.unadjusted_split(closes, vols, 39)
     assert not D.unadjusted_split(closes, [8_000_000.0] * 35 + [90_000_000.0] * 5, 39)   # skutečná raketa: objem vysoko
+    frgt = [8_000_000.0] * 35 + [9_000_000.0, 700_000.0, 500_000.0, 400_000.0, 600_000.0]    # v den splitu objem vysoký
+    assert D.unadjusted_split(closes, frgt, 39) and not D.unadjusted_split(closes, frgt, 35)  # v den splitu ještě nepoznat
+    assert D.unadjusted_split(closes, frgt, 35, until=39)                                  # historie: 5 dní dopředu
 
 
 def test_market_day_refuses_snapshot_that_disagrees_with_sp500(conn):

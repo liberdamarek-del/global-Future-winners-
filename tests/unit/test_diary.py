@@ -28,6 +28,8 @@ def test_merge_series_rejects_split_and_stale_data():
     split = D.merge_series(days, closes, vols, [(105, 100.0, 95.0, 5)])                       # 1:10 reverse split
     assert "split" in split[3]
     assert "mezera" in D.merge_series(days, closes, vols, [(120, 12.0, 11.0, 5)])[3]
+    assert "split" in D.merge_series(days, closes, vols, [(102, 0.2, 0.21, 5)])[3]          # týž den: Yahoo 10, Nasdaq 0,2
+    assert D.merge_series(days, closes, vols, [(102, 10.01, 9.9, 5)])[3] is None
 
 
 def test_detect_windows_and_liquidity():

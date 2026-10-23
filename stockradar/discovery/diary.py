@@ -181,8 +181,13 @@ def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list,
     """Yahoo řada + dny snímků po jejím konci. snaps = [(den_ordinal, close, prev_close, volume)] seřazené podle dne.
     Vrací (dny, ceny, objemy, problém); problém = důvod, proč řadu nepoužít (split, stará data)."""
     d, c, v = list(days), list(closes), list(volumes)
+    recent = dict(zip(d[-40:], c[-40:]))
     for day, close, prev, vol in snaps:
         if d and day <= d[-1]:
+            # týž den v obou zdrojích: Yahoo někdy upraví zpětný split jen u části dnů (DKI 1:50 k 22. 10. 2026)
+            y = recent.get(day)
+            if y and y > 0 and abs(close / y - 1) > MAX_GAP:
+                return d, c, v, f"Yahoo {y:.4g} a Nasdaq {close:.4g} za týž den nesedí — pravděpodobně split / chyba dat"
             continue
         if not d or day - d[-1] > 7:
             return d, c, v, "stará data — mezi cenami z Yahoo a snímkem je mezera"
@@ -240,15 +245,19 @@ def strength(r: dict) -> float:
     return max(abs(math.log1p(r["moves"][k])) for k in r["okna"] if r["moves"].get(k) is not None and r["moves"][k] > -1)
 
 
-def unadjusted_split(closes, volumes, i: int, *, lookback: int = 21) -> bool:
-    """Skok aspoň 2,9× za den při objemu (v kusech) pod polovinou běžného = skoro jistě neupravený zpětný split, ne raketa
-    (FRGT 2026-10-19: split 1:10, v datech „+558 % za týden“ s objemem 0,1× běžného). Skutečná raketa má objem vysoký.
-    Doplňuje `winners.reverse_split_points`, které chce poměr přesně na násobku splitu."""
+def unadjusted_split(closes, volumes, i: int, *, lookback: int = 21, until: int | None = None) -> bool:
+    """Skok aspoň 2,9× za den, po kterém se obchoduje méně než polovina běžného počtu kusů = skoro jistě neupravený
+    zpětný split, ne raketa (FRGT 2026-10-19: split 1:10, v datech „+558 % za týden“, objem pak 0,1× běžného; v den
+    splitu samotném bývá objem vysoký). Skutečná raketa má objem i po skoku vysoký. Rozhoduje medián objemu ode dne
+    skoku do `until` (živě do dneška; historie smí kvůli chybám dat hledět 5 dní dopředu). Doplňuje
+    `winners.reverse_split_points`, které chce poměr přesně na násobku splitu."""
+    end = i if until is None else until
     for k in range(max(21, i - lookback + 1), i + 1):
         a = closes[k - 1]
         if a > 0 and closes[k] / a >= 2.9:
             usual = statistics.median(volumes[k - 20:k])
-            if usual > 0 and volumes[k] <= 0.5 * usual:
+            after = statistics.median(volumes[k:end + 1])
+            if usual > 0 and after <= 0.5 * usual:
                 return True
     return False
 
