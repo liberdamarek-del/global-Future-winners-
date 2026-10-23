@@ -248,6 +248,26 @@ def post(msg: dict) -> int:
     return 0
 
 
+STEP_CZ = {"update": "aktualizace", "causal": "kauzální radar", "rakety": "raketový deník", "objevovani": "objevování",
+           "smartmoney": "smart money", "signals": "signály", "testy": "testy", "stranka": "stránka"}
+
+
+def failure_message(kind: str, kroky: str, url: str, logs=()) -> dict:
+    """Které kroky selhaly (KROKY = "update=success causal=failure ..."), zda se stránka přesto obnovila, a známá
+    příčina: kauzální radar na prázdné cache hlásí BLOKOVÁNO, dokud ji nenaplní první týdenní objevování."""
+    what = {"denni": "Denní běh radaru", "tyden": "Týdenní objevování radaru"}.get(kind, "Běh radaru")
+    steps = dict(p.split("=", 1) for p in kroky.split() if "=" in p)
+    failed = [STEP_CZ.get(k, k) for k, v in steps.items() if v in ("failure", "cancelled")]
+    page_ok = steps.get("stranka") == "success"
+    lines = [f"Nepovedlo se: {', '.join(failed)}." if failed else f"{what} na GitHubu skončil chybou.",
+             "Ostatní kroky proběhly a stránka je obnovená." if page_ok else "Stránka ukazuje poslední úspěšná data."]
+    if any("Kauzální radar BLOKOVÁNO" in Path(f).read_text(encoding="utf-8", errors="replace") for f in logs):
+        lines.append("Kauzální radar čeká na ceny akcií - doplní je první týdenní objevování (dočasné).")
+    lines.append(f"Podrobnosti: {url}" if url else "Podrobnosti: GitHub → Actions.")
+    return {"title": f"Radar: {what} – " + (f"chyba ({', '.join(failed)})" if failed else "selhal"),
+            "priority": 3 if page_ok else 4, "lines": lines}
+
+
 def main(argv: list[str]) -> int:
     cmd = argv[0] if argv else ""
     kind = argv[1] if len(argv) > 1 and not argv[1].startswith("-") else "denni"
@@ -284,11 +304,8 @@ def main(argv: list[str]) -> int:
         msg = json.loads(NOTE.read_text(encoding="utf-8")) if NOTE.exists() else summary(kind)
         return post(msg) if msg.get("poslat") else 0
     if cmd == "oznam-chyba":
-        what = {"denni": "Denní běh radaru", "tyden": "Týdenní objevování radaru"}.get(kind, "Běh radaru")
-        url = os.environ.get("BEH_URL", "")
-        return post({"title": f"Radar: {what} selhal", "priority": 4,
-                     "lines": [f"{what} na GitHubu skončil chybou. Stránka ukazuje poslední úspěšná data.",
-                               f"Podrobnosti: {url}" if url else "Podrobnosti: GitHub → Actions."]})
+        return post(failure_message(kind, os.environ.get("KROKY", ""), os.environ.get("BEH_URL", ""),
+                                    (ROOT / "zprava").glob("*.txt")))
     print(__doc__)
     return 2
 

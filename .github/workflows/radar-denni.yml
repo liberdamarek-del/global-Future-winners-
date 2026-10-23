@@ -178,6 +178,7 @@ jobs:
         if: failure() || steps.causal.outcome == 'failure' || steps.rakety.outcome == 'failure'
         env:
           NTFY_TEMA: ${{ secrets.NTFY_TEMA }}
+          KROKY: "update=${{ steps.update.outcome }} causal=${{ steps.causal.outcome }} rakety=${{ steps.rakety.outcome }} stranka=${{ steps.kontrola.outcome }}"
         run: mkdir -p zprava && python tools/github_beh.py oznam-chyba denni 2>&1 | tee -a zprava/oznameni.txt
 
       - name: Zpráva o běhu (větev provoz-zprava)

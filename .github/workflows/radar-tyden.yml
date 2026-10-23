@@ -272,6 +272,7 @@ jobs:
         if: failure() || steps.signaly.outcome == 'failure' || steps.causal.outcome == 'failure' || needs.objevovani.result == 'failure' || needs.smartmoney.result == 'failure'
         env:
           NTFY_TEMA: ${{ secrets.NTFY_TEMA }}
+          KROKY: "objevovani=${{ needs.objevovani.result }} smartmoney=${{ needs.smartmoney.result }} signals=${{ steps.signaly.outcome }} update=${{ steps.update.outcome }} causal=${{ steps.causal.outcome }} testy=${{ steps.testy.outcome }} stranka=${{ steps.kontrola.outcome }}"
         run: mkdir -p zprava && python tools/github_beh.py oznam-chyba tyden 2>&1 | tee -a zprava/oznameni.txt
 
       - name: Zpráva o běhu (větev provoz-zprava)

@@ -98,3 +98,14 @@ def test_summary(tmp_path, monkeypatch):
 def test_post_without_topic(monkeypatch):
     monkeypatch.delenv("NTFY_TEMA", raising=False)
     assert G.post({"title": "x", "lines": []}) == 0
+
+
+def test_failure_message(tmp_path):
+    log = tmp_path / "beh.txt"
+    log.write_text("Kauzální radar BLOKOVÁNO: v cache objevování nejsou ceny akcií", encoding="utf-8")
+    m = G.failure_message("denni", "update=success causal=failure rakety=success stranka=success", "https://beh", [log])
+    assert m["title"] == "Radar: Denní běh radaru – chyba (kauzální radar)" and m["priority"] == 3
+    assert m["lines"][0] == "Nepovedlo se: kauzální radar." and "stránka je obnovená" in m["lines"][1]
+    assert any("týdenní objevování" in x for x in m["lines"]) and m["lines"][-1] == "Podrobnosti: https://beh"
+    m = G.failure_message("tyden", "objevovani=failure update=success stranka=skipped", "")
+    assert m["priority"] == 4 and "poslední úspěšná data" in m["lines"][1] and "objevování" in m["title"]
