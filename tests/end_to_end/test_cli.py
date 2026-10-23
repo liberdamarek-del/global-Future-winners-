@@ -51,3 +51,13 @@ def test_full_cli_flow(tmp_path):
     # diagnostika: čerstvá DB bez denního běhu = CHYBA (návratový kód 1), ale stav je uložený
     diag = run(tmp_path, "diag", code=1)
     assert "Denní běh (update)" in diag and "Celkově: CHYBA" in diag and "SEC EDGAR" in diag
+
+
+def test_causal_without_stock_prices_is_blocked(tmp_path):
+    """Nový server s prázdnou cache (provoz na GitHubu, v0.16.0): kauzální radar nic nepočítá ani nezapisuje."""
+    run(tmp_path, "init")
+    out = run(tmp_path, "causal", "--no-download", "--no-news", code=1)
+    assert "BLOKOVÁNO" in out
+    assert not (tmp_path / "web" / "stav_kauzalni.json").exists()
+    assert not (tmp_path / "state" / "causal_runs.jsonl").exists() or \
+        not (tmp_path / "state" / "causal_runs.jsonl").read_text(encoding="utf-8").strip()

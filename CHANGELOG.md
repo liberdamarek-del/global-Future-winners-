@@ -17,10 +17,13 @@ vypouštějí; týden souběhu s rutinami Claude; e-mail pro SEC v secretu GitHu
 | `.github/workflows/radar-testy.yml` (nový) | `python -m pytest` při každé změně | — |
 | `tools/github_beh.py` (nový, nástroj provozu mimo balíček) | klíče běhů (večer od 21:30, sobota od 9:00 Praha), režim `provoz/github.json` (stin / ostry), sestavení stránky (odmítne data s e-mailovou adresou), kontrola v Chrome, souhrn a oznámení přes ntfy | `test_github_provoz.py` (15) |
 | `web/index.html` | mimo claude.ai načte `stav_*.json` a `provoz.json` vedle sebe a ukáže varování, když je po termínu další aktualizace; v Claude beze změny | kontrola v Chromiu na skutečných datech |
+| `cli.py` `cmd_causal` | prázdná cache bez cen akcií (nový server): příkaz skončí kódem 1 s hlášením BLOKOVÁNO dřív, než se zapíše test řetězců, karty a predikce (dřív `ValueError: ordinal must be >= 1` na GitHubu, ale až po `record_study`) | `test_cli.py::test_causal_without_stock_prices_is_blocked` |
 | `provoz/github.json`, `requirements-provoz.txt`, `docs/GITHUB_PROVOZ.md` (nové) | režim stin; pytest a playwright jen pro testy a kontrolu stránky | — |
 
-**Výsledek:** stránka z dnešních dat (10 dokumentů z artefaktu) prošla kontrolou v Chromiu včetně šířky telefonu. Běh na
-serverech GitHubu (Yahoo, Nasdaq, xtb.com, SEC, Senát z datacentra) je NEOVĚŘENÝ do prvního běhu.
+**Výsledek:** stránka z dnešních dat (10 dokumentů z artefaktu) prošla kontrolou v Chromiu včetně šířky telefonu. První denní
+běh na GitHubu (23. 10.): testy prošly, `update` OK (Yahoo 99/99, model v16), snímek Nasdaq OK (6 630 akcií), `causal` padal na
+prázdné cache (opraveno výše; cache se naplní prvním sobotním objevováním), stránka prošla kontrolou. xtb.com, SEC, Senát a
+stahování 13 000 firem z GitHubu NEOVĚŘENO do prvního týdenního běhu.
 
 ## 2026-10-20 · v0.15.2 — Kauzální radar: zprávy o komoditě jen v tržním nebo výrobním smyslu
 

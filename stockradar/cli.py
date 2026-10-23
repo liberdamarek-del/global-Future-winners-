@@ -439,6 +439,11 @@ def cmd_causal(args) -> int:
         cdata.download(cconn, log=log)
     comm = cdata.load(cconn)
     ex, data_end, from_memo = memo.load_or_build(cconn, log=log)     # ceny akcií se mění týdně → většinou z paměti
+    if not data_end:                      # prázdná cache (nový server, v0.16.0): bez cen akcií nic nepočítat ani nezapisovat
+        print("Kauzální radar BLOKOVÁNO: v cache objevování nejsou ceny akcií (nejdřív `discover --download`);"
+              " test řetězců se nezapsal, karty ani predikce nevznikly.")
+        _note(args, blokovano="chybí ceny akcií v cache")
+        return 1
     weekly = ex.weekly
     periods = {"UCENI": (0, sm.TRAIN_END), "VALIDACE": sm.VAL, "TEST": sm.TEST}
     st = chains.study(ex, periods, log=log)

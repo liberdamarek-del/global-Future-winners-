@@ -21,10 +21,11 @@ raket z titulků zůstávají označené AUTO / neověřené. Kdykoli to jde ud�
 ## Data mezi běhy
 
 * `state/` (git) = zdroj pravdy; každý běh si z něj sestaví `data/stockradar.db` (`init` po smazání staré DB).
-* `data/market_cache.db` (ceny ~13 000 firem, SEC, studie, insideři, 13F, XTB, snímky raketového deníku) se přenáší cache
-  GitHubu (`radar-data-<běh>`; obnoví se nejnovější). Ukládá se i po selhání, takže přerušené stahování pokračuje.
+* `data/market_cache.db` (ceny ~13 000 firem, SEC, studie, insideři, 13F, XTB, snímky raketového deníku) a paměť
+  kauzálního radaru `data/cache_kauzalni.pkl` se přenáší cache GitHubu (`radar-data-<běh>`; obnoví se nejnovější). Ukládá se i po selhání, takže přerušené stahování pokračuje.
   První běh na GitHubu začíná s prázdnou cache: stáhne všechno znovu (hodiny), raketový deník potřebuje 5 / 10 / 21 dní
-  vlastních snímků, než najde rakety (v Claude je historie v jeho kontejneru).
+  vlastních snímků, než najde rakety (v Claude je historie v jeho kontejneru). Kauzální radar bez cen akcií hlásí
+  BLOKOVÁNO a nic nezapíše (první denní běh 23. 10.), dokud první sobotní objevování cache nenaplní.
 * Mezi joby týdenního běhu jde `data/stockradar.db` jako artefakt (3 dny).
 * E-mail pro SEC: secret `STOCKRADAR_CONTACT_EMAIL` → proměnná prostředí, kterou čte `stockradar.contact` (v logu je
   maskovaný, do gitu ani na stránku se nedostane; `tools/github_beh.py stranka` odmítne zveřejnit data s e-mailovou adresou

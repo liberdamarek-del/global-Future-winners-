@@ -93,7 +93,9 @@ jobs:
       - name: Cache dat (ceny, SEC, studie, XTB, snímky)
         uses: actions/cache/restore@v6
         with:
-          path: data/market_cache.db
+          path: |
+            data/market_cache.db
+            data/cache_kauzalni.pkl
           key: radar-data-${{ github.run_id }}
           restore-keys: radar-data-
       - name: Databáze ze state/
@@ -154,7 +156,9 @@ jobs:
         if: always() && hashFiles('data/market_cache.db') != ''
         uses: actions/cache/save@v6
         with:
-          path: data/market_cache.db
+          path: |
+            data/market_cache.db
+            data/cache_kauzalni.pkl
           key: radar-data-${{ github.run_id }}
       - name: Značka hotového běhu
         if: steps.kontrola.outcome == 'success' && needs.plan.outputs.hotovo != 'true'
