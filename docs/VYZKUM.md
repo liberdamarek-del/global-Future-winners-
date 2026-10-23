@@ -190,6 +190,13 @@ kritérium N-10 (zpoždění ≤ 4 týdny) nesplnil žádný. Současné pravidl
 potvrdí roli bez efektu. Nic se nemění; další krok jen v simulaci: kontrola každé 4 týdny s rozložením α a jednostranný
 prior. Omezení: týdny jsou v simulaci nezávislé (skutečné mohou být závislé → současné pravidlo by bylo ještě horší).
 
+**Doplnění 2026-10-23 (kalibrovaný práh, skript `n10b_2026-10-23.py`):** konstantní práh zvolený jen na nulových
+datech tak, aby falešných OVĚŘENO bylo nejvýš 5 %: při týdenní kontrole **t ≥ 2,83**, při kontrole každé 4 týdny
+t ≥ 2,53. Na nových datech: bez efektu 4,8 % falešných (oba); efekt 0,5 sd — OVĚŘENO do 26 týdnů 56–58 % (současné
+83 %), medián 19.–20. týden (současné 10.); efekt 0,3 sd — do 52 týdnů 45–51 % (současné 75 %). Zpoždění +9–10
+týdnů je menší než u e-procesu, ale kritérium N-10 (≤ 4 týdny) opět nesplněno. Návrh zůstává jen návrhem:
+dvoustupňový stav (t ≥ 2 = PŘEDBĚŽNĚ s malou vahou, t ≥ 2,83 = OVĚŘENO).
+
 ## E5 · 2026-10-23 · Co následuje po velkém pohybu akcie (popisná studie, ne test hypotézy)
 
 - **Zadání uživatele:** analyzovat, proč akcie vyletěla nebo spadla a co po tom následuje — ne je kupovat.

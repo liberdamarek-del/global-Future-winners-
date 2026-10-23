@@ -98,3 +98,15 @@
 {"day": "2026-10-22", "first_at": "2026-10-22T12:15:51Z", "host": "data.sec.gov", "last_at": "2026-10-22T12:15:51Z", "purpose": "ověření příčiny rakety SGMT (seznam podání)", "requests": 1}
 {"day": "2026-10-22", "first_at": "2026-10-22T12:15:56Z", "host": "www.sec.gov", "last_at": "2026-10-22T12:15:56Z", "purpose": "ověření příčiny rakety INDP (8-K)", "requests": 1}
 {"day": "2026-10-22", "first_at": "2026-10-22T12:15:56Z", "host": "www.sec.gov", "last_at": "2026-10-22T12:15:56Z", "purpose": "ověření příčiny rakety SGMT (8-K)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:21:43Z", "host": "data.sec.gov", "last_at": "2026-10-23T12:21:59Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 60}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:33Z", "host": "data.sec.gov", "last_at": "2026-10-23T12:23:33Z", "purpose": "ověření příčiny propadu EYPT (seznam podání)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:33Z", "host": "data.sec.gov", "last_at": "2026-10-23T12:23:33Z", "purpose": "ověření příčiny propadu SXTC (seznam podání)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:33Z", "host": "data.sec.gov", "last_at": "2026-10-23T12:23:33Z", "purpose": "ověření příčiny propadu WFF (seznam podání)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:34Z", "host": "data.sec.gov", "last_at": "2026-10-23T12:23:34Z", "purpose": "ověření příčiny propadu NIVF (seznam podání)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:34Z", "host": "data.sec.gov", "last_at": "2026-10-23T12:23:34Z", "purpose": "ověření příčiny propadu XHLD (seznam podání)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:42Z", "host": "www.sec.gov", "last_at": "2026-10-23T12:23:42Z", "purpose": "ověření příčiny propadu EYPT (8-K)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:42Z", "host": "www.sec.gov", "last_at": "2026-10-23T12:23:42Z", "purpose": "ověření příčiny propadu SXTC (prospekt)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:43Z", "host": "www.sec.gov", "last_at": "2026-10-23T12:23:43Z", "purpose": "ověření příčiny propadu WFF (prospekt)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:23:43Z", "host": "www.sec.gov", "last_at": "2026-10-23T12:23:43Z", "purpose": "ověření příčiny propadu NIVF (prospekt)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:24:16Z", "host": "www.sec.gov", "last_at": "2026-10-23T12:24:16Z", "purpose": "ověření příčiny propadu EYPT (seznam příloh 8-K)", "requests": 1}
+{"day": "2026-10-23", "first_at": "2026-10-23T12:24:17Z", "host": "www.sec.gov", "last_at": "2026-10-23T12:24:17Z", "purpose": "ověření příčiny propadu EYPT (tisková zpráva, příloha 99.1)", "requests": 1}
