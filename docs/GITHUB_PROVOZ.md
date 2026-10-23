@@ -25,7 +25,9 @@ raket z titulků zůstávají označené AUTO / neověřené. Kdykoli to jde ud�
   kauzálního radaru `data/cache_kauzalni.pkl` se přenáší cache GitHubu (`radar-data-<běh>`; obnoví se nejnovější). Ukládá se i po selhání, takže přerušené stahování pokračuje.
   První běh na GitHubu začíná s prázdnou cache: stáhne všechno znovu (hodiny; 23. 10. 13 097 řad za ~73 min). Raketový deník
   bere ceny z Yahoo v cache + vlastní denní snímky Nasdaq (od v0.17.0 i propady, podání u SEC, výsledky a přehled trhu;
-  v režimu `stin` se jeho nové záznamy nezachovají a podání u SEC se doplňují každý večer znovu, nejvýš 60 dotazů). Kauzální radar bez cen akcií hlásí
+  v režimu `stin` se jeho nové záznamy nezachovají a podání u SEC se doplňují každý večer znovu, nejvýš 60 dotazů).
+  Screener Nasdaq vydá závěr dne D až ráno D+1, takže večerní běh má deník a přehled trhu **za předchozí obchodní den**
+  (snímek se ukládá pod dnem, na který sedí závěry z Yahoo — oprava v0.17.0 po běhu 23. 10.). Kauzální radar bez cen akcií hlásí
   BLOKOVÁNO a nic nezapíše (první denní běh 23. 10.), dokud první sobotní objevování cache nenaplní.
 * Mezi joby týdenního běhu jde `data/stockradar.db` jako artefakt (3 dny).
 * Ceny sledovaných firem a S&P 500 (`price_bars`) ve state/ nejsou: týdenní běh je proto po `init` stáhne příkazem

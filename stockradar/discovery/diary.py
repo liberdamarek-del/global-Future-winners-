@@ -83,19 +83,86 @@ def parse_snapshot(rows: list[dict]) -> list[tuple]:
     return out
 
 
-def take_snapshot(cache_conn, *, now: datetime | None = None, fetch=None, log=print) -> dict:
-    """Uloží denní snímek (jen po závěru obchodování); stejné ceny jako minulý snímek = svátek → neukládá se."""
+def reference_closes(main_conn, *, days: int = 20) -> dict[str, dict[str, float]]:
+    """Denní závěry amerických akcií ze sledovaných firem (price_bars, Yahoo s datem) — podle nich se pozná, ze kterého
+    dne snímek screeneru opravdu je."""
+    since = (utcnow().date() - timedelta(days=days)).isoformat()
+    out: dict[str, dict[str, float]] = {}
+    for sym, day, close in main_conn.execute("SELECT symbol, date, close FROM price_bars WHERE date >= ? AND close > 0", (since,)):
+        if "." not in sym and "=" not in sym and not sym.startswith("^"):
+            out.setdefault(sym, {})[day] = close
+    return out
+
+
+def data_day(rows, reference: dict[str, dict[str, float]], *, tol: float = 0.0015) -> tuple[str | None, int, int]:
+    """Ze kterého obchodního dne ceny snímku jsou: závěr firmy se porovná se závěry z Yahoo; vyhraje den, na který sedí
+    nejvíc firem. Vrací (den, shod, porovnaných firem)."""
+    from collections import Counter
+    votes, compared = Counter(), 0
+    for r in rows:
+        ref = reference.get(r[0])
+        if not ref:
+            continue
+        compared += 1
+        for day, c in ref.items():
+            if abs(r[1] / c - 1) < tol:
+                votes[day] += 1
+    if not votes:
+        return None, 0, compared
+    day, n = votes.most_common(1)[0]
+    return day, n, compared
+
+
+def _trusted(day, n, compared) -> bool:
+    return day is not None and n >= 3 and n >= 0.6 * compared
+
+
+def repair_snapshots(cache_conn, reference: dict, *, log=print) -> list[str]:
+    """Snímky s cenami jiného dne, než nesou (screener vydá závěr dne D až ráno D+1 — večerní běh tak dřív zapsal
+    ceny z D−1 pod D, 2026-10-23): přejmenovat na skutečný den, nebo smazat, když ten už je. Cache, ne historie."""
+    cache_conn.executescript(SNAP_SCHEMA)
+    fixes = []
+    for (label,) in cache_conn.execute("SELECT DISTINCT day FROM nasdaq_snap ORDER BY day DESC LIMIT 15").fetchall():
+        rows = [tuple(r) for r in cache_conn.execute("SELECT symbol, close FROM nasdaq_snap WHERE day = ?", (label,))]
+        day, n, comp = data_day(rows, reference)
+        if not _trusted(day, n, comp) or day == label:
+            continue
+        with cache_conn:
+            if cache_conn.execute("SELECT 1 FROM nasdaq_snap WHERE day = ? LIMIT 1", (day,)).fetchone():
+                cache_conn.execute("DELETE FROM nasdaq_snap WHERE day = ?", (label,))
+                fixes.append(f"{label}: ceny jsou z {day}, který už je → smazáno")
+            else:
+                cache_conn.execute("UPDATE nasdaq_snap SET day = ? WHERE day = ?", (day, label))
+                fixes.append(f"{label}: ceny jsou z {day} → přejmenováno")
+    for f in fixes:
+        log(f"Snímek {f}")
+    return fixes
+
+
+def take_snapshot(cache_conn, *, now: datetime | None = None, fetch=None, reference: dict | None = None, log=print) -> dict:
+    """Uloží denní snímek (jen mimo obchodní hodiny) pod dnem, ze kterého ceny opravdu jsou: podle `reference` (závěry
+    z Yahoo), jinak podle hodin. Stejné ceny jako minulý snímek = svátek / zastaralá data → neukládá se."""
     cache_conn.executescript(SNAP_SCHEMA)
     now = now or utcnow()
     day = session_day(now)
     if day is None:
         return {"stav": "PŘESKOČENO", "duvod": "trh v New Yorku právě obchoduje — snímek až po závěru"}
-    if cache_conn.execute("SELECT 1 FROM nasdaq_snap WHERE day = ? LIMIT 1", (day.isoformat(),)).fetchone():
+    if not reference and cache_conn.execute("SELECT 1 FROM nasdaq_snap WHERE day = ? LIMIT 1", (day.isoformat(),)).fetchone():
         return {"stav": "UŽ JE", "den": day.isoformat()}
     if fetch is None:
         from stockradar.discovery import listings
         fetch = lambda: json.loads(listings._get(listings.NASDAQ_SCREENER))["data"]["rows"]
     rows = parse_snapshot(fetch())
+    if reference:
+        actual, n, comp = data_day(rows, reference)
+        if _trusted(actual, n, comp):
+            if actual != day.isoformat():
+                log(f"Snímek: screener ukazuje závěr z {actual}, ne z {day} — ukládá se pod {actual}")
+            day = date.fromisoformat(actual)
+        elif comp >= 3:
+            return {"stav": "NEOVĚŘENO", "duvod": f"ceny screeneru nesedí na žádný den z Yahoo ({n} z {comp} firem)"}
+        if cache_conn.execute("SELECT 1 FROM nasdaq_snap WHERE day = ? LIMIT 1", (day.isoformat(),)).fetchone():
+            return {"stav": "UŽ JE", "den": day.isoformat()}
     last = cache_conn.execute("SELECT MAX(day) FROM nasdaq_snap").fetchone()[0]
     if last:
         prev = {s: c for s, c in cache_conn.execute("SELECT symbol, close FROM nasdaq_snap WHERE day = ?", (last,))}
@@ -173,6 +240,19 @@ def strength(r: dict) -> float:
     return max(abs(math.log1p(r["moves"][k])) for k in r["okna"] if r["moves"].get(k) is not None and r["moves"][k] > -1)
 
 
+def unadjusted_split(closes, volumes, i: int, *, lookback: int = 21) -> bool:
+    """Skok aspoň 2,9× za den při objemu (v kusech) pod polovinou běžného = skoro jistě neupravený zpětný split, ne raketa
+    (FRGT 2026-10-19: split 1:10, v datech „+558 % za týden“ s objemem 0,1× běžného). Skutečná raketa má objem vysoký.
+    Doplňuje `winners.reverse_split_points`, které chce poměr přesně na násobku splitu."""
+    for k in range(max(21, i - lookback + 1), i + 1):
+        a = closes[k - 1]
+        if a > 0 and closes[k] / a >= 2.9:
+            usual = statistics.median(volumes[k - 20:k])
+            if usual > 0 and volumes[k] <= 0.5 * usual:
+                return True
+    return False
+
+
 def glitch(closes, *, lookback: int = 40, drop: float = 0.2, back: float = 0.3, within: int = 5) -> bool:
     """Chyba dat typu „propad a návrat“: cena během dne klesne aspoň 5× a do `within` dnů se vrátí aspoň na 30 %
     původní úrovně. U skutečných akcií prakticky nenastává; vzniká, když zdroj upraví zpětný split jen u části dnů
@@ -217,6 +297,9 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
             continue
         for direction in (1, -1):
             hit = detect(d, c, v, direction)
+            if hit and direction > 0 and unadjusted_split(c, v, len(c) - 1):
+                stats["split_nebo_chyba"] += 1
+                continue
             if hit:
                 found.append({"symbol": sym, "nazev": name, "mcap": cap, "obor": industry, **hit})
     stats["raket"] = sum(1 for r in found if r["smer"] > 0)

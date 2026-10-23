@@ -39,7 +39,22 @@ Proto se rozšiřuje existující deník a jeho tabulka, žádný paralelní mod
 
 **Výsledek:** 212 testů prošlo lokálně. Z prvního týdenního běhu ověřeno: stažení 13 097 řad z Yahoo (~73 min), SEC (835 tis.
 podání v indexu), ClinicalTrials.gov, Senát (305 výkazů) a **xtb.com z GitHubu funguje** (63 dotazů, 0 chyb — ze serveru Claude
-je od 11. 10. blokované). Běh nového deníku na skutečných datech: viz další záznam.
+je od 11. 10. blokované).
+
+**Zkušební denní běh na GitHubu se skutečnými daty (23. 10., běh 39911979271) — co ukázal a co se hned opravilo:**
+
+| Zjištění | Oprava | Test |
+|---|---|---|
+| Přehled trhu za „22. 10.“ ukazoval trh +0,59 % a technologie +1,3 %, ale S&P 500 ten den padl o 1,2 % (Nasdaq −2,6 %; ABC News / AP). Snímek byl ve skutečnosti z 21. 10. (S&P +0,6 %): screener Nasdaq vydá závěr dne D až ráno D+1, takže večerní běh na GitHubu zapisoval ceny z předchozího dne pod dnešní datum (rutina Claude ve 14:13 je měla správně) | `diary.reference_closes` + `data_day`: snímek se uloží pod dnem, na který jeho ceny sedí podle závěrů z Yahoo (`price_bars`); nesedí-li na žádný, neuloží se (NEOVĚŘENO); `repair_snapshots` přejmenuje nebo smaže starší snímky se špatným dnem; přehled trhu se nezapíše, když se celý trh od S&P 500 téhož dne liší o víc než 1 p. b. Večerní běh na GitHubu tak má deník a přehled za předchozí obchodní den | `test_moves.py::test_snapshot_is_stored_under_the_day_its_prices_are_from`, `::test_market_day_refuses_snapshot_that_disagrees_with_sp500` |
+| FRGT „+558 % za týden“ s objemem 0,1× běžného — ve skutečnosti zpětný split 1:10 od 19. 10. 2026 (finviz), který Yahoo neupravil a stávající detektor nepoznal (poměr nebyl přesně násobkem) | `diary.unadjusted_split`: skok ≥ 2,9× za den při objemu pod polovinou běžného = chyba dat, ne raketa (živě i v historii; studie verze 2) | `test_moves.py::test_reverse_split_with_low_volume_is_not_a_rocket` |
+| První běh zachytil všechny propady posledního měsíce najednou (201 propadů, 27 raket, 206 nových epizod) — jednorázové dohnání, v dalších dnech jen nové | — (v režimu `stin` se dohnání opakuje každý večer, protože GitHub nic neukládá) | — |
+| Podání u SEC: 60 dotazů, 60 zapsáno, 0 chyb (čeká 221) — e-mail dnes 60× jen data.sec.gov | limit 60 za běh ponechán | — |
+
+Historická studie na skutečných datech (12 235 raket a 15 142 propadů, 11/2021–10/2026, popis, ne předpověď):
+po raketě byl medián výnosu proti S&P 500 −2,3 % po 5, −6,9 % po 20 a −15,0 % po 60 obchodních dnech (dál nahoru šlo
+jen 42 / 40 / 37 %); nejhůř rakety s emisí akcií (−29,5 % po 60 dnech) a malé firmy pod 300 mil. USD (−30,7 %), nejlíp
+velké firmy (−1,6 %) a rakety s výsledky 10-Q/10-K (−9,3 %). Je to v souladu se známým „efektem MAX“ (akcie s extrémním
+denním růstem pak v průměru zaostávají; Bali, Cakici a Whitelaw 2011), ale seznam firem je dnešní (survivorship bias) a pohyby se shlukují v čase.
 
 ## 2026-10-23 · v0.16.0 — Provoz na GitHubu bez Claude (Actions + Pages)
 

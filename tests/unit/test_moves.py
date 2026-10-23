@@ -254,3 +254,41 @@ def test_monthly_window_does_not_record_the_same_jump_twice(conn):
     later = D.detect(days[:118], [10.0] * 100 + [16.0] * 18, [200_000.0] * 118)          # 17 obchodních dní ≈ 23 kalendářních
     assert later is not None and later["end"] - first["end"] > D.EPISODE_DAYS
     assert D.same_story(later, first["end"]) and not D.same_story(first, None)
+
+
+def test_snapshot_is_stored_under_the_day_its_prices_are_from():
+    """Screener vydá závěr dne D až ráno D+1: večerní běh 22. 10. dostal ceny z 21. 10. (S&P +0,6 %, ne −1,2 %)."""
+    from datetime import datetime, timezone
+    c = sqlite3.connect(":memory:")
+    rows = [{"symbol": f"S{i}", "lastsale": f"${10 + i}", "netchange": "0.5", "volume": "1000", "marketCap": "1", "name": "x"}
+            for i in range(10)]
+    ref = {f"S{i}": {"2026-10-21": 10.0 + i, "2026-10-22": 9.0 + i} for i in range(10)}
+    evening = datetime(2026, 10, 22, 20, 47, tzinfo=timezone.utc)                    # 16:47 v New Yorku
+    res = D.take_snapshot(c, now=evening, fetch=lambda: rows, reference=ref, log=QUIET)
+    assert res == {"stav": "OK", "den": "2026-10-21", "akcii": 10}
+    assert D.take_snapshot(c, now=evening, fetch=lambda: rows, reference=ref, log=QUIET)["stav"] == "UŽ JE"
+    bad = {f"S{i}": {"2026-10-22": 50.0} for i in range(10)}
+    assert D.take_snapshot(sqlite3.connect(":memory:"), now=evening, fetch=lambda: rows, reference=bad,
+                           log=QUIET)["stav"] == "NEOVĚŘENO"
+    # oprava staršího snímku se špatným dnem: přejmenovat, nebo smazat, když skutečný den už je
+    c.execute("UPDATE nasdaq_snap SET day = '2026-10-22'")
+    assert D.repair_snapshots(c, ref, log=QUIET) == ["2026-10-22: ceny jsou z 2026-10-21 → přejmenováno"]
+    assert [r[0] for r in c.execute("SELECT DISTINCT day FROM nasdaq_snap")] == ["2026-10-21"]
+
+
+def test_reverse_split_with_low_volume_is_not_a_rocket():
+    days = list(range(40))
+    closes = [0.25] * 35 + [2.1, 1.9, 1.6, 1.4, 1.23]                                   # split 1:10 a pak pokles
+    vols = [8_000_000.0] * 35 + [600_000.0] * 5                                          # objem v kusech klesl
+    assert D.detect(days, closes, vols) is not None and D.unadjusted_split(closes, vols, 39)
+    assert not D.unadjusted_split(closes, [8_000_000.0] * 35 + [90_000_000.0] * 5, 39)   # skutečná raketa: objem vysoko
+
+
+def test_market_day_refuses_snapshot_that_disagrees_with_sp500(conn):
+    cconn = dcache.connect(":memory:")
+    _snap_day(cconn, "2026-10-22")                                                       # trh v datech asi −3 %
+    with conn:
+        conn.executemany("INSERT INTO price_bars (symbol, date, close, volume, source, fetched_at) VALUES ('SPY', ?, ?, 1, 't', 'x')",
+                         [("2026-10-21", 7757.17), ("2026-10-22", 7757.17 * 1.006)])
+    res = MD.build(conn, cconn, "2026-10-22", fetch=None)
+    assert res["stav"] == "NEOVĚŘENO" and "S&P 500" in res["duvod"] and not MD.record(conn, res)

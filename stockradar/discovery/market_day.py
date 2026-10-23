@@ -141,6 +141,12 @@ def build(main_conn, cache_conn, day: str | None = None, *, fetch=news.fetch_hea
     if len(rows) < 100:
         return {"den": day, "stav": "NEOVĚŘENO", "duvod": f"ve snímku jen {len(rows)} firem nad 300 mil. USD"}
     market = aggregate(rows)
+    ctx = market_context(main_conn, day)
+    spy = (ctx.get("sp500") or {}).get("zmena")
+    if spy is not None and abs(market["zmena"] - spy) > 0.01:
+        # celý trh vážený hodnotou se od S&P 500 liší o desetiny procenta; přes 1 p. b. = snímek je z jiného dne
+        return {"den": day, "stav": "NEOVĚŘENO",
+                "duvod": f"snímek {market['zmena'] * 100:+.2f} %, S&P 500 téhož dne {spy * 100:+.2f} % — ceny nejsou z {day}"}
     groups = {}
     for key in ("sektor", "obor"):
         by: dict[str, list] = {}
@@ -164,7 +170,7 @@ def build(main_conn, cache_conn, day: str | None = None, *, fetch=news.fetch_hea
             g["titulky"] = headlines_for(g["tahouni"], day, fetch=fetch, pause=pause)
         g["vysvetleni"] = explain(g)
     return {
-        "den": day, "stav": "OK", "trh": {**market, **market_context(main_conn, day)},
+        "den": day, "stav": "OK", "trh": {**market, **ctx},
         "sektory": sectors, "obory": industries,
         "komodity": [c for c in comm if abs(c["z"]) >= Z_NOTABLE][:6] or comm[:3],
         "pohybu_v_deniku": {"rakety": sum(1 for e in events if e["direction"] > 0),

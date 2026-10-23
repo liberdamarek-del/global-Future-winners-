@@ -24,7 +24,7 @@ from stockradar.discovery import diary, news
 from stockradar.timeutil import to_iso, utcnow
 
 HORIZONS = (5, 20, 60)
-STUDY_VERSION = "1"
+STUDY_VERSION = "2"                  # 2: + neupravené zpětné splity vyřazeny (FRGT)
 STUDY_EVERY_DAYS = 7
 SEC_LIMIT = 60                       # nejvýš tolik dotazů na SEC za běh (nové pohyby; zbytek příště)
 MIN_GROUP = 30                       # menší skupina historie = MALÝ VZOREK
@@ -361,7 +361,8 @@ def scan_history(cache_conn, spy, *, symbols: set[str] | None = None, log=print)
                 # chyby dat typu „skok a návrat do 5 dní“ (VWAV) — jediné místo, kde výběr hledí dopředu; u skutečných
                 # akcií tenhle vzor prakticky nenastává, chyba dat by ale zkreslila „co následovalo“
                 if hit is None or diary.same_story(hit, last[direction] if last[direction] > 0 else None) or \
-                        is_bad_tick(c, i) or diary.glitch(c[max(0, i - 41):i + 6], lookback=46):
+                        is_bad_tick(c, i) or diary.glitch(c[max(0, i - 41):i + 6], lookback=46) or \
+                        (direction > 0 and diary.unadjusted_split(c, v, i)):
                     continue
                 last[direction] = d[i]
                 s0 = _spy_at(spy, d[i])
@@ -454,7 +455,7 @@ def history_study(conn, cache_conn, *, force: bool = False, log=print) -> dict |
     res = summarize_history(events)
     res["poznamky"] = [
         "Popis historie, ne předpověď: co obvykle následovalo po podobném pohybu (stejná pravidla jako deník).",
-        "Seznam firem je dnešní — zkrachovalé a vyřazené firmy chybí, proto výsledky po propadech vycházejí lépe, než byly.",
+        "Seznam firem je dnešní — zkrachovalé a vyřazené firmy chybí, proto výsledky vycházejí lépe, než byly (nejvíc po propadech a u malých firem).",
         "Pohyby se shlukují v čase (stejný den padá mnoho akcií), takže nejsou nezávislé; viz dny s nejvíc pohyby a roky.",
         "Velikost firmy je dnešní tržní hodnota. Podání u SEC jen z kvartálního indexu (bez čísel bodů 8-K).",
         "Vyřazené chyby dat: skok a návrat do 5 dní (nastává jen u chybně upravených splitů).",

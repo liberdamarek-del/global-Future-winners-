@@ -364,7 +364,9 @@ def cmd_rakety(args) -> int:
         return 0
     cconn = dcache.connect()
     log = lambda m: print(f"  {m}", flush=True)
-    snap = {"stav": "VYPNUTO"} if args.bez_snimku else diary.take_snapshot(cconn, log=log)
+    reference = diary.reference_closes(conn)          # závěry z Yahoo s datem → ze kterého dne snímek opravdu je
+    diary.repair_snapshots(cconn, reference, log=log)
+    snap = {"stav": "VYPNUTO"} if args.bez_snimku else diary.take_snapshot(cconn, reference=reference, log=log)
     print("Snímek trhu:", snap)
     found, stats = diary.scan(cconn)
     new = diary.record_new(conn, found, today=date.today(), auto=None if args.bez_zprav else news.explain_event,
@@ -387,6 +389,12 @@ def cmd_rakety(args) -> int:
         g = study["skupiny"]
         print(f"Historická studie: {study['pohybu']} pohybů {study.get('obdobi')}; raket {g.get('rakety', {}).get('pohybu')},"
               f" propadů {g.get('propady', {}).get('pohybu')}")
+        for key in ("rakety", "propady"):
+            for row in (g.get(key) or {}).get("tabulka", [])[:1] + [r for r in (g.get(key) or {}).get("tabulka", [])
+                                                                   if r["skupina"].startswith(("s emisí", "s výsledky", "malé"))]:
+                cells = ", ".join(f"{h}: {row[h]['median_proti_trhu']:+.1f} % proti trhu, dál {row[h]['pokracovalo'] * 100:.0f} %"
+                                  for h in ("5d", "20d", "60d") if row.get(h, {}).get("median_proti_trhu") is not None)
+                print(f"  {key} · {row['skupina']} ({row['pohybu']}): {cells}")
     else:
         print("Historická studie: beze změny (přepočet jednou týdně, --historie-znovu vynutí)")
     export_state(conn, state_dir())
