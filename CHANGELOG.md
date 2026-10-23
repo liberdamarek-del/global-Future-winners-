@@ -51,6 +51,10 @@ je od 11. 10. blokované).
 | První běh zachytil všechny propady posledního měsíce najednou (201 propadů, 27 raket, 206 nových epizod) — jednorázové dohnání, v dalších dnech jen nové | — (v režimu `stin` se dohnání opakuje každý večer, protože GitHub nic neukládá) | — |
 | Podání u SEC: 60 dotazů, 60 zapsáno, 0 chyb (čeká 221) — e-mail dnes 60× jen data.sec.gov | limit 60 za běh ponechán | — |
 
+Třetí zkušební běh (39913941561) po opravách: snímek uložen pod 21. 10. (přehled trhu +0,59 % = S&P 500 21. 10. +0,6 %),
+FRGT ani DKI už mezi pohyby nejsou (vyřazeno kvůli splitu / chybě dat 21 řad místo 15), podání u SEC 60 / 60 bez chyby.
+E-mail pro SEC při třech zkouškách: 3 × 60 dotazů na data.sec.gov.
+
 Historická studie na skutečných datech (12 235 raket a 15 142 propadů, 11/2021–10/2026, popis, ne předpověď):
 po raketě byl medián výnosu proti S&P 500 −2,3 % po 5, −6,9 % po 20 a −15,0 % po 60 obchodních dnech (dál nahoru šlo
 jen 42 / 40 / 37 %); nejhůř rakety s emisí akcií (−29,5 % po 60 dnech) a malé firmy pod 300 mil. USD (−30,7 %), nejlíp
