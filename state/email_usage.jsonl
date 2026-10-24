@@ -119,3 +119,10 @@
 {"day": "2026-10-24", "first_at": "2026-10-24T08:56:40Z", "host": "data.sec.gov", "last_at": "2026-10-24T09:14:24Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 3}
 {"day": "2026-10-24", "first_at": "2026-10-24T09:12:31Z", "host": "www.sec.gov", "last_at": "2026-10-24T09:14:23Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 7}
 {"day": "2026-10-24", "first_at": "2026-10-24T09:16:25Z", "host": "www.sec.gov", "last_at": "2026-10-24T09:16:28Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 14}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:16:04Z", "host": "data.sec.gov", "last_at": "2026-10-24T12:16:19Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 60}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:17:28Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:28Z", "purpose": "ověření příčiny pohybu MGNX (8-K)", "requests": 1}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:17:29Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:29Z", "purpose": "ověření příčiny pohybu TCRT (8-K)", "requests": 1}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:17:29Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:29Z", "purpose": "ověření příčiny pohybu SHFS (8-K)", "requests": 1}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:17:44Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:44Z", "purpose": "ověření příčiny pohybu MGNX (seznam příloh 8-K)", "requests": 1}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:17:55Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:55Z", "purpose": "ověření příčiny pohybu MGNX (seznam příloh 8-K, opakovaně)", "requests": 1}
+{"day": "2026-10-24", "first_at": "2026-10-24T12:17:56Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:56Z", "purpose": "ověření příčiny pohybu MGNX (tisková zpráva, příloha 99.1)", "requests": 1}

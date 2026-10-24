@@ -17,8 +17,10 @@ Důvod: 21. 10. deník zapsal STFS jako raketu +51 % za 21 dní jen proto, že o
 | `smartmoney/report.py` | aktuální signály vynechají uzavřené fondy (`is_fund`, jako deník u DHY): 24. 10. byl mezi 10 signály PNI (komunální fond, banka jako dealer koupila a týž den prodávala) → predikce #68 zůstává v knize | `test_smartmoney.py::test_closed_end_fund_is_not_a_smart_money_signal` |
 | `discovery/rocket.py` | `broken_recent`: dnešní kandidáti raket bez řad s propadem a návratem nebo neupraveným zpětným splitem za 130 dní (kontroly deníku). 24. 10. tak vznikly predikce #62 DLXY a #63 FRGT („volatilita“ 35 a 140 % denně) — zůstávají v knize. Vyřadí 41 z 12 351 řad (0,3 %); učení a test modelu se nemění | `test_rocket.py::test_broken_price_series_is_not_a_rocket_candidate` |
 
-Pravidlo je definice měření (kvalita dat), ne model; dopad na počty raket a propadů v historické studii se zapíše po
-přepočtu. Už zapsané epizody se nemění (append-only).
+Pravidlo je definice měření (kvalita dat), ne model. **Dopad:** na stejných datech (800 náhodných akcií, ~2 roky) o 3,3 %
+méně dnů s raketou a o 4,9 % méně s propadem; historická studie v4 má 11 137 raket a 13 679 propadů (v3: 12 321 a 15 173 —
+rozdíl zahrnuje i posun období o týden a nová data). Závěry studie se nemění (po raketě medián −7 % proti trhu za 20 dní,
+dál pokračuje 40 %). Už zapsané epizody se nemění (append-only).
 
 ## 2026-10-23 · v0.17.0 — Proč se akcie a sektory hýbou: propady, podání u SEC, co následovalo, přehled trhu
 
