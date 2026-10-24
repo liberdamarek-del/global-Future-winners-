@@ -178,8 +178,9 @@
 
 | Co | Stav |
 |---|---|
+| Týden 2026-10-24 | objevování #8: 12 296 firem, 61 zemí; 4 predikce raket (#62 DLXY a #63 FRGT z rozbitých cen → oprava v0.17.1); smart money #6: 10 signálů (PNI = fond → oprava), Senát BLOKOVÁNO (HTTP 403); signály: RŮST 0 ve všech horizontech, POKLES 790 / 640 / 420; kauzální radar #26–27: DRYBULK ↓ → rejdaři ↓ (predikce #36), GDACS CHYBA (vypršení spojení) |
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` (centrum se obnoví samo) + diag + výzkum (`research`) + web (10 dokumentů včetně `stav/prehled`), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
-| Experiment N-5 (od 2026-10-19) | živá kalibrace karet a pokrytí q20–q80 statické × ACI (`python -m stockradar kalibrace`); start: P(+5 %) 0,30 × skutečně 0,15, pokrytí 43 % (cíl 60 %), 1 týden; vyhodnocení po 8 a 16 týdnech |
+| Experiment N-5 (od 2026-10-19) | živá kalibrace karet a pokrytí q20–q80 statické × ACI (`python -m stockradar kalibrace`); start: P(+5 %) 0,30 × skutečně 0,15, pokrytí 43 % (cíl 60 %), 1 týden; 2026-10-24 (2 týdny, 90 karet 14 dní): P(+5 %) 0,30 × skutečně 0,18, Brier 0,163 × základ 0,149 (dovednost −0,09), pokrytí statické 44 % × ACI 56 %; vyhodnocení po 8 a 16 týdnech |
 | Živá zpětná vazba | Role se zatím hodnotí jen z testů; první živé výsledky 2026-10-09, spolehlivé po ~30 případech v 6 týdnech |
 | Vyhodnocení ručního výzkumu | v0.15.0: směrový výzkum o firmách se po horizontu měří proti S&P 500 (`research_outcomes`, krok v `update`); první horizont končí 2027-02-03, do té doby role VÝZKUM = NEOVĚŘENO |
 | Kauzální radar mezi sobotami | VYŘEŠENO 2026-10-11 (v0.11.0): šok komodity z denních cen k dni běhu |
