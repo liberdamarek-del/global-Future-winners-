@@ -1,0 +1,35 @@
+Databáze vytvořena a obnovena ze /home/runner/work/global-Future-winners-/global-Future-winners-/state: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db
+Ceny (Yahoo): 99/99 symbolů, chyb 0; SPY 1 dní staré
+Seznam firem: USA (Nasdaq screener) 5882, Austrálie (ASX) 2049, Japonsko (JPX) 3707, Wikipedia: FTSE 100 100, Wikipedia: FTSE 250 250, Wikipedia: DAX 40, Wikipedia: MDAX 50, Wikipedia: SDAX 0, Wikipedia: TecDAX 0, Wikipedia: CAC 40 40, Wikipedia: AEX 25, Wikipedia: SMI 20, Wikipedia: OMXS30 30, Wikipedia: OMXC25 25, Wikipedia: OMXH25 25, Wikipedia: OBX 25, Wikipedia: FTSE MIB 40, Wikipedia: IBEX 35 35, Wikipedia: S&P/TSX 60 60, Wikipedia: S&P/TSX Composite 220, Wikipedia: Hang Seng 85, Wikipedia: NIFTY 50 50, Wikipedia: NIFTY Next 50 50, Wikipedia: Straits Times 30, Wikipedia: TA-35 35, Wikipedia: KOSPI 200 199, Wikipedia: Ibovespa 88
+  Ke stažení: 4 symbolů (3 vlákna, 3.0/s)
+  4/4 hotovo, OK 3, chyb 1, 3.51/s
+Stahování cen: {'requested': 4, 'ok': 3, 'errors': 1}
+SEC EDGAR: {'tickeru': 10429, 'frames': {'dotazu': 10, 'chyb': 0}, 'index': {'dotazu': 1, 'filingu': 5936}, 'rocni': {'dotazu': 1}, 'stav': 'DONE'}
+  ClinicalTrials.gov: 18624 studií fáze 2/3
+ClinicalTrials.gov: {'studii': 18624, 'sponzoru': 4336, 'sparovano': 576, 'stav': 'DONE'}
+GLOBAL DISCOVERY …
+  Načteno 12267 firem s ≥ 250 dny historie
+  Události: W1_30 18646, M1_50 10466, M3_50 13114, M6_100 4074
+  W1_30: AUC test 0.901761221064327, směrová výhoda False, asymetrie {'top1': {'rakety': 0.03515, 'propady': 0.02543, 'prumer': 0.00765, 'median': -0.00877}, 'lift_top1': 3.55, 'top5': {'rakety': 0.03006, 'propady': 0.02737, 'prumer': 0.00366, 'median': -0.00866}, 'lift_top5': 3.04, 'top10': {'rakety': 0.02842, 'propady': 0.0252, 'prumer': 0.00362, 'median': -0.00727}, 'lift_top10': 2.87, 'smerova_vyhoda': False, 'smer': 'ani asymetrie (raketa minus propad) nedává směrovou výhodu — kandidáti jen ke sledování'}
+  M3_50: AUC test 0.869553964766714, směrová výhoda False, asymetrie {'top1': {'rakety': 0.20955, 'propady': 0.2237, 'prumer': 0.03974, 'median': -0.0303}, 'lift_top1': 2.17, 'top5': {'rakety': 0.20428, 'propady': 0.18555, 'prumer': 0.05565, 'median': -0.00481}, 'lift_top5': 2.12, 'top10': {'rakety': 0.1851, 'propady': 0.16514, 'prumer': 0.05994, 'median': 0.0029}, 'lift_top10': 1.92, 'smerova_vyhoda': False, 'smer': 'ani asymetrie (raketa minus propad) nedává směrovou výhodu — kandidáti jen ke sledování'}
+  Fundamenty SEC: 5431 firem s CIK, klinické studie u 496 firem
+  panel 2022-05-10: 2508 vzorků
+  panel 2023-02-14: 52801 vzorků
+  panel 2023-11-21: 104729 vzorků
+  panel 2024-08-27: 158301 vzorků
+  panel 2025-06-03: 213167 vzorků
+  panel 2026-03-10: 312338 vzorků
+  Panel: 393385 vzorků, trénink 182660, test 110163
+  Stabilita 2024-01-01..2024-06-30: raketa 0.1314 vs 0.1004, propad 0.0629
+  Stabilita 2025-01-01..2025-06-30: raketa 0.2733 vs 0.1809, propad 0.0691
+  Test: AUC 0.735 (jen cena 0.7335), řazení vydrzi_asym (vybráno na validaci), směrová výhoda False
+  Příčiny z titulků: 120 událostí
+XTB: 0 dotazů na xtb.com, 59 z cache, chyb 0
+Běh #8: 12267 firem, 61 zemí, 373 oborů, rakety {'W1_30': 18646, 'M1_50': 10466, 'M3_50': 13114, 'M6_100': 4074}, titulků 744
+Do ledgeru zapsáno 0 kandidátů (týden/3 měsíce) a 8 predikcí raket na 6 měsíců.
+  ! W1_30: model nemá směrovou výhodu v testu mimo vzorek — kandidáti do ledgeru nezapsáni (je lepší nemít tip než slabý tip, §36).
+  ! M3_50: model nemá směrovou výhodu v testu mimo vzorek — kandidáti do ledgeru nezapsáni (je lepší nemít tip než slabý tip, §36).
+  ! Model raket nemá v testu jasnou směrovou výhodu — predikce jsou zapsané jako WATCH (sledovat), aby se jejich přesnost měřila v ledgeru.
+Centrum: 566 firem (příležitost 269, riziko 13, rozpor 6), záznam OK #97, web 135 kB
+E-mail dnes: 21× — data.sec.gov 19×, www.sec.gov 2×
+Data pro web se obnoví při příštím `update`.

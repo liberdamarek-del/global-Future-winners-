@@ -1,0 +1,49 @@
+Databáze už existuje: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db (schema v12)
+Ceny: SPY je 1 dní staré — stahování přeskočeno.
+  SEC insider 2026Q2: 36413 transakcí
+  SEC insider 2026Q3: 22876 transakcí
+  SEC insider 2026Q4: HTTP Error 404: Not Found
+SEC insider: {'kvartalu': 2, 'transakci': 59289}
+SEC index: {'dotazu': 1, 'filingu': 5936}
+SEC buybacky: {'dotazu': 1}
+  Sněmovna 2025: 515 výkazů transakcí
+  Sněmovna 2026: 437 výkazů transakcí
+Sněmovna: {'vykazu': 952, 's_textem': 832, 'bez_textu': 120, 'transakci': 11254}
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/runner/work/global-Future-winners-/global-Future-winners-/stockradar/__main__.py", line 7, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/global-Future-winners-/global-Future-winners-/stockradar/cli.py", line 932, in main
+    rc = args.func(args)
+         ^^^^^^^^^^^^^^^
+  File "/home/runner/work/global-Future-winners-/global-Future-winners-/stockradar/cli.py", line 295, in cmd_smart_money
+    print("Senát:", sources.fetch_senate(cconn, start=f"01/01/{today.year - 1}", log=log))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/global-Future-winners-/global-Future-winners-/stockradar/smartmoney/sources.py", line 305, in fetch_senate
+    op, csrf = _senate_session()
+               ^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/global-Future-winners-/global-Future-winners-/stockradar/smartmoney/sources.py", line 273, in _senate_session
+    _get(f"{SENATE}/search/home/", opener=op, headers={"Referer": f"{SENATE}/search/home/"},
+  File "/home/runner/work/global-Future-winners-/global-Future-winners-/stockradar/smartmoney/sources.py", line 59, in _get
+    with (opener.open if opener else urllib.request.urlopen)(req, timeout=timeout) as r:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/urllib/request.py", line 525, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/urllib/request.py", line 634, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/urllib/request.py", line 563, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/urllib/request.py", line 643, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 403: Forbidden
+SEC Fails-to-Deliver (CUSIP → symbol): {'souboru': 0}
+SEC 13F: {'baliku': 0}
+Žádná nová čtvrtletní sada 13F od posledního běhu (2026-10-11T09:58:59Z) → studie se nepočítá znovu (--force přepočítá).
