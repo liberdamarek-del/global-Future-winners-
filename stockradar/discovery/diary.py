@@ -197,6 +197,15 @@ def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list,
     return d, c, v, None
 
 
+def anchor(closes, i: int, k: int) -> float:
+    """Kotva okna k dní: medián tří závěrů kolem dne i − k, ne jediný den — jednodenní výkyv v kotvě nesmí vyrobit pohyb
+    (STFS 2026-10-21: 3,62 → 2,90 → 3,66 USD, 21denní „raketa“ +51 % jen z propadu v kotvě; bez něj +19 %). Okno 1 den
+    kotví na včerejším závěru — jednodenní skok je definován proti předchozímu dni."""
+    if k == 1 or i - k - 1 < 0:
+        return closes[i - k]
+    return statistics.median(closes[i - k - 1:i - k + 2])
+
+
 def detect_at(days, closes, volumes, i: int, direction: int = 1) -> dict | None:
     """Splněná okna jednoho směru ke dni `i` (nebo None). Stejná funkce slouží živému deníku (poslední den) i historické
     studii (každý den) — pravidla jsou tak v obou stejná."""
@@ -204,7 +213,7 @@ def detect_at(days, closes, volumes, i: int, direction: int = 1) -> dict | None:
         return None
     moves, hit, k_max, starts = {}, [], 0, {}
     for name, (k, th) in WINDOWS[direction].items():
-        base = closes[i - k]
+        base = anchor(closes, i, k)
         moves[name] = closes[i] / base - 1 if base > 0 else None
         m = moves[name]
         if m is not None and (m >= th if direction > 0 else m <= th):

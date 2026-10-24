@@ -93,3 +93,16 @@ def test_partly_adjusted_split_is_a_data_error_not_a_rocket():
     assert D.glitch(vwav)
     assert not D.glitch([10.0, 9.0, 1.5, 1.4, 1.6, 1.7, 1.5])                                   # skutečný pád bez návratu
     assert not D.glitch([1.0, 1.1, 1.3, 2.0, 3.1, 4.5, 4.0])                                    # skutečná raketa
+
+
+def test_one_day_dip_in_the_window_anchor_is_not_a_rocket():
+    """STFS 2026-10-21: 21denní okno začínalo jednodenním propadem 3,62 → 2,90 → 3,66 USD; „+51 %“ bylo jen z kotvy."""
+    days = list(range(30))
+    vols = [2_000_000.0] * 30
+    closes = [3.6] * 7 + [3.62, 2.90, 3.66] + [3.7] * 15 + [3.9, 4.0, 4.1, 4.2, 4.37]
+    assert D.detect(days, closes, vols) is None                                                 # proti 3,62 jen +21 %
+    assert D.anchor(closes, 29, 21) == pytest.approx(3.62)
+    real = [3.6] * 8 + [3.6, 3.6] + [3.7] * 15 + [4.2, 4.6, 5.0, 5.3, 5.6]                      # skutečná raketa +56 %
+    assert "21d" in D.detect(days, real, vols)["okna"]
+    jump = [5.0] * 29 + [6.5]                                                                    # skok za den dál proti včerejšku
+    assert "1d" in D.detect(days, jump, vols)["okna"] and D.anchor(jump, 29, 1) == 5.0

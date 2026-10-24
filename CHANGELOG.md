@@ -4,6 +4,19 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-24 · v0.17.1 — Raketový deník: kotva okna = medián 3 dnů (jednodenní výkyv nevyrobí pohyb)
+
+Důvod: 21. 10. deník zapsal STFS jako raketu +51 % za 21 dní jen proto, že okno začínalo jednodenním propadem
+(3,62 → 2,90 → 3,66 USD); proti okolním dnům to bylo +19 až +21 % (report `docs/agent_vyzkum/reporty/2026-10-21.md`).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `discovery/diary.py` | `anchor()`: okna 5 / 10 / 21 dní kotví na mediánu závěrů dne i − k a dnů kolem něj (jeden výkyv nerozhoduje); okno 1 den dál proti včerejšku. Platí pro živý deník i historickou studii (sdílené `detect_at`) | `test_diary.py::test_one_day_dip_in_the_window_anchor_is_not_a_rocket` |
+| `discovery/moves.py` | `STUDY_VERSION` 3 → 4: historická studie se s novým pravidlem přepočítá | celý `pytest` |
+
+Pravidlo je definice měření (kvalita dat), ne model; dopad na počty raket a propadů v historické studii se zapíše po
+přepočtu. Už zapsané epizody se nemění (append-only).
+
 ## 2026-10-23 · v0.17.0 — Proč se akcie a sektory hýbou: propady, podání u SEC, co následovalo, přehled trhu
 
 Důvod: zadání uživatele 23. 10. 2026 — nekupovat akcie, které udělaly +100 %, ale analyzovat, **proč** vyletěly (nebo

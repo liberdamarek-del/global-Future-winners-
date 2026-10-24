@@ -24,7 +24,7 @@ from stockradar.discovery import diary, news
 from stockradar.timeutil import to_iso, utcnow
 
 HORIZONS = (5, 20, 60)
-STUDY_VERSION = "3"                  # 2–3: + neupravené zpětné splity vyřazeny (FRGT)
+STUDY_VERSION = "4"                  # 2–3: + neupravené zpětné splity vyřazeny (FRGT); 4: kotva okna = medián 3 dnů (STFS)
 STUDY_EVERY_DAYS = 7
 SEC_LIMIT = 60                       # nejvýš tolik dotazů na SEC za běh (nové pohyby; zbytek příště)
 MIN_GROUP = 30                       # menší skupina historie = MALÝ VZOREK
