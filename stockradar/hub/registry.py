@@ -255,8 +255,21 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
         bad = [k for k, v in p.items() if v is None]
         add("Google News RSS — zprávy o narušení", "CHYBA" if p and len(bad) == len(p) else "OK" if p else "ROZPRACOVÁNO",
             f"{len(p) - len(bad)} z {len(p)} komodit" + (f"; nedostupné: {', '.join(bad)}" if bad else ""))
+    sen = senate_blocked(conn)
+    if sen:
+        add("Senát USA — hlášení obchodů (eFD)", "BLOKOVÁNO",
+            f"při běhu {sen[0]} web odmítl dotazy ({sen[1]}) → použita dříve stažená hlášení")
     add("GDELT — světové zprávy", "BLOKOVÁNO", "HTTP 429 ze sdílené adresy serveru (zjištěno 2026-10-06) → nepoužito")
     return out
+
+
+def senate_blocked(conn) -> tuple[str, str] | None:
+    """(kdy, proč), pokud poslední běh smart money, který Senát zkoušel, dostal odmítnutí; jinak None."""
+    for started, summ in conn.execute("SELECT started_at, summary_json FROM system_runs ORDER BY id DESC LIMIT 50"):
+        s = json.loads(summ)
+        if "senat" in s:
+            return (started[:16], s.get("senat_duvod") or "") if s["senat"] == "BLOKOVÁNO" else None
+    return None
 
 
 def xtb_blocked(conn) -> str | None:

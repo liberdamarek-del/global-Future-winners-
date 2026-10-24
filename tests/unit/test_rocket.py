@@ -93,3 +93,15 @@ def test_ranking_is_chosen_on_validation_folds_not_on_test():
     folds = [fold((0.25, 0.10, 0.02), (0.30, 0.30, -0.05)), fold((0.22, 0.12, 0.01), (0.28, 0.25, -0.02))]
     assert R.choose_ranking(folds) == "asymetrie"            # větší rozdíl rakety − propady na validaci
     assert R.choose_ranking([]) == "asymetrie"               # bez validace výchozí pravidlo
+
+
+def test_broken_price_series_is_not_a_rocket_candidate():
+    """FRGT a DLXY 2026-10-24: neupravený split / propad a návrat v cenách → „volatilita 140 % denně“ a predikce rakety."""
+    from stockradar.discovery import rocket as R
+    calm = [10.0 + 0.01 * (i % 7) for i in range(200)]
+    vols = [100_000.0] * 200
+    assert not R.broken_recent(calm, vols)
+    glitchy = calm[:150] + [0.5, 0.45, 0.4, 9.8] + calm[154:]                                      # propad 20× a návrat
+    assert R.broken_recent(glitchy, vols)
+    split = calm[:180] + [c * 10 for c in calm[180:]]                                              # skok 10× bez objemu
+    assert R.broken_recent(split, vols[:180] + [10_000.0] * 20)

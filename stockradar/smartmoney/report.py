@@ -10,6 +10,7 @@ from collections import Counter, defaultdict
 from datetime import date, timedelta
 
 from stockradar.discovery import study
+from stockradar.discovery.bestideas import is_fund
 from stockradar.discovery.fundamentals import Fundamentals
 from stockradar.smartmoney import analysis, current, groups, score
 from stockradar.smartmoney.events import HORIZONS, ordinal, summarize, table
@@ -169,6 +170,8 @@ def current_signals(market, fund, bb, sc, cache_conn, *, today: int, ev: dict, l
         name = rs[0]["company"]
         if "acquisition" in name.lower() or " spac" in name.lower():
             continue  # SPAC: sponzor kupuje za 10 USD, nejde o signál
+        if is_fund(name):
+            continue  # uzavřený fond není firma (PNI 2026-10-24: banka jako dealer koupila a týž den prodávala)
         titles = " ".join(r["title"] for r in rs)
         value = sum(r["value"] or 0 for r in rs)
         public = max(ordinal(r["filed"]) for r in rs)

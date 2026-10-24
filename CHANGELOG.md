@@ -4,7 +4,7 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
-## 2026-10-24 · v0.17.1 — Raketový deník: kotva okna = medián 3 dnů (jednodenní výkyv nevyrobí pohyb)
+## 2026-10-24 · v0.17.1 — Kvalita dat: kotva okna deníku, rozbité řady u modelu raket, fondy u smart money, výpadek Senátu
 
 Důvod: 21. 10. deník zapsal STFS jako raketu +51 % za 21 dní jen proto, že okno začínalo jednodenním propadem
 (3,62 → 2,90 → 3,66 USD); proti okolním dnům to bylo +19 až +21 % (report `docs/agent_vyzkum/reporty/2026-10-21.md`).
@@ -13,6 +13,9 @@ Důvod: 21. 10. deník zapsal STFS jako raketu +51 % za 21 dní jen proto, že o
 |---|---|---|
 | `discovery/diary.py` | `anchor()`: okna 5 / 10 / 21 dní kotví na mediánu závěrů dne i − k a dnů kolem něj (jeden výkyv nerozhoduje); okno 1 den dál proti včerejšku. Platí pro živý deník i historickou studii (sdílené `detect_at`) | `test_diary.py::test_one_day_dip_in_the_window_anchor_is_not_a_rocket` |
 | `discovery/moves.py` | `STUDY_VERSION` 3 → 4: historická studie se s novým pravidlem přepočítá | celý `pytest` |
+| `smartmoney/sources.py`, `cli.py`, `hub/registry.py` | Senát (efdsearch.senate.gov) vrátil 24. 10. HTTP 403 a shodil celý běh smart money → `fetch_senate` vrátí BLOKOVÁNO (blokace se neobchází), běh pokračuje s dříve staženými hlášeními; stav se zapíše do deníku a `system` ho ukáže u zdrojů | `test_smartmoney.py::test_senate_block_is_reported_not_fatal` |
+| `smartmoney/report.py` | aktuální signály vynechají uzavřené fondy (`is_fund`, jako deník u DHY): 24. 10. byl mezi 10 signály PNI (komunální fond, banka jako dealer koupila a týž den prodávala) → predikce #68 zůstává v knize | `test_smartmoney.py::test_closed_end_fund_is_not_a_smart_money_signal` |
+| `discovery/rocket.py` | `broken_recent`: dnešní kandidáti raket bez řad s propadem a návratem nebo neupraveným zpětným splitem za 130 dní (kontroly deníku). 24. 10. tak vznikly predikce #62 DLXY a #63 FRGT („volatilita“ 35 a 140 % denně) — zůstávají v knize. Vyřadí 41 z 12 351 řad (0,3 %); učení a test modelu se nemění | `test_rocket.py::test_broken_price_series_is_not_a_rocket_candidate` |
 
 Pravidlo je definice měření (kvalita dat), ne model; dopad na počty raket a propadů v historické studii se zapíše po
 přepočtu. Už zapsané epizody se nemění (append-only).

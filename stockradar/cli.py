@@ -292,8 +292,11 @@ def cmd_smart_money(args) -> int:
         print("SEC index:", sec.fetch_index(cconn, start=date(2021, 1, 1), end=today, log=log))
         print("SEC buybacky:", sec.fetch_annual(cconn, log=log))
         print("Sněmovna:", sources.fetch_house(cconn, years=[today.year - 1, today.year], log=log))
-        print("Senát:", sources.fetch_senate(cconn, start=f"01/01/{today.year - 1}", log=log))
-        sources.senate_roles(cconn, start=f"01/01/{today.year - 1}")
+        senate = sources.fetch_senate(cconn, start=f"01/01/{today.year - 1}", log=log)
+        print("Senát:", senate)
+        _note(args, senat=senate.get("stav") or "OK", senat_duvod=senate.get("duvod"))
+        if senate.get("stav") != "BLOKOVÁNO":
+            sources.senate_roles(cconn, start=f"01/01/{today.year - 1}")
     result = report.run(cconn, conn, log=log, csv_dir=db_path().parent)
     run_id = sm_store.save_run(conn, result)
     created, notes = sm_store.record_signals(conn, cconn, result, run_id)

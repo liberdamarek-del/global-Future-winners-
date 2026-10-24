@@ -473,6 +473,15 @@ def _fmt(f: str, v) -> str:
 MAX_XTB_CHECKS = 600     # strop dotazů na XTB za běh (cache je 30 dní, takže další běhy jsou rychlé)
 
 
+def broken_recent(closes, volumes, *, days: int = 130) -> bool:
+    """Chyba dat v posledních ~6 měsících (stejné kontroly jako raketový deník): propad a návrat nebo neupravený zpětný
+    split. Znaky jako volatilita nebo výška nad minimem se pak počítají ze špatných cen — FRGT a DLXY 2026-10-24 dostaly
+    predikci rakety s „denní volatilitou“ 140 % a 35 %. Jen pro dnešní kandidáty; učení a test se nemění."""
+    from stockradar.discovery import diary
+    n = len(closes)
+    return n > 22 and (diary.glitch(closes, lookback=days) or diary.unadjusted_split(closes, volumes, n - 1, lookback=days))
+
+
 def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str, events: dict, cache_conn, *,
                 top_n: int, hold: Model | None = None, xtb_check=None) -> tuple[list[dict], list[dict]]:
     """Dva seznamy ve stejném pořadí modelu: všichni kandidáti a jen ti, které XTB nabízí jako akcie (každý seznam
@@ -497,6 +506,8 @@ def score_today(data, heat, fund, up: Model, down: Model, ev: dict, ranking: str
     scored = []
     for sym, j in last.items():
         s = data.secs[sym]
+        if broken_recent(s.prep.bars.closes, s.prep.bars.volumes):
+            continue
         f = study.sample_features(data, s, j, heat)
         if f is None:
             continue

@@ -301,8 +301,16 @@ def parse_senate_ptr(page: str) -> list[dict]:
 
 
 def fetch_senate(cache_conn, *, start: str = "01/01/2021", pause: float = 0.6, part: int = 0, parts: int = 1,
-                 log=print) -> dict:
-    op, csrf = _senate_session()
+                 log=print, session=None) -> dict:
+    """Nová hlášení senátorů (eFD). Když web dotazy odmítne (2026-10-24: HTTP 403 už na úvodní stránce), blokaci
+    neobcházíme: vrátí se stav BLOKOVÁNO a studie pokračuje s dříve staženými hlášeními v cache."""
+    try:
+        op, csrf = (session or _senate_session)()
+    except (urllib.error.URLError, OSError) as exc:
+        code = getattr(exc, "code", None)
+        why = f"HTTP {code}" if code else str(getattr(exc, "reason", exc))[:80]
+        log(f"Senát (efdsearch.senate.gov) nedostupný: {why} — použita dříve stažená hlášení")
+        return {"stav": "BLOKOVÁNO", "duvod": why}
     have = {r[0] for r in cache_conn.execute("SELECT doc_id FROM congress_docs WHERE chamber = 'SENATE'")}
     reports, offset = [], 0
     while True:

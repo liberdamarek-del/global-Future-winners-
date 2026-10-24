@@ -184,3 +184,30 @@ def test_insider_zip_tries_new_sec_folder_then_old():
 def test_market_view_without_spy_is_unverified():
     from stockradar.signals.regime import Regime, Series, market_view
     assert market_view(Regime(Series([], [])), 740000)["stav"] == "NEOVĚŘENO"
+
+
+def test_senate_block_is_reported_not_fatal(conn):
+    """2026-10-24: efdsearch.senate.gov vrátil HTTP 403 už na úvodní stránce a celý běh smart money spadl.
+    Blokace se neobchází — běh pokračuje s dřívějšími hlášeními a přehled zdrojů ukáže BLOKOVÁNO."""
+    import urllib.error
+    from datetime import datetime, timezone
+    from stockradar.hub import registry
+
+    def refused():
+        raise urllib.error.HTTPError("https://efdsearch.senate.gov/search/home/", 403, "Forbidden", {}, None)
+    out = sources.fetch_senate(None, session=refused, log=lambda m: None)
+    assert out == {"stav": "BLOKOVÁNO", "duvod": "HTTP 403"}
+    t = datetime(2026, 10, 24, 9, 0, tzinfo=timezone.utc)
+    registry.record_run(conn, "smart-money", {}, t, "OK", {"senat": "BLOKOVÁNO", "senat_duvod": "HTTP 403"}, finished=t)
+    assert registry.senate_blocked(conn) == ("2026-10-24T09:00", "HTTP 403")
+    registry.record_run(conn, "smart-money", {}, t, "OK", {"senat": "OK"}, finished=t)
+    assert registry.senate_blocked(conn) is None
+
+
+def test_closed_end_fund_is_not_a_smart_money_signal():
+    """PNI 2026-10-24: Bank of America jako dealer koupila a týž den prodávala podíly komunálního fondu → signál STŘEDNÍ."""
+    import inspect
+    from stockradar.discovery.bestideas import is_fund
+    from stockradar.smartmoney import report
+    assert is_fund("Pimco New York Municipal Income Fund II") and not is_fund("Outset Medical, Inc.")
+    assert "is_fund(name)" in inspect.getsource(report.current_signals)
