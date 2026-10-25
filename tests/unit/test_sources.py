@@ -172,3 +172,18 @@ def test_us_cent_quotes_need_no_fx_download():
     from stockradar.sources.yahoo import fx_symbol, usd_factor
     assert fx_symbol("USX") is None and usd_factor("USX") == 0.01
     assert fx_symbol("GBp") == "GBP=X" and fx_symbol("USD") is None
+
+
+def test_prices_fetched_before_last_session_close_are_refetched():
+    """GitHub 2026-10-24: cache ze zkušebního běhu 23. 10. ráno byla „mladší než 6 dní“ → staženy 4 z 13 281 symbolů,
+    ceny končily 22. 10. Stažení před závěrkou poslední seance (23. 10. 16:15 New York) se musí opakovat."""
+    from datetime import datetime, timezone
+    from stockradar.discovery import download
+    c = cache.connect(":memory:")
+    c.execute("INSERT INTO securities (symbol, name, source, fetched_at) VALUES ('OLD', 'Old', 't', 'x'), ('NEW', 'New', 't', 'x')")
+    cache.store_series(c, "OLD", "USD", [("2026-10-21", 10.0, 1.0), ("2026-10-22", 10.0, 1.0)], source="t",
+                       fetched_at="2026-10-23T06:56:00Z")                    # ráno před páteční závěrkou
+    cache.store_series(c, "NEW", "USD", [("2026-10-22", 10.0, 1.0), ("2026-10-23", 10.0, 1.0)], source="t",
+                       fetched_at="2026-10-24T07:00:00Z")                    # po závěrce
+    now = datetime(2026, 10, 24, 7, 30, tzinfo=timezone.utc)
+    assert download.pending_symbols(c, max_age_days=6, now=now) == ["OLD"]

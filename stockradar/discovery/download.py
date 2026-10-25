@@ -29,8 +29,19 @@ class RateLimiter:
             time.sleep(delay)
 
 
+def last_session_close(now):
+    """Závěrka poslední UKONČENÉ seance v New Yorku (16:15 místního času, UTC). Během obchodování předchozí seance."""
+    from stockradar.discovery.diary import session_day
+    from stockradar.update import bar_close_time
+    d = session_day(now) or session_day(now.replace(hour=0, minute=0, second=0, microsecond=0))
+    return parse_iso(to_iso(bar_close_time(d.isoformat())))
+
+
 def pending_symbols(conn, *, max_age_days: int, now) -> list[str]:
-    cutoff = to_iso(now - timedelta(days=max_age_days))
+    """Symboly ke stažení: chybí, jsou starší než `max_age_days`, nebo byly staženy před závěrkou poslední seance.
+    Poslední podmínka platí od 2026-10-25: týdenní běh na GitHubu stáhl jen 4 z 13 281 symbolů, protože obnovená cache
+    ze zkušebního běhu 23. 10. byla „mladší než 6 dní“ — ceny pak končily 22. 10. a karty z 9. 10. se nevyhodnotily."""
+    cutoff = to_iso(max(now - timedelta(days=max_age_days), last_session_close(now)))
     retry_errors = to_iso(now - timedelta(days=7))
     rows = conn.execute(
         "SELECT s.symbol FROM securities s LEFT JOIN series r ON r.symbol = s.symbol"

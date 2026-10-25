@@ -4,6 +4,17 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-25 · v0.17.2 — Ceny se stáhnou znovu, když chybí poslední závěr (ne až po 6 dnech)
+
+Důvod: souběh GitHub × Claude 24. 10. — týdenní běh na GitHubu stáhl ceny jen 4 z 13 281 symbolů („Ke stažení: 4“),
+protože cache obnovená ze zkušebního běhu 23. 10. ráno byla podle `fetched_at` mladší než 6 dní. Ceny pak končily
+22. 10. → GitHub nevyhodnotil 25 karet z 9. 10. (potřebují závěr 23. 10.) a jeho žebříčky se lišily od našich
+(report `docs/agent_vyzkum/reporty/2026-10-25.md`). Stejné riziko měl i kontejner Claude po každém stažení mimo plán.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `discovery/download.py` | `pending_symbols`: ke stažení i řady stažené před závěrkou poslední ukončené seance v New Yorku (16:15 místního času, `last_session_close`); pokračování po výpadku sítě dál nestahuje znovu to, co už je po závěrce | `test_sources.py::test_prices_fetched_before_last_session_close_are_refetched` |
+
 ## 2026-10-24 · v0.17.1 — Kvalita dat: kotva okna deníku, rozbité řady u modelu raket, fondy u smart money, výpadek Senátu
 
 Důvod: 21. 10. deník zapsal STFS jako raketu +51 % za 21 dní jen proto, že okno začínalo jednodenním propadem

@@ -226,6 +226,15 @@ dvoustupňový stav (t ≥ 2 = PŘEDBĚŽNĚ s malou vahou, t ≥ 2,83 = OVĚŘE
   velikost je dnešní tržní hodnota; neupravené splity v datech Yahoo jsou částečně vyřazené (FRGT, DKI), ne úplně.
 - **Verdikt:** POPIS (ne předpověď a ne obchodní pravidlo). Do modelu jen přes nový pokus se zamčeným testem.
 
+## N-5 · 2026-10-25 · Průběžně po 2 týdnech: je odchylka kalibrace náhoda? (nic se nemění)
+
+90 karet SIGNAL_14D (65 z 2. 10., 25 z 9. 10.): předpověď P(+5 %) v průměru 0,30, skutečnost 0,18 (16 z 90; týden
+2. 10. 0,15, týden 9. 10. 0,24), základní četnost běhu 0,23. Za předpokladu kalibrace a **nezávislých** karet je 16 a méně
+růstů pravděpodobné jen v 0,5 % (95% pásmo 19–36). Karty jednoho týdne ale sdílí pohyb trhu: historicky kolísá podíl
+akcií s +5 % za 10 dní mezi týdny se sd 0,125 (logit 0,73; 102 týdnů, 1 500 akcií USA, min 0,02, max 0,61). Se
+společným týdenním šokem sd 0,5–1,0 je pravděpodobnost 12–38 % → **po 2 týdnech žádný důkaz špatné kalibrace**. Návrh
+N-14: pásma konzistence se shlukem týdne (Bröcker–Smith 2007) jako součást vyhodnocení N-5.
+
 ## Zvážené, ale odložené hypotézy
 
 | Hypotéza | Proč odloženo (2026-10-11) |
