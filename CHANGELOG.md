@@ -4,6 +4,21 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-26 · v0.17.3 — Experiment N-13: otisk běhu a srovnání souběhu GitHub × Claude
+
+Důvod: týdenní experiment (návrh N-13 z 24. 10.) — uživatel po týdnu souběhu rozhoduje o přepnutí na GitHub, ale běhy se
+24. 10. lišily (predikce raket 8 × 4, vyhodnocené karty 0 × 25 — příčina opravena ve v0.17.2) a nebyla kritéria.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `provoz.py` (nový) | `fingerprint` — konečný stav běhu (všechny predikce, vyhodnocení, vyhodnocené karty, TOP 10 žebříčků, den dat, verze, chybné kroky, e-mail za den); `compare` — kritéria N-13 předem (shoda deterministických částí, překryv TOP 10 ≥ 0,6 nebo jiný den dat, bez chyb); `report_md` | `test_provoz.py` (4) |
+| `cli.py` | `python -m stockradar otisk [--ven soubor]`; `python -m stockradar porovnani` (jen čte větev provoz-zprava; zpráva `docs/provoz/srovnani_DEN.md`; deník běhů) | celý `pytest` |
+| `.github/workflows/radar-denni.yml`, `radar-tyden.yml` | krok diagnostiky uloží `zprava/otisk.json` do zprávy běhu | celý `pytest` |
+
+Vyhodnocení po 5 obchodních dnech se stejným dnem dat; o přepnutí rozhoduje uživatel. GitHub ve stínu začíná ze state/
+po večerní rutině Claude, proto se srovnává konečný stav, ne „dnes nově“. E-mail v otisku GitHubu obsahuje i řádky Claude
+ze state/ (rozdíl ≈ vlastní použití GitHubu).
+
 ## 2026-10-25 · v0.17.2 — Ceny se stáhnou znovu, když chybí poslední závěr (ne až po 6 dnech)
 
 Důvod: souběh GitHub × Claude 24. 10. — týdenní běh na GitHubu stáhl ceny jen 4 z 13 281 symbolů („Ke stažení: 4“),

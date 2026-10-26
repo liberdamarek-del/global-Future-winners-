@@ -223,6 +223,7 @@ jobs:
         run: |
           python -m stockradar diag 2>&1 | tee zprava/diag.txt
           python -m stockradar email --days 1 2>&1 | tee zprava/email.txt
+          python -m stockradar otisk --ven zprava/otisk.json 2>&1 | tee -a zprava/diag.txt
       - name: Testy
         id: testy
         continue-on-error: true

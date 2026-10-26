@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-25 · **Verze:** v0.17.2 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-26 · **Verze:** v0.17.3 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -178,6 +178,7 @@
 
 | Co | Stav |
 |---|---|
+| Experiment N-13 (od 2026-10-26) | souběh GitHub × Claude: `otisk` (GitHub do zprávy běhu) + `porovnani` (kritéria předem, zpráva docs/provoz/); vyhodnocení po 5 obchodních dnech se stejným dnem dat; o přepnutí rozhoduje uživatel |
 | Týden 2026-10-24 | objevování #8: 12 296 firem, 61 zemí; 4 predikce raket (#62 DLXY a #63 FRGT z rozbitých cen → oprava v0.17.1); smart money #6: 10 signálů (PNI = fond → oprava), Senát BLOKOVÁNO (HTTP 403); signály: RŮST 0 ve všech horizontech, POKLES 790 / 640 / 420; kauzální radar #26–27: DRYBULK ↓ → rejdaři ↓ (predikce #36), GDACS CHYBA (vypršení spojení) |
 | Denní rutina | `trig_014DLvB7z2E2pdZPBQ9W1WVp`, po–pá 22:47 (Praha): `update` + `causal` (centrum se obnoví samo) + diag + výzkum (`research`) + web (10 dokumentů včetně `stav/prehled`), spouští se do session 01DgCocSAmUmZvDnxF2gb7wH |
 | Experiment N-5 (od 2026-10-19) | živá kalibrace karet a pokrytí q20–q80 statické × ACI (`python -m stockradar kalibrace`); start: P(+5 %) 0,30 × skutečně 0,15, pokrytí 43 % (cíl 60 %), 1 týden; 2026-10-24 (2 týdny, 90 karet 14 dní): P(+5 %) 0,30 × skutečně 0,18, Brier 0,163 × základ 0,149 (dovednost −0,09), pokrytí statické 44 % × ACI 56 %; vyhodnocení po 8 a 16 týdnech |

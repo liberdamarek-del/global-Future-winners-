@@ -127,3 +127,4 @@
 {"day": "2026-10-24", "first_at": "2026-10-24T12:17:55Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:55Z", "purpose": "ověření příčiny pohybu MGNX (seznam příloh 8-K, opakovaně)", "requests": 1}
 {"day": "2026-10-24", "first_at": "2026-10-24T12:17:56Z", "host": "www.sec.gov", "last_at": "2026-10-24T12:17:56Z", "purpose": "ověření příčiny pohybu MGNX (tisková zpráva, příloha 99.1)", "requests": 1}
 {"day": "2026-10-25", "first_at": "2026-10-25T13:15:33Z", "host": "data.sec.gov", "last_at": "2026-10-25T13:15:49Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 60}
+{"day": "2026-10-26", "first_at": "2026-10-26T13:20:48Z", "host": "data.sec.gov", "last_at": "2026-10-26T13:21:02Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 60}

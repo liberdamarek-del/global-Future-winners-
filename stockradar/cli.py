@@ -662,6 +662,47 @@ def cmd_email(args) -> int:
     return 0
 
 
+def cmd_otisk(args) -> int:
+    """Otisk běhu pro srovnání souběhu GitHub × Claude (N-13) — GitHub ho ukládá do zprávy běhu."""
+    from pathlib import Path
+    from stockradar import provoz
+    conn = _open(create=False)
+    fp = provoz.fingerprint(conn, web_dir())
+    out = Path(args.ven) if args.ven else None
+    text = json.dumps(fp, ensure_ascii=False, indent=1)
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text + "\n", encoding="utf-8")
+        print(f"Otisk běhu: {out} (den dat {fp['den_dat']}, predikcí {len(fp['predikce'])}, vyhodnocení"
+              f" {len(fp['vyhodnoceni'])}, karet {len(fp['karty'])})")
+    else:
+        print(text)
+    return 0
+
+
+def cmd_porovnani(args) -> int:
+    """Srovnání poslední zprávy GitHubu s naším stavem podle kritérií N-13 (jen čte větev provoz-zprava)."""
+    from pathlib import Path
+    from stockradar import provoz
+    from stockradar.config import PROJECT_ROOT
+    conn = _open(create=False)
+    gh = provoz.fetch_github(PROJECT_ROOT)
+    if gh is None:
+        print("Zpráva GitHubu zatím nemá otisk běhu (otisk.json) — srovnání až po prvním běhu s v0.17.3.")
+        _note(args, stav="BEZ OTISKU")
+        return 0
+    cl = provoz.fingerprint(conn, web_dir(), day=gh.get("den"))
+    res = provoz.compare(gh, cl)
+    md = provoz.report_md(res, gh, cl)
+    out = Path(args.ven) if args.ven else PROJECT_ROOT / "docs" / "provoz" / f"srovnani_{gh.get('den')}.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(md, encoding="utf-8")
+    print(md)
+    print(f"Uloženo: {out}")
+    _note(args, splneno=res["splneno"], problemy=len(res["problemy"]), den=gh.get("den"))
+    return 0
+
+
 def cmd_diag(args) -> int:
     from stockradar.diag import run_checks, to_json, worst
     from stockradar.discovery import cache as dcache
@@ -846,6 +887,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_hub.add_argument("--firma", default=None, help="vypsat důkazní řetězec firem (např. VLO,MSFT)")
     p_hub.set_defaults(func=cmd_hub)
     sub.add_parser("system", help="stav celého systému: moduly, zdroje, spolehlivost, deník").set_defaults(func=cmd_system)
+    p_ot = sub.add_parser("otisk", help="otisk běhu pro srovnání souběhu GitHub × Claude (N-13)")
+    p_ot.add_argument("--ven", default=None, help="soubor JSON (jinak výpis)")
+    p_ot.set_defaults(func=cmd_otisk)
+    p_po = sub.add_parser("porovnani", help="srovná poslední zprávu GitHubu se stavem Claude (N-13)")
+    p_po.add_argument("--ven", default=None, help="soubor Markdown (jinak docs/provoz/srovnani_DEN.md)")
+    p_po.set_defaults(func=cmd_porovnani)
     p_res = sub.add_parser("research", help="ruční výzkum se zdrojem jako trvalý důkaz (bez --entita jen výpis)")
     p_res.add_argument("--entita", default=None, help="ticker(y) oddělené čárkou, nebo obor / komodita")
     p_res.add_argument("--typ", default="firma", choices=["firma", "obor", "komodita", "trh"])
@@ -873,7 +920,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 # Příkazy, které se zapisují do deníku (`system_runs`): mění data nebo kontrolují systém. Čistě čtecí příkazy
 # (status, ledger, system, email…) a obnova ze state/ se nezapisují — deník nemá měnit stav jen tím, že se díváme.
-JOURNALED = {"update", "ceny", "discover", "smart-money", "funds", "rakety", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
+JOURNALED = {"porovnani", "update", "ceny", "discover", "smart-money", "funds", "rakety", "signals", "causal", "sources", "hub", "research", "diag", "snapshot",
              "seed-lessons"}
 
 

@@ -69,3 +69,9 @@ GitHubu; ruční spuštění (Actions → workflow → Run workflow) běží vž
 | 60 dní bez aktivity → GitHub plány vypne | běhy přestanou | v ostrém režimu commituje bot denně (zda to stačí, NEOVĚŘENO) |
 | Velikost cache | GitHub drží nejvýš 10 GB na repozitář, staré záznamy maže | ukládá se jen `market_cache.db`; velikost ve zprávě o běhu |
 | Bez AI části | méně ověřených důkazů v centru, žádné nové zlepšení kódu | ručně v rozhovoru s Claude |
+
+## Srovnání souběhu (N-13, od v0.17.3)
+
+Každý běh na GitHubu uloží do zprávy `otisk.json` (konečný stav: predikce, vyhodnocení, karty, TOP 10, den dat, e-mail).
+`python -m stockradar porovnani` ho porovná se stavem Claude podle kritérií daných předem (docs/agent_vyzkum/navrhy.jsonl, N-13)
+a zapíše `docs/provoz/srovnani_DEN.md`. O přepnutí do režimu `ostry` rozhoduje uživatel.
