@@ -200,6 +200,9 @@ def test_senate_block_is_reported_not_fatal(conn):
     t = datetime(2026, 10, 24, 9, 0, tzinfo=timezone.utc)
     registry.record_run(conn, "smart-money", {}, t, "OK", {"senat": "BLOKOVÁNO", "senat_duvod": "HTTP 403"}, finished=t)
     assert registry.senate_blocked(conn) == ("2026-10-24T09:00", "HTTP 403")
+    for _ in range(60):                                       # 2026-10-28: denní běhy blokaci neodsunou z přehledu
+        registry.record_run(conn, "rakety", {}, t, "OK", {"pricina": 1}, finished=t)
+    assert registry.senate_blocked(conn) == ("2026-10-24T09:00", "HTTP 403")
     registry.record_run(conn, "smart-money", {}, t, "OK", {"senat": "OK"}, finished=t)
     assert registry.senate_blocked(conn) is None
 

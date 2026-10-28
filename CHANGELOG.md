@@ -4,6 +4,18 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-28 · v0.17.4 — Blokace zdrojů nezmizí z přehledu po 50 dalších bězích
+
+Důvod: denní radar 28. 10. — `python -m stockradar system` přestal ukazovat Senát USA jako BLOKOVÁNO, ačkoli poslední
+běh smart money (24. 10.) dostal HTTP 403. Stav se hledal jen v posledních 50 záznamech deníku běhů a denní běhy
+(`rakety --pricina`, `research`, `update`) ho odsunuly. Totéž hrozilo u XTB.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `hub/registry.py` | `_last_with(conn, klíč)` — poslední běh, jehož souhrn klíč obsahuje, bez limitu 50; používají ho `senate_blocked` a `xtb_blocked` | `test_smartmoney.py::test_senate_block_is_reported_not_fatal` (60 pozdějších běhů jiného příkazu; na staré verzi padá) |
+
+Výsledek: přehled zdrojů znovu ukazuje Senát BLOKOVÁNO (od 2026-10-24T09:14, HTTP 403); 225 testů prošlo.
+
 ## 2026-10-26 · v0.17.3 — Experiment N-13: otisk běhu a srovnání souběhu GitHub × Claude
 
 Důvod: týdenní experiment (návrh N-13 z 24. 10.) — uživatel po týdnu souběhu rozhoduje o přepnutí na GitHub, ale běhy se

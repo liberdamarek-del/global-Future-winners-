@@ -263,22 +263,29 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
     return out
 
 
+def _last_with(conn, key: str) -> tuple[str, dict] | None:
+    """Poslední běh v deníku, jehož souhrn obsahuje klíč — bez ohledu na počet pozdějších běhů jiných příkazů
+    (2026-10-28: blokace Senátu z 24. 10. zmizela z přehledu, protože ji odsunulo 50 denních běhů)."""
+    for started, summ in conn.execute("SELECT started_at, summary_json FROM system_runs WHERE summary_json LIKE ?"
+                                      " ORDER BY id DESC", (f'%"{key}"%',)):
+        s = json.loads(summ)
+        if key in s:
+            return started, s
+    return None
+
+
 def senate_blocked(conn) -> tuple[str, str] | None:
     """(kdy, proč), pokud poslední běh smart money, který Senát zkoušel, dostal odmítnutí; jinak None."""
-    for started, summ in conn.execute("SELECT started_at, summary_json FROM system_runs ORDER BY id DESC LIMIT 50"):
-        s = json.loads(summ)
-        if "senat" in s:
-            return (started[:16], s.get("senat_duvod") or "") if s["senat"] == "BLOKOVÁNO" else None
+    last = _last_with(conn, "senat")
+    if last and last[1]["senat"] == "BLOKOVÁNO":
+        return last[0][:16], last[1].get("senat_duvod") or ""
     return None
 
 
 def xtb_blocked(conn) -> str | None:
     """Kdy byl xtb.com naposledy nedostupný — podle posledního běhu v deníku, který XTB ověřoval (None = dostupný)."""
-    for started, summ in conn.execute("SELECT started_at, summary_json FROM system_runs ORDER BY id DESC LIMIT 50"):
-        s = json.loads(summ)
-        if "xtb_nedostupne" in s:
-            return started[:16] if s["xtb_nedostupne"] else None
-    return None
+    last = _last_with(conn, "xtb_nedostupne")
+    return last[0][:16] if last and last[1]["xtb_nedostupne"] else None
 
 
 SUMMARY_KEYS = ("HOTOVO/OVĚŘENO", "HOTOVO", "NEOVĚŘENO", "ROZPRACOVÁNO", "BLOKOVÁNO", "CHYBA")
