@@ -4,6 +4,19 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-29 · v0.17.5 — Záchranný snímek Nasdaq i z večerního `update`
+
+Důvod: ranní rutina výzkumu (deník raket) se 29. 10. spustila ve 13:48 UTC = 9:48 v New Yorku, kdy už trh obchodoval;
+snímek screeneru se během obchodování nebere, a závěr 28. 10. by v deníku chyběl natrvalo (1denní pohyby by se pak
+počítaly přes 2 dny). Rutina je plánovaná na 13:13 UTC, do otevření má jen 17 minut a spouští se se zpožděním.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `discovery/diary.py` | `safety_snapshot(main, cache)` — oprava starších snímků + `take_snapshot` s referencí z Yahoo (uloží se pod dnem, ze kterého ceny opravdu jsou); chyba sítě vrátí CHYBA, běh nezastaví | `test_moves.py::test_safety_snapshot_from_evening_update_fills_missed_morning` |
+| `cli.py` (`update`) | po vyhodnocení výzkumu zavolá `safety_snapshot`; řádek „Snímek Nasdaq“ ve výpisu, `snimek` v deníku běhů | celý `pytest` |
+
+Výsledek: 226 testů prošlo. Ráno (deník) a večer (update) se tak snímek pokusí vzít dvakrát; druhý pokus je „UŽ JE“.
+
 ## 2026-10-28 · v0.17.4 — Blokace zdrojů nezmizí z přehledu po 50 dalších bězích
 
 Důvod: denní radar 28. 10. — `python -m stockradar system` přestal ukazovat Senát USA jako BLOKOVÁNO, ačkoli poslední

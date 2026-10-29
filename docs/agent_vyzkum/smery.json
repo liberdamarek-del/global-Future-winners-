@@ -1,16 +1,16 @@
 {
- "aktualizovano": "2026-10-28",
+ "aktualizovano": "2026-10-29",
  "pravidlo": "hlavní směr = nejvyšší priorita, průzkumný = nejméně běhů; 3 prázdné běhy po sobě → priorita / 2 a stav UTLUMENY; nové zjištění s návrhem → priorita + 0,1 (max 1)",
  "smery": [
   {
    "id": "S1",
    "nazev": "Experimentování a statistika: mnohonásobné testování a přeučení na historii",
    "proc_pro_nas": "děláme mnoho experimentů a variant modelů (E1–E4, pokusy na zamčených testech) → riziko falešných objevů; hledat korekce typu deflated Sharpe, PBO, reality check, Benjamini–Hochberg",
-   "priorita": 1.0,
-   "behu": 16,
-   "prazdnych_behu_po_sobe": 2,
-   "posledni_beh": "2026-10-28",
-   "stav": "AKTIVNI"
+   "priorita": 0.5,
+   "behu": 17,
+   "prazdnych_behu_po_sobe": 3,
+   "posledni_beh": "2026-10-29",
+   "stav": "UTLUMENY"
   },
   {
    "id": "S2",
@@ -36,10 +36,10 @@
    "id": "S4",
    "nazev": "Učení ze zpětné vazby a alokace pozornosti (bandity, online učení)",
    "proc_pro_nas": "váhy rolí jsou pevné pravidlo (t/4); který modul / kandidáta ručně zkoumat se rozhoduje ad hoc",
-   "priorita": 0.8,
-   "behu": 2,
+   "priorita": 0.9,
+   "behu": 3,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-10-22",
+   "posledni_beh": "2026-10-29",
    "stav": "AKTIVNI"
   },
   {

@@ -137,3 +137,5 @@
 {"day": "2026-10-28", "first_at": "2026-10-28T13:31:36Z", "host": "www.sec.gov", "last_at": "2026-10-28T13:31:36Z", "purpose": "ověření příčiny pohybu ENVX (8-K)", "requests": 1}
 {"day": "2026-10-28", "first_at": "2026-10-28T13:31:36Z", "host": "www.sec.gov", "last_at": "2026-10-28T13:31:36Z", "purpose": "ověření příčiny pohybu DMRC (8-K)", "requests": 1}
 {"day": "2026-10-28", "first_at": "2026-10-28T21:54:30Z", "host": "www.sec.gov", "last_at": "2026-10-28T21:54:30Z", "purpose": "ověření výsledků DINO 3Q 2026 (8-K, příloha 99.1)", "requests": 1}
+{"day": "2026-10-29", "first_at": "2026-10-29T13:49:20Z", "host": "data.sec.gov", "last_at": "2026-10-29T13:49:22Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 4}
+{"day": "2026-10-29", "first_at": "2026-10-29T13:50:15Z", "host": "www.sec.gov", "last_at": "2026-10-29T13:50:15Z", "purpose": "ověření příčiny pohybu CRML (6-K)", "requests": 1}

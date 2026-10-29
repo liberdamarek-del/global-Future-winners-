@@ -276,6 +276,27 @@ def test_snapshot_is_stored_under_the_day_its_prices_are_from():
     assert [r[0] for r in c.execute("SELECT DISTINCT day FROM nasdaq_snap")] == ["2026-10-21"]
 
 
+def test_safety_snapshot_from_evening_update_fills_missed_morning():
+    """29. 10.: ranní deník běžel až po otevření trhu → večerní `update` uloží chybějící závěr pod jeho skutečný den;
+    chyba sítě denní běh nezastaví."""
+    from datetime import datetime, timezone
+    from stockradar.timeutil import utcnow
+    main, cache = sqlite3.connect(":memory:"), sqlite3.connect(":memory:")
+    main.execute("CREATE TABLE price_bars (symbol TEXT, date TEXT, close REAL)")
+    day = (utcnow().date() - timedelta(days=3)).isoformat()
+    main.executemany("INSERT INTO price_bars VALUES (?, ?, ?)", [(f"S{i}", day, 10.0 + i) for i in range(10)])
+    rows = [{"symbol": f"S{i}", "lastsale": f"${10 + i}", "netchange": "0.5", "volume": "1000", "marketCap": "1", "name": "x"}
+            for i in range(10)]
+    weekend = datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc)
+    assert D.safety_snapshot(main, cache, now=weekend, fetch=lambda: rows, log=QUIET) == {"stav": "OK", "den": day, "akcii": 10}
+    assert D.safety_snapshot(main, cache, now=weekend, fetch=lambda: rows, log=QUIET)["stav"] == "UŽ JE"
+
+    def offline():
+        raise OSError("síť nedostupná")
+    res = D.safety_snapshot(main, sqlite3.connect(":memory:"), now=weekend, fetch=offline, log=QUIET)
+    assert res["stav"] == "CHYBA" and "OSError" in res["duvod"]
+
+
 def test_reverse_split_with_low_volume_is_not_a_rocket():
     days = list(range(40))
     closes = [0.25] * 35 + [2.1, 1.9, 1.6, 1.4, 1.23]                                   # split 1:10 a pak pokles

@@ -177,6 +177,17 @@ def take_snapshot(cache_conn, *, now: datetime | None = None, fetch=None, refere
     return {"stav": "OK", "den": day.isoformat(), "akcii": len(rows)}
 
 
+def safety_snapshot(main_conn, cache_conn, *, now: datetime | None = None, fetch=None, log=print) -> dict:
+    """Snímek i z večerního `update`: 29. 10. se ranní deník spustil až po otevření trhu v New Yorku a závěr 28. 10. by
+    chyběl natrvalo. Ukládá se pod dnem, ze kterého ceny opravdu jsou; chyba sítě denní běh nezastaví."""
+    try:
+        reference = reference_closes(main_conn)
+        repair_snapshots(cache_conn, reference, log=log)
+        return take_snapshot(cache_conn, now=now, fetch=fetch, reference=reference, log=log)
+    except Exception as e:  # noqa: BLE001 — záchranný krok
+        return {"stav": "CHYBA", "duvod": f"{type(e).__name__}: {str(e)[:100]}"}
+
+
 def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list, list, str | None]:
     """Yahoo řada + dny snímků po jejím konci. snaps = [(den_ordinal, close, prev_close, volume)] seřazené podle dne.
     Vrací (dny, ceny, objemy, problém); problém = důvod, proč řadu nepoužít (split, stará data)."""
