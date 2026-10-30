@@ -140,3 +140,11 @@
 {"day": "2026-10-29", "first_at": "2026-10-29T13:49:20Z", "host": "data.sec.gov", "last_at": "2026-10-29T13:49:22Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 4}
 {"day": "2026-10-29", "first_at": "2026-10-29T13:50:15Z", "host": "www.sec.gov", "last_at": "2026-10-29T13:50:15Z", "purpose": "ověření příčiny pohybu CRML (6-K)", "requests": 1}
 {"day": "2026-10-29", "first_at": "2026-10-29T21:53:31Z", "host": "www.sec.gov", "last_at": "2026-10-29T21:53:31Z", "purpose": "ověření výsledků CAT 3Q 2026 (8-K, příloha 99.1)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:25:42Z", "host": "data.sec.gov", "last_at": "2026-10-30T13:26:56Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 44}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:38Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:38Z", "purpose": "ověření příčiny pohybu ADT (8-K)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:38Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:38Z", "purpose": "ověření příčiny pohybu BHC (8-K)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:38Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:38Z", "purpose": "ověření příčiny pohybu GMAB (6-K)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:39Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:39Z", "purpose": "ověření příčiny pohybu XRX (8-K)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:39Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:39Z", "purpose": "ověření příčiny pohybu IOVA (8-K)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:39Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:39Z", "purpose": "ověření příčiny pohybu XHLD (8-K)", "requests": 1}
+{"day": "2026-10-30", "first_at": "2026-10-30T13:27:40Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:40Z", "purpose": "ověření příčiny pohybu XLAB (8-K)", "requests": 1}
