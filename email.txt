@@ -1,0 +1,16 @@
+E-mail: nastaven (data/kontakt.txt nebo STOCKRADAR_CONTACT_EMAIL)
+Posílá se jen na: www.sec.gov, data.sec.gov
+Celkem od začátku: 1100 dotazů
+Den        | Server       | Účel                                              | Dotazů | Od (UTC) | Do (UTC)
+-----------+--------------+---------------------------------------------------+--------+----------+---------
+2026-10-31 | data.sec.gov | fundamenty: buyback (XBRL frames, roční)          | 2      | 09:38    | 09:51   
+2026-10-31 | data.sec.gov | fundamenty: cash (XBRL frames)                    | 3      | 09:38    | 09:38   
+2026-10-31 | data.sec.gov | fundamenty: net_income (XBRL frames)              | 3      | 09:38    | 09:38   
+2026-10-31 | data.sec.gov | fundamenty: revenue (XBRL frames)                 | 9      | 09:38    | 09:38   
+2026-10-31 | data.sec.gov | fundamenty: shares (XBRL frames)                  | 3      | 09:38    | 09:38   
+2026-10-31 | www.sec.gov  | insider transakce Form 4 (strukturovaná data SEC) | 3      | 09:51    | 09:51   
+2026-10-31 | www.sec.gov  | ověření nákupu insidera (Form 4 XML)              | 4      | 09:52    | 09:52   
+2026-10-31 | www.sec.gov  | seznam datových sad 13F (výzkum E4)               | 1      | 09:52    | 09:52   
+2026-10-31 | www.sec.gov  | seznam filingů s datem podání (full-index)        | 2      | 09:38    | 09:51   
+2026-10-31 | www.sec.gov  | seznam souborů Fails-to-Deliver (výzkum E4)       | 1      | 09:52    | 09:52   
+2026-10-31 | www.sec.gov  | seznam tickerů a CIK (company_tickers.json)       | 1      | 09:38    | 09:38   

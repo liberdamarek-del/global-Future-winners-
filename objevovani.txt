@@ -1,0 +1,87 @@
+Databáze vytvořena a obnovena ze /home/runner/work/global-Future-winners-/global-Future-winners-/state: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db
+Ceny (Yahoo): 112/112 symbolů, chyb 0; SPY 1 dní staré
+Seznam firem: USA (Nasdaq screener) 5877, Austrálie (ASX) 2060, Japonsko (JPX) 3707, Wikipedia: FTSE 100 100, Wikipedia: FTSE 250 250, Wikipedia: DAX 40, Wikipedia: MDAX 50, Wikipedia: SDAX 0, Wikipedia: TecDAX 0, Wikipedia: CAC 40 40, Wikipedia: AEX 25, Wikipedia: SMI 20, Wikipedia: OMXS30 30, Wikipedia: OMXC25 25, Wikipedia: OMXH25 25, Wikipedia: OBX 25, Wikipedia: FTSE MIB 40, Wikipedia: IBEX 35 35, Wikipedia: S&P/TSX 60 60, Wikipedia: S&P/TSX Composite 220, Wikipedia: Hang Seng 85, Wikipedia: NIFTY 50 50, Wikipedia: NIFTY Next 50 50, Wikipedia: Straits Times 30, Wikipedia: TA-35 35, Wikipedia: KOSPI 200 199, Wikipedia: Ibovespa 88
+  Ke stažení: 13132 symbolů (3 vlákna, 3.0/s)
+  250/13132 hotovo, OK 250, chyb 0, 3.01/s
+  500/13132 hotovo, OK 500, chyb 0, 3.00/s
+  750/13132 hotovo, OK 750, chyb 0, 3.00/s
+  1000/13132 hotovo, OK 1000, chyb 0, 3.00/s
+  1250/13132 hotovo, OK 1249, chyb 1, 3.00/s
+  1500/13132 hotovo, OK 1499, chyb 1, 3.00/s
+  1750/13132 hotovo, OK 1749, chyb 1, 3.00/s
+  2000/13132 hotovo, OK 1999, chyb 1, 3.00/s
+  2250/13132 hotovo, OK 2249, chyb 1, 3.00/s
+  2500/13132 hotovo, OK 2499, chyb 1, 3.00/s
+  2750/13132 hotovo, OK 2749, chyb 1, 3.00/s
+  3000/13132 hotovo, OK 2999, chyb 1, 3.00/s
+  3250/13132 hotovo, OK 3248, chyb 2, 3.00/s
+  3500/13132 hotovo, OK 3497, chyb 3, 3.00/s
+  3750/13132 hotovo, OK 3747, chyb 3, 3.00/s
+  4000/13132 hotovo, OK 3997, chyb 3, 3.00/s
+  4250/13132 hotovo, OK 4236, chyb 14, 3.00/s
+  4500/13132 hotovo, OK 4480, chyb 20, 3.00/s
+  4750/13132 hotovo, OK 4721, chyb 29, 3.00/s
+  5000/13132 hotovo, OK 4965, chyb 35, 3.00/s
+  5250/13132 hotovo, OK 5211, chyb 39, 3.00/s
+  5500/13132 hotovo, OK 5455, chyb 45, 3.00/s
+  5750/13132 hotovo, OK 5702, chyb 48, 3.00/s
+  6000/13132 hotovo, OK 5950, chyb 50, 3.00/s
+  6250/13132 hotovo, OK 6194, chyb 56, 3.00/s
+  6500/13132 hotovo, OK 6436, chyb 64, 3.00/s
+  6750/13132 hotovo, OK 6682, chyb 68, 3.00/s
+  7000/13132 hotovo, OK 6929, chyb 71, 3.00/s
+  7250/13132 hotovo, OK 7175, chyb 75, 3.00/s
+  7500/13132 hotovo, OK 7421, chyb 79, 3.00/s
+  7750/13132 hotovo, OK 7664, chyb 86, 3.00/s
+  8000/13132 hotovo, OK 7913, chyb 87, 3.00/s
+  8250/13132 hotovo, OK 8157, chyb 93, 3.00/s
+  8500/13132 hotovo, OK 8406, chyb 94, 3.00/s
+  8750/13132 hotovo, OK 8650, chyb 100, 3.00/s
+  9000/13132 hotovo, OK 8883, chyb 117, 3.00/s
+  9250/13132 hotovo, OK 9124, chyb 126, 3.00/s
+  9500/13132 hotovo, OK 9366, chyb 134, 3.00/s
+  9750/13132 hotovo, OK 9605, chyb 145, 3.00/s
+  10000/13132 hotovo, OK 9850, chyb 150, 3.00/s
+  10250/13132 hotovo, OK 10087, chyb 163, 3.00/s
+  10500/13132 hotovo, OK 10332, chyb 168, 3.00/s
+  10750/13132 hotovo, OK 10560, chyb 190, 3.00/s
+  11000/13132 hotovo, OK 10804, chyb 196, 3.00/s
+  11250/13132 hotovo, OK 11050, chyb 200, 3.00/s
+  11500/13132 hotovo, OK 11291, chyb 209, 3.00/s
+  11750/13132 hotovo, OK 11530, chyb 220, 3.00/s
+  12000/13132 hotovo, OK 11777, chyb 223, 3.00/s
+  12250/13132 hotovo, OK 12024, chyb 226, 3.00/s
+  12500/13132 hotovo, OK 12271, chyb 229, 3.00/s
+  12750/13132 hotovo, OK 12516, chyb 234, 3.00/s
+  13000/13132 hotovo, OK 12754, chyb 246, 3.00/s
+  13132/13132 hotovo, OK 12884, chyb 248, 3.00/s
+Stahování cen: {'requested': 13132, 'ok': 12884, 'errors': 248}
+SEC EDGAR: {'tickeru': 10430, 'frames': {'dotazu': 10, 'chyb': 0}, 'index': {'dotazu': 1, 'filingu': 9353}, 'rocni': {'dotazu': 1}, 'stav': 'DONE'}
+  ClinicalTrials.gov: 18646 studií fáze 2/3
+ClinicalTrials.gov: {'studii': 18646, 'sponzoru': 4343, 'sparovano': 578, 'stav': 'DONE'}
+GLOBAL DISCOVERY …
+  Načteno 12286 firem s ≥ 250 dny historie
+  Události: W1_30 18731, M1_50 10501, M3_50 13144, M6_100 4088
+  W1_30: AUC test 0.904729436880543, směrová výhoda False, asymetrie {'top1': {'rakety': 0.03441, 'propady': 0.02992, 'prumer': 0.00401, 'median': -0.00338}, 'lift_top1': 3.88, 'top5': {'rakety': 0.0317, 'propady': 0.03081, 'prumer': 0.00398, 'median': -0.0075}, 'lift_top5': 3.57, 'top10': {'rakety': 0.03013, 'propady': 0.02624, 'prumer': 0.00474, 'median': -0.00599}, 'lift_top10': 3.4, 'smerova_vyhoda': False, 'smer': 'ani asymetrie (raketa minus propad) nedává směrovou výhodu — kandidáti jen ke sledování'}
+  M3_50: AUC test 0.8663861252106559, směrová výhoda False, asymetrie {'top1': {'rakety': 0.24102, 'propady': 0.22349, 'prumer': 0.07703, 'median': -0.02229}, 'lift_top1': 2.69, 'top5': {'rakety': 0.22033, 'propady': 0.1688, 'prumer': 0.07476, 'median': 0.0}, 'lift_top5': 2.46, 'top10': {'rakety': 0.18903, 'propady': 0.14223, 'prumer': 0.07442, 'median': 0.01136}, 'lift_top10': 2.11, 'smerova_vyhoda': False, 'smer': 'ani asymetrie (raketa minus propad) nedává směrovou výhodu — kandidáti jen ke sledování'}
+  Fundamenty SEC: 5437 firem s CIK, klinické studie u 498 firem
+  panel 2022-05-13: 2491 vzorků
+  panel 2023-02-17: 52450 vzorků
+  panel 2023-11-24: 104047 vzorků
+  panel 2024-08-30: 157683 vzorků
+  panel 2025-06-06: 212522 vzorků
+  panel 2026-03-13: 311845 vzorků
+  Panel: 393234 vzorků, trénink 179094, test 110497
+  Stabilita 2024-01-01..2024-06-30: raketa 0.4743 vs 0.1014, propad 0.3971
+  Stabilita 2025-01-01..2025-06-30: raketa 0.5789 vs 0.1684, propad 0.3934
+  Test: AUC 0.7349 (jen cena 0.7334), řazení vydrzi (vybráno na validaci), směrová výhoda False
+  Příčiny z titulků: 120 událostí
+XTB: 28 dotazů na xtb.com, 5 z cache, chyb 0
+Běh #9: 12286 firem, 61 zemí, 374 oborů, rakety {'W1_30': 18731, 'M1_50': 10501, 'M3_50': 13144, 'M6_100': 4088}, titulků 721
+Do ledgeru zapsáno 0 kandidátů (týden/3 měsíce) a 7 predikcí raket na 6 měsíců.
+  ! W1_30: model nemá směrovou výhodu v testu mimo vzorek — kandidáti do ledgeru nezapsáni (je lepší nemít tip než slabý tip, §36).
+  ! M3_50: model nemá směrovou výhodu v testu mimo vzorek — kandidáti do ledgeru nezapsáni (je lepší nemít tip než slabý tip, §36).
+  ! Model raket nemá v testu jasnou směrovou výhodu — predikce jsou zapsané jako WATCH (sledovat), aby se jejich přesnost měřila v ledgeru.
+Centrum: 669 firem (příležitost 276, riziko 15, rozpor 4), záznam OK #159, web 135 kB
+E-mail dnes: 21× — data.sec.gov 19×, www.sec.gov 2×
+Data pro web se obnoví při příštím `update`.

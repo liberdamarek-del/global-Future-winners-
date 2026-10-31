@@ -1,0 +1,83 @@
+Databáze už existuje: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db (schema v12)
+Ceny: SPY je 1 dní staré — stahování přeskočeno.
+  openinsider 2026-09-30 … 2026-10-13: 306
+  openinsider 2026-10-14 … 2026-10-27: 222
+  openinsider 2026-10-28 … 2026-10-31: 68
+openinsider: 596 nákupů od 2026-09-30
+  Komodity: staženo 27, chyb 0
+  [31 s] Data: 12286 firem, z toho US 5446; insideři ze SEC do 2026-09-30
+  [38 s] Týdenní řady: 260 týdnů, 125 oborů, 3945 akcií, 27 komodit
+  [39 s] Týdenní řady a citlivosti: přepočítány a uloženy (otisk d53e8182a39a8c8e)
+  [39 s] panel 2022-07-12: 0 vzorků
+  [40 s] panel 2023-01-03: 5352 vzorků
+  [43 s] panel 2023-06-27: 18738 vzorků
+  [45 s] panel 2023-12-19: 32049 vzorků
+  [48 s] panel 2024-06-11: 46108 vzorků
+  [51 s] panel 2024-12-03: 66338 vzorků
+  [56 s] panel 2025-05-27: 91074 vzorků
+  [60 s] panel 2025-11-18: 114272 vzorků
+  [64 s] panel 2026-05-12: 139360 vzorků
+  [70 s] SIGNAL_14D: TRAIN 47249 (10059 nezávislých), VALIDATION 47834 (6480 nezávislých), LOCKED_TEST 38433 (4817 nezávislých), POST 38124 (3671 nezávislých)
+  [70 s] Učím 8 modelů (4 procesy)
+  [127 s] SIGNAL_14D meta-model: up5|KLID=global, up5|STRES=global, down5|KLID=prumer, down5|STRES=global, beat_sec|KLID=global, beat_sec|STRES=global, big|KLID=prumer, big|STRES=global
+  [137 s] SIGNAL_14D: ZAMČENÝ TEST už vyhodnocen → jen načteno
+  [137 s] Učím 6 modelů (4 procesy)
+  [244 s] SIGNAL_14D: finální model naučen a zkalibrován
+  [245 s] SIGNAL_14D dnes (2026-10-30): 3573 akcií, rozhodnutí {'RŮST': 0, 'POKLES': 728, 'NEVÍM': 2845}
+  [261 s] SIGNAL_14D: XTB — {'kontrola': True, 'prohledano': 20, 'vybrano': 20, 'preskoceno': {'NE': 0, 'CFD': 0, 'NEOVĚŘENO': 0}}
+  [308 s] SIGNAL_14D: karty 25
+  [308 s] SIGNAL_1M: TRAIN 46108 (9831 nezávislých), VALIDATION 45752 (6209 nezávislých), LOCKED_TEST 36313 (4554 nezávislých), POST 35238 (3389 nezávislých)
+  [309 s] Učím 8 modelů (4 procesy)
+  [370 s] SIGNAL_1M meta-model: up5|KLID=prumer, up5|STRES=global, down5|KLID=prumer, down5|STRES=global, beat_sec|KLID=global, beat_sec|STRES=global, big|KLID=prumer, big|STRES=global
+  [380 s] SIGNAL_1M: ZAMČENÝ TEST už vyhodnocen → jen načteno
+  [381 s] Učím 7 modelů (4 procesy)
+  [512 s] SIGNAL_1M: finální model naučen a zkalibrován
+  [512 s] SIGNAL_1M dnes (2026-10-30): 3573 akcií, rozhodnutí {'RŮST': 0, 'POKLES': 654, 'NEVÍM': 2919}
+  [527 s] SIGNAL_1M: XTB — {'kontrola': True, 'prohledano': 22, 'vybrano': 20, 'preskoceno': {'NE': 2, 'CFD': 0, 'NEOVĚŘENO': 0}}
+  [566 s] SIGNAL_1M: karty 25
+  [567 s] SIGNAL_6M: TRAIN 34347 (7378 nezávislých), VALIDATION 25125 (3430 nezávislých), LOCKED_TEST 38433 (4817 nezávislých)
+  [567 s] Učím 8 modelů (4 procesy)
+  [613 s] SIGNAL_6M meta-model: up5|KLID=prumer, down5|KLID=global, beat_sec|KLID=prumer, big|KLID=rezim
+  [621 s] SIGNAL_6M: ZAMČENÝ TEST už vyhodnocen → jen načteno
+  [622 s] Učím 7 modelů (4 procesy)
+  [727 s] SIGNAL_6M: finální model naučen a zkalibrován
+  [728 s] SIGNAL_6M dnes (2026-10-30): 3573 akcií, rozhodnutí {'RŮST': 0, 'POKLES': 474, 'NEVÍM': 3099}
+  [735 s] SIGNAL_6M: XTB — {'kontrola': True, 'prohledano': 20, 'vybrano': 20, 'preskoceno': {'NE': 0, 'CFD': 0, 'NEOVĚŘENO': 0}}
+  [805 s] SIGNAL_6M: karty 43
+  [845 s] Mechanismy uceni: {'AI_ENERGIE': {'vazeb': 44, 'prumer_t': -0.52, 'kladnych': 11, 'percentil_vs_nahodne': 0.269}, 'ROPA': {'vazeb': 6, 'prumer_t': 0.24, 'kladnych': 4, 'percentil_vs_nahodne': 0.598}, 'STAVBA': {'vazeb': 16, 'prumer_t': 0.63, 'kladnych': 13, 'percentil_vs_nahodne': 0.723}}
+  [845 s] Mechanismy validace_a_test: {'AI_ENERGIE': {'vazeb': 48, 'prumer_t': -0.41, 'kladnych': 15, 'percentil_vs_nahodne': 0.325}, 'ROPA': {'vazeb': 6, 'prumer_t': -0.64, 'kladnych': 1, 'percentil_vs_nahodne': 0.227}, 'STAVBA': {'vazeb': 16, 'prumer_t': -0.6, 'kladnych': 2, 'percentil_vs_nahodne': 0.231}}
+XTB: 40 dotazů na xtb.com, 44 z cache, 0 ze staršího ověření, chyb 0
+SIGNAL_14D (běh #27): 25 nových karet; dnes RŮST 0, POKLES 728, NEVÍM 2845; zamčený test (načteno z registru (vyhodnoceno 2026-10-05T14:00:37Z) — znovu se nepočítá): AUC růst 0.6032, pokles 0.6892
+SIGNAL_1M (běh #28): 25 nových karet; dnes RŮST 0, POKLES 654, NEVÍM 2919; zamčený test (načteno z registru (vyhodnoceno 2026-10-05T14:54:04Z) — znovu se nepočítá): AUC růst 0.6366, pokles 0.7432
+SIGNAL_6M (běh #29): 43 nových karet; dnes RŮST 0, POKLES 474, NEVÍM 3099; zamčený test (načteno z registru (vyhodnoceno 2026-10-06T08:27:43Z) — znovu se nepočítá): AUC růst 0.6798, pokles 0.7532
+Vyhodnoceno dřívějších karet: 91; web: signaly 71 kB, zebricek 60 kB, zebricek6m 55 kB
+Kalibrace SIGNAL_14D (N-5): karet 115, týdnů 2; P(růst) průměr 0.296 × skutečně 0.209; Brier 0.1741 (základ 0.1657, dovednost -0.051); pokrytí q20–q80 statické 0.443 / ACI 0.617 (cíl 0.6)
+Kalibrace SIGNAL_1M (N-5): karet 66, týdnů 1; P(růst) průměr 0.237 × skutečně 0.106; Brier 0.1129 (základ 0.0989, dovednost -0.142); pokrytí q20–q80 statické 0.364 / ACI 0.364 (cíl 0.6)
+Centrum: 672 firem (příležitost 278, riziko 13, rozpor 5), záznam OK #161, web 135 kB
+E-mail dnes: 32× — data.sec.gov 20×, www.sec.gov 12×
+UPDATE 2026-10-30  (běh #43)
+  Firmy a řetězec        DONE
+  Ceny (Yahoo)           DONE 124/124
+  SEC EDGAR              TÝDNĚ (v sobotním objevování; každé použití e-mailu se eviduje)
+  Vyhodnocení predikcí   DONE (0 nových)
+  Učení modelu           DONE (verze 22)
+  Skóre                  DONE (46 firem)
+  Nové predikce          DONE (0 nových)
+  Snapshot               PŘESKOČENO (poslední do 7 dní)
+  Export stavu           DONE
+  Data pro web           DONE
+Model: Váhy se změnily méně než o 0,02 — verze modelu zůstává.
+Data pro web: /home/runner/work/global-Future-winners-/global-Future-winners-/data/web
+  Vyhodnocení výzkumu    0 nových
+  Snímek Nasdaq          UŽ JE 2026-10-29
+Centrum: 672 firem (příležitost 278, riziko 13, rozpor 5), záznam OK #162, web 135 kB
+E-mail dnes: 32× — data.sec.gov 20×, www.sec.gov 12×
+  Komodity: staženo 27, chyb 0
+  Týdenní řady a citlivosti: z paměti (otisk d53e8182a39a8c8e, beze změny dat)
+  Šoky komodit: 253 (týden × komodita), vazeb 4257
+  UCENI: šoků 107, empirické vazby 1228: za 13 týdnů -0.0027 (t -0.26)
+  VALIDACE: šoků 52, empirické vazby 755: za 13 týdnů -0.0092 (t -0.58)
+  TEST: šoků 52, empirické vazby 929: za 13 týdnů 0.0098 (t 0.74)
+Kauzální radar (běh #33): karet 16, příležitostí 0, nových predikcí 0, vyhodnoceno 22; GDACS 9 výstrah; test řetězců za 13 týdnů 0.0094 (t 0.54); web 74 kB
+Centrum: 672 firem (příležitost 278, riziko 13, rozpor 5), záznam OK #163, web 135 kB
+E-mail dnes: 32× — data.sec.gov 20×, www.sec.gov 12×
