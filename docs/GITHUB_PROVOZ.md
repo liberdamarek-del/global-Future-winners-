@@ -75,3 +75,30 @@ GitHubu; ruční spuštění (Actions → workflow → Run workflow) běží vž
 Každý běh na GitHubu uloží do zprávy `otisk.json` (konečný stav: predikce, vyhodnocení, karty, TOP 10, den dat, e-mail).
 `python -m stockradar porovnani` ho porovná se stavem Claude podle kritérií daných předem (docs/agent_vyzkum/navrhy.jsonl, N-13)
 a zapíše `docs/provoz/srovnani_DEN.md`. O přepnutí do režimu `ostry` rozhoduje uživatel.
+
+### Vyhodnocení N-13 (2026-10-31, po týdnu souběhu)
+
+| Běh | Den dat | Predikce | Vyhodnocení | Karty | Překryv TOP 10 (14 d / 1 m / 6 m / 6 m vše / 6 m velké) | Kritéria |
+|---|---|---|---|---|---|---|
+| denní 26. 10. | 26. 10. | 73 = 73 | 104 = 104 | 90 = 90 | 1,0 všude | SPLNĚNA |
+| denní 27. 10. | 27. 10. | 73 = 73 | 105 = 105 | 90 = 90 | 1,0 všude | SPLNĚNA |
+| denní 28. 10. | 28. 10. | 73 = 73 | 106 = 106 | 90 = 90 | 1,0 všude | SPLNĚNA |
+| denní 29. 10. | 29. 10. | 73 = 73 | 107 = 107 | 90 = 90 | 1,0 všude | SPLNĚNA |
+| denní 30. 10. | 30. 10. | 73 = 73 | 108 = 108 | 90 = 90 | 1,0 všude | SPLNĚNA |
+| týdenní 31. 10. | 30. 10. | 85 × 85, ale 5 + 5 jiných firem | 108 = 108 | 181 = 181 | 0,82 / **0,33** / **0,33** / 0,67 / 1,0 | **NESPLNĚNA** |
+
+- **Denní běh** (`update`, `causal`) dává na GitHubu stejný výsledek jako rutina Claude, 5 z 5 dnů.
+- **Týdenní běh** se liší, ale **příčinou jsou vstupní data, ne kód**:
+  - GitHub dostal ze seznamů 13 132 symbolů a Claude 13 237. Chyb stahování z Yahoo měl GitHub 248 a Claude 297, takže
+    vyšlo 12 286 × 12 307 firem.
+  - Model raket si na validaci vybral jiné pravidlo řazení: GitHub „výdrž“, Claude „raketa“ (AUC testu 0,735 × 0,732).
+  - Ze 7 a 6 predikcí raket jsou společné jen 2 (RXT, PEPG).
+  - Signály měly 3 573 × 3 578 akcií. Žebříček na 1 měsíc a model raket jsou na tak malý rozdíl dat citlivé (překryv
+    TOP 10 jen 0,33).
+- **Závěr:** přepnutí na GitHub by kód ani denní výsledky nezměnilo. Týdenní tipy jsou ale z velké části dané náhodou
+  ve vstupních datech (která stažení selžou) — to platí stejně pro Claude.
+  - Doporučení před přepnutím: zkontrolovat stabilitu výběru (opakovaný běh na mírně jiných datech; samostatný
+    návrh).
+  - O přepnutí do režimu `ostry` rozhoduje uživatel.
+- Pozor: GitHub spustil 31. 10. týdenní běh **dvakrát** (08:23 a 09:16 UTC, oba sloty cronu kvůli konci letního času).
+  Ve stínu to nevadí, v ostrém režimu by druhý běh zapsal podruhé.
