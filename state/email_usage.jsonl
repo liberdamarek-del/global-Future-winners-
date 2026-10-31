@@ -159,3 +159,9 @@
 {"day": "2026-10-31", "first_at": "2026-10-31T10:11:48Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:11:50Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 11}
 {"day": "2026-10-31", "first_at": "2026-10-31T10:23:31Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:23:31Z", "purpose": "kontrola Form 4 OFLX (smart money STŘEDNÍ)", "requests": 1}
 {"day": "2026-10-31", "first_at": "2026-10-31T10:23:31Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:23:31Z", "purpose": "kontrola Form 4 SBLK (smart money STŘEDNÍ)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T13:17:50Z", "host": "data.sec.gov", "last_at": "2026-10-31T13:17:59Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 38}
+{"day": "2026-10-31", "first_at": "2026-10-31T13:18:51Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:51Z", "purpose": "ověření příčiny pohybu ELME (8-K)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu ARI (8-K)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu ABOS (8-K)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu INTC (8-K)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu GDYN (8-K)", "requests": 1}

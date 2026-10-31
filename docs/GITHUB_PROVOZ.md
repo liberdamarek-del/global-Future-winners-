@@ -100,5 +100,7 @@ a zapíše `docs/provoz/srovnani_DEN.md`. O přepnutí do režimu `ostry` rozhod
   - Doporučení před přepnutím: zkontrolovat stabilitu výběru (opakovaný běh na mírně jiných datech; samostatný
     návrh).
   - O přepnutí do režimu `ostry` rozhoduje uživatel.
-- Pozor: GitHub spustil 31. 10. týdenní běh **dvakrát** (08:23 a 09:16 UTC, oba sloty cronu kvůli konci letního času).
-  Ve stínu to nevadí, v ostrém režimu by druhý běh zapsal podruhé.
+- Oprava (31. 10. odpoledne): druhý týdenní běh (09:16 UTC, druhý slot cronu kvůli konci letního času) **nic
+  nespustil**. Ve frontě počkal na skupinu `radar-provoz`, po skončení prvního běhu našel značku
+  `radar-beh-tyden-…` v cache a všechny kroky přeskočil (`bezet=false`, joby „skipped“). Ochrana proti dvojímu
+  běhu funguje; dřívější věta „spustil dvakrát“ byla chybná.
