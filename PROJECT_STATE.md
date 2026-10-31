@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-31 · **Verze:** v0.17.6 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-10-31 · **Verze:** v0.17.7 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -94,6 +94,7 @@
 | Skóre | test 2025–26: odliší jen nejslabší pětinu (0–20) |
 | Signály | 10 ověřených ve Form 4 (SBLK, GRNT, BLX, INR = STŘEDNÍ; NOMD, PRE, CC, KMPR, ELAN, AVBC = NÍZKÁ); žádná VYSOKÁ |
 | Web | sekce Smart money, dokument `stav/smartmoney` (~37 kB) |
+| Form 4 — úpis (v0.17.7, 2026-10-31) | poznámky Form 4 se čtou: úpis v emisi s kódem P (SBLK 15. 9. 2026, paralelní nabídka v Athénách) = PASIVNÍ, ne aktivní nákup; platí od běhu #8 |
 | NEOVĚŘENO | Trump (OGE 278-T jsou skeny), 13F, short interest, oznámení buybacků z 8-K, EPS, zisk opcí |
 
 ## Signály na 14 dní (v0.6.0, běhy #1–#2, 2026-10-05)

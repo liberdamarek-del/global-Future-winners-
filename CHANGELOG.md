@@ -4,6 +4,19 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-31 · v0.17.7 — Smart money: úpis v emisi s kódem P není nákup na trhu
+
+Důvod: ruční kontrola originálního Form 4 u prvního signálu týdne (SBLK, STŘEDNÍ): ředitel „koupil“ 15. 9. 2026
+10 000 + 50 000 akcií (kód P), ale poznámka ve Form 4 říká, že šlo o úpis nových akcií v paralelní nabídce v Řecku
+(Euronext Athens). Ověření Form 4 poznámky nečetlo, takže úpis prošel jako aktivní nákup (poučení #27).
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `smartmoney/current.py` | `verify_form4` ukládá poznámky (footnotes); `form4_type`: poznámka o emisi (offering, subscribed, private placement, underwriting, rights issue, PIPE) → „PASIVNÍ (úpis v emisi, ne nákup na trhu)“; záznam v cache bez poznámek se jednou stáhne znovu (evidováno v `email_usage`) | `test_smartmoney.py::test_form4_type_detects_espp_flip_and_discount` (případ SBLK; běžná poznámka o průměrné ceně nákup nemění) |
+
+Platí od příštího běhu smart money; dnešní běh (#7) zůstává, jak je, predikce v ledgeru se nemění. Historická studie
+insiderů (čtvrtletní sady SEC) úpisy neodlišuje — případné zkreslení odhadu výhody je NEOVĚŘENO.
+
 ## 2026-10-31 · v0.17.6 — Kauzální radar: skok při přechodu na další kontrakt není šok komodity
 
 Důvod: poučení #26 (28.–29. 10.). Karta „prasata −25 % za 4 týdny“ obsahovala skok −11,9 % 15. 10. (konec říjnového

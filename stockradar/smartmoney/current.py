@@ -84,6 +84,9 @@ def raw_xml_url(url: str) -> str:
 
 
 DISCOUNT = 0.88  # nákup za cenu pod 88 % tržní ceny téhož dne = zvýhodněný nákup (zaměstnanecký plán), ne trh
+# úpis nových akcií v emisi s kódem P (2026-10-31: SBLK — „Participation in the Parallel Offering … subscribed to
+# 10,000 new common shares“, Euronext Athens) není nákup na trhu; pozná se jen z poznámek (footnotes) ve Form 4
+OFFERING = re.compile(r"(?i:\b(?:offering|subscri\w*|private placement|underwrit\w*|rights issue)\b)|\bPIPE\b")
 
 
 def form4_type(v: dict, market_close: float | None = None) -> str:
@@ -100,6 +103,8 @@ def form4_type(v: dict, market_close: float | None = None) -> str:
                and 0 <= date.fromisoformat(t["date"][:10]).toordinal() - first <= 10)
     if bought and sold >= 0.5 * bought:
         return "NEJASNÉ (hned prodáno)"
+    if any(OFFERING.search(n or "") for n in v.get("poznamky") or []):
+        return "PASIVNÍ (úpis v emisi, ne nákup na trhu)"
     price = sum((t["shares"] or 0) * (t["price"] or 0) for t in buys) / bought if bought else None
     if market_close and price and price < DISCOUNT * market_close:
         return "PASIVNÍ (nákup se slevou, zaměstnanecký plán)"
@@ -112,10 +117,11 @@ def verify_form4(url: str, cache_conn=None) -> dict:
     if cache_conn is not None:
         cache_conn.execute("CREATE TABLE IF NOT EXISTS form4_verify (url TEXT PRIMARY KEY, result_json TEXT NOT NULL)")
         hit = cache_conn.execute("SELECT result_json FROM form4_verify WHERE url = ?", (url,)).fetchone()
-        if hit:
+        if hit and "poznamky" in json.loads(hit[0]):
             v = json.loads(hit[0])
             v["typ"] = form4_type(v)  # pravidla se mohla zpřísnit — typ se počítá vždy znovu z uložených transakcí
             return v
+        # záznam z doby před čtením poznámek (v0.17.7) se stáhne jednou znovu
     xml = contact.http_get(raw_xml_url(url), "ověření nákupu insidera (Form 4 XML)").decode("utf-8", "replace")
     root = ET.fromstring(xml)
     plan = (root.findtext("aff10b5One") or "").strip().lower() in ("1", "true")
@@ -127,10 +133,11 @@ def verify_form4(url: str, cache_conn=None) -> dict:
         txs.append({"code": code, "date": t.findtext("transactionDate/value"),
                     "shares": float(shares) if shares else None, "price": float(price) if price else None,
                     "ad": t.findtext("transactionAmounts/transactionAcquiredDisposedCode/value")})
+    notes = [" ".join("".join(f.itertext()).split())[:300] for f in root.iter("footnote")]
     owner = root.findtext("reportingOwner/reportingOwnerId/rptOwnerName")
     title = root.findtext("reportingOwner/reportingOwnerRelationship/officerTitle")
     buys = [t for t in txs if t["code"] == "P"]
-    result = {"overeno": True, "plan10b51": plan, "owner": owner, "title": title, "transakce": txs,
+    result = {"overeno": True, "plan10b51": plan, "owner": owner, "title": title, "transakce": txs, "poznamky": notes[:8],
               "nakupu_P": len(buys), "hodnota_P": round(sum((t["shares"] or 0) * (t["price"] or 0) for t in buys)),
               "url": raw_xml_url(url)}
     result["typ"] = form4_type(result)

@@ -148,3 +148,14 @@
 {"day": "2026-10-30", "first_at": "2026-10-30T13:27:39Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:39Z", "purpose": "ověření příčiny pohybu IOVA (8-K)", "requests": 1}
 {"day": "2026-10-30", "first_at": "2026-10-30T13:27:39Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:39Z", "purpose": "ověření příčiny pohybu XHLD (8-K)", "requests": 1}
 {"day": "2026-10-30", "first_at": "2026-10-30T13:27:40Z", "host": "www.sec.gov", "last_at": "2026-10-30T13:27:40Z", "purpose": "ověření příčiny pohybu XLAB (8-K)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:38Z", "host": "www.sec.gov", "last_at": "2026-10-31T09:56:38Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:40Z", "host": "data.sec.gov", "last_at": "2026-10-31T09:56:44Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:44Z", "host": "data.sec.gov", "last_at": "2026-10-31T09:56:45Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:45Z", "host": "data.sec.gov", "last_at": "2026-10-31T09:56:46Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:46Z", "host": "data.sec.gov", "last_at": "2026-10-31T09:56:46Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:47Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:09:58Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 2}
+{"day": "2026-10-31", "first_at": "2026-10-31T09:56:54Z", "host": "data.sec.gov", "last_at": "2026-10-31T10:09:58Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
+{"day": "2026-10-31", "first_at": "2026-10-31T10:09:51Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:09:57Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
+{"day": "2026-10-31", "first_at": "2026-10-31T10:11:48Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:11:50Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 11}
+{"day": "2026-10-31", "first_at": "2026-10-31T10:23:31Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:23:31Z", "purpose": "kontrola Form 4 OFLX (smart money STŘEDNÍ)", "requests": 1}
+{"day": "2026-10-31", "first_at": "2026-10-31T10:23:31Z", "host": "www.sec.gov", "last_at": "2026-10-31T10:23:31Z", "purpose": "kontrola Form 4 SBLK (smart money STŘEDNÍ)", "requests": 1}

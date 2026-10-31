@@ -65,6 +65,12 @@ def test_form4_type_detects_espp_flip_and_discount():
     assert current.form4_type(v([("P", "2026-08-31", 1000.0, 87.9)]), 88.25) == "AKTIVNÍ NÁKUP"
     assert current.form4_type(v([("P", "2026-08-31", 1000.0, 87.9)], plan=True)) == "AUTOMATICKÝ"
     assert current.form4_type(v([("A", "2026-08-31", 1000.0, 0.0)])) == "NEJASNÉ"
+    # SBLK 2026-09-15: kód P, ale úpis nových akcií v paralelní nabídce (poznámka ve Form 4) → ne nákup na trhu
+    sblk = v([("P", "2026-09-15", 10000.0, 28.27)]) | {"poznamky": [
+        "Participation in the Parallel Offering undertaken by STAR BULK CARRIERS CORP in Greece, following its dual "
+        "listing on Euronext Athens, pursuant to which I personally subscribed to 10,000 new common shares"]}
+    assert current.form4_type(sblk) == "PASIVNÍ (úpis v emisi, ne nákup na trhu)"
+    assert current.form4_type(v([("P", "2026-09-14", 1000.0, 25.42)]) | {"poznamky": ["Weighted average price."]}) == "AKTIVNÍ NÁKUP"
 
 
 HOUSE_TEXT = """
