@@ -192,19 +192,24 @@ def shock(weekly: Weekly, cid: str, w: int, weeks_back: int = 4, sd_weeks: int =
     return (r, r / sd) if sd > 0 else None
 
 
-def daily_shock(bars, as_of: int, days_back: int = 28, hist_weeks: int = 52, max_stale: int = 5) -> tuple[float, float, int] | None:
+def daily_shock(bars, as_of: int, days_back: int = 28, hist_weeks: int = 52, max_stale: int = 5,
+                cid: str | None = None) -> tuple[float, float, int] | None:
     """Šok komodity z DENNÍCH cen k poslednímu obchodnímu dni ≤ as_of: (výnos za `days_back` dní, z-skóre vůči
     stejně dlouhým výnosům za posledních `hist_weeks` týdnů, den posledního závěru). Týdenní mřížka končí posledním dnem
-    cen akcií (sobotní stažení), takže bez tohoto by radar pohyby komodit během týdne neviděl (zjištěno 2026-10-08)."""
+    cen akcií (sobotní stažení), takže bez tohoto by radar pohyby komodit během týdne neviděl (zjištěno 2026-10-08).
+    S `cid` se u komodit s pravidlem přechodu kontraktu (data.ROLL_RULES) skoky při přechodu odečtou z výnosu i z
+    historie (v0.17.6; jen živé karty, zamčený test řetězců používá týdenní řady beze změny)."""
     import bisect
     i = bisect.bisect_right(bars.days, as_of) - 1
     if i < 0 or as_of - bars.days[i] > max_stale:
         return None
     day = bars.days[i]
-    r = cdata.ret(bars, day, days_back)
+    ret = (lambda d: cdata.ret_ex_roll(bars, cid, d, days_back)) if cid in cdata.ROLL_RULES else \
+          (lambda d: cdata.ret(bars, d, days_back))
+    r = ret(day)
     if r is None:
         return None
-    hist = [h for h in (cdata.ret(bars, day - 7 * k, days_back) for k in range(days_back // 7, days_back // 7 + hist_weeks))
+    hist = [h for h in (ret(day - 7 * k) for k in range(days_back // 7, days_back // 7 + hist_weeks))
             if h is not None]
     if len(hist) < 20:
         return None

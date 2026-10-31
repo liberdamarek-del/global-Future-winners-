@@ -182,6 +182,34 @@ def test_daily_shock_sees_moves_after_last_stock_day():
     assert daily_shock(bars, days[-1] + 30) is None                        # stará data (> 5 dní) se nepoužijí
 
 
+def test_contract_roll_jump_is_not_a_commodity_shock():
+    """Poučení #26 (2026-10-28/29): prasata HE=F −11,9 % 15. 10. a ocel HRC=F +4,0 % 28. 10. byly přechody na další
+    kontrakt, ne události. Skok se odečte jen na dni podle pravidla burzy; skok v jiný den zůstane."""
+    from stockradar.causal import data as cd
+    from stockradar.causal.exposure import daily_shock
+    from stockradar.discovery.cache import Bars
+    assert cd._hogs_last(2026, 10) == date(2026, 10, 14) and cd._hogs_last(2026, 9) is None
+    assert cd._steel_last(2026, 10) == date(2026, 10, 27) and cd._steel_last(2026, 9) == date(2026, 9, 29)
+    assert cd._iron_last(2026, 9) == date(2026, 9, 30)
+    rng = random.Random(7)
+    days = [d for d in range(date(2025, 1, 1).toordinal(), date(2026, 10, 31).toordinal()) if date.fromordinal(d).weekday() < 5]
+    roll = date(2026, 10, 15).toordinal()
+    closes, p = [], 70.0
+    for d in days:
+        p *= 1 + rng.gauss(0, 0.005) - (0.12 if d == roll else 0.0)
+        closes.append(p)
+    bars = Bars("HE=F", "USD", days, closes, [1.0] * len(days))
+    jumps = cd.roll_jumps(bars, "HOGS", days[-1] - 28, days[-1])
+    assert [j["den"] for j in jumps] == ["2026-10-15"] and jumps[0]["skok"] < -0.10
+    raw, adj = cd.ret(bars, days[-1], 28), cd.ret_ex_roll(bars, "HOGS", days[-1], 28)
+    assert raw < -0.08 and abs(adj) < 0.06
+    assert abs(daily_shock(bars, days[-1])[1]) > 2 * abs(daily_shock(bars, days[-1], cid="HOGS")[1])
+    assert cd.roll_jumps(bars, "CORN", days[-1] - 28, days[-1]) == []        # bez ověřeného pravidla nic
+    shifted = Bars("HE=F", "USD", days, [c * (0.88 if d >= date(2026, 10, 21).toordinal() else 1) / (0.88 if d >= roll else 1)
+                                         for d, c in zip(days, closes)], [1.0] * len(days))
+    assert abs(cd.ret_ex_roll(shifted, "HOGS", days[-1], 28) - cd.ret(shifted, days[-1], 28)) < 0.02   # skok mimo termín zůstane
+
+
 def test_verified_producer_shares_have_primary_source():
     for cid, v in CM.VERIFIED_PRODUCERS.items():
         assert cid in CM.BY_ID and v["url"].startswith("https://") and 0 < sum(v["podily"].values()) <= 1

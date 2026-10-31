@@ -99,9 +99,11 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         sh = shock(wk, cid, w)
         sh_day = wk.weeks[w]
         if as_of is not None and bars is not None:
-            d = daily_shock(bars, as_of.toordinal())
+            d = daily_shock(bars, as_of.toordinal(), cid=cid)
             if d is not None:
                 sh, sh_day = (d[0], d[1]), d[2]
+        rolls = [{k: v for k, v in j.items() if k != "_den"} for j in cdata.roll_jumps(bars, cid, sh_day - 28, sh_day)] \
+            if bars is not None and cid in cdata.ROLL_RULES else []
         pulse = pulses.get(cid) or {}
         gd = gdacs_links.get(cid) or []
         price_shock = sh is not None and abs(sh[1]) >= Z_EVENT
@@ -172,6 +174,8 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             "cena": round(now, 4) if now else None, "den": date.fromordinal(sh_day).isoformat(),
             "pohyb_1t": round(wk.comm[cid][w], 4) if wk.comm[cid][w] == wk.comm[cid][w] else None,
             "pohyb_4t": round(r4, 4) if r4 is not None else None, "z": round(sh[1], 2) if sh else None,
+            "prechod_kontraktu": rolls or None,
+            "pravidlo_prechodu": cdata.ROLL_RULES[cid][1] if rolls else None,
             "sok_k_datu": date.fromordinal(sh_day).isoformat(),
             "obory_k_datu": date.fromordinal(wk.weeks[w]).isoformat(),
             "spoustec": [x for x, on in (("cenový šok", price_shock), ("zprávy", news_spike),

@@ -118,7 +118,7 @@ COMMODITIES = [
      "vyrobci": ["Brazílie", "USA (Florida)"], "uzly": [],
      "retez": [(1, r"beverages", -1, "výrobci džusů")]},
     {"id": "CATTLE", "symbol": "LE=F", "nazev": "Skot", "skupina": "zemědělství", "slova": r"\b(cattle|beef)\b",
-     "vyrobci": ["USA", "Brazílie", "Čína", "Argentina", "Austrálie"], "uzly": [],
+     "vyrobci": ["Brazílie", "USA", "Čína", "EU", "Indie", "Argentina", "Austrálie"], "uzly": [],
      "retez": [(1, r"meat/poultry/fish", -1, "zpracovatelé masa nakupují dobytek"),
                (2, r"restaurants|food chains", -1, "dražší maso v restauracích")]},
     {"id": "HOGS", "symbol": "HE=F", "nazev": "Prasata", "skupina": "zemědělství", "slova": r"\b(hogs?|pork|swine fever)\b",
@@ -166,6 +166,10 @@ VERIFIED_PRODUCERS = {
              "url": "https://apps.fas.usda.gov/psdonline/circulars/livestock_poultry.pdf", "rok": "2026",
              "podily": {"Čína": 0.495, "EU": 0.183, "USA": 0.104, "Brazílie": 0.041, "Vietnam": 0.034, "Rusko": 0.033},
              "overeno": "2026-10-17"},
+    "CATTLE": {"zdroj": "USDA FAS — Livestock and Poultry: World Markets and Trade, 9. 10. 2026 (hovězí a telecí, 2026)",
+               "url": "https://apps.fas.usda.gov/psdonline/circulars/livestock_poultry.pdf", "rok": "2026",
+               "podily": {"Brazílie": 0.202, "USA": 0.188, "Čína": 0.113, "EU": 0.105, "Indie": 0.081, "Argentina": 0.051, "Austrálie": 0.050},
+               "overeno": "2026-10-31"},
 }
 
 

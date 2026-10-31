@@ -4,6 +4,24 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-10-31 · v0.17.6 — Kauzální radar: skok při přechodu na další kontrakt není šok komodity
+
+Důvod: poučení #26 (28.–29. 10.). Karta „prasata −25 % za 4 týdny“ obsahovala skok −11,9 % 15. 10. (konec říjnového
+kontraktu 14. 10.); karta „ocel +9 %“ skoky +3,2 % 30. 9. a +4,0 % 28. 10. (konec kontraktu pracovní den před poslední
+středou); železná ruda −4,6 % 1. 10. Obě karty byly ve stavu PŘÍLEŽITOST hlavně kvůli přechodu kontraktu Yahoo `=F`.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `causal/data.py` | `ROLL_RULES` jen pro komodity s ověřeným pravidlem konce obchodování (CME: prasata kap. 152 — 10. pracovní den měsíce kontraktu; ocel HRC kap. 920 — pracovní den před poslední středou; železná ruda kap. 919 — poslední pracovní den měsíce); `roll_jumps` (skok na 1. nebo 2. obchodním dni po konci kontraktu), `ret_ex_roll` | `test_causal.py::test_contract_roll_jump_is_not_a_commodity_shock` (pravidla na říjnu 2026; umělý skok v den přechodu se odečte, skok v jiný den zůstane; komodita bez pravidla beze změny) |
+| `causal/exposure.py` | `daily_shock(..., cid=)` odečte skoky při přechodu z výnosu i z historie (z-skóre) | totéž |
+| `causal/radar.py` | karta: `prechod_kontraktu` (den, skok) a `pravidlo_prechodu` | celý `pytest` |
+| `causal/commodities.py` | skot: ověřené podíly výroby hovězího (USDA FAS, 9. 10. 2026: Brazílie 20 %, USA 19 %, Čína 11 %, EU 11 %, Indie 8 %, Argentina 5 %, Austrálie 5 %); seznam výrobců doplněn o EU a Indii | `test_verified_producer_shares_have_primary_source` |
+| `web/index.html` | u karty komodity věta „bez skoku při přechodu na další kontrakt (… odečteno; pravidlo)“ | ruční kontrola |
+
+Jen živé karty: týdenní řady pro zamčený test řetězců se nemění, otisk konfigurace testu (`causal.store.config_hash`)
+zůstává b3e10705103a8221 — žádný nový pokus. Na datech k 30. 10.: prasata −24,2 % → −14,0 %, ocel +10,0 % → +5,7 %.
+Komodity bez ověřeného pravidla (např. zemní plyn, ropa, obilí) se zatím neupravují.
+
 ## 2026-10-29 · v0.17.5 — Záchranný snímek Nasdaq i z večerního `update`
 
 Důvod: ranní rutina výzkumu (deník raket) se 29. 10. spustila ve 13:48 UTC = 9:48 v New Yorku, kdy už trh obchodoval;
