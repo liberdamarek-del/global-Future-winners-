@@ -165,3 +165,13 @@
 {"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu ABOS (8-K)", "requests": 1}
 {"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu INTC (8-K)", "requests": 1}
 {"day": "2026-10-31", "first_at": "2026-10-31T13:18:52Z", "host": "www.sec.gov", "last_at": "2026-10-31T13:18:52Z", "purpose": "ověření příčiny pohybu GDYN (8-K)", "requests": 1}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:34:16Z", "host": "www.sec.gov", "last_at": "2026-11-01T14:34:16Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:34:17Z", "host": "data.sec.gov", "last_at": "2026-11-01T14:34:37Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 72}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:34:38Z", "host": "data.sec.gov", "last_at": "2026-11-01T14:34:48Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 24}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:34:48Z", "host": "data.sec.gov", "last_at": "2026-11-01T14:34:58Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 24}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:34:58Z", "host": "data.sec.gov", "last_at": "2026-11-01T14:35:10Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 24}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:35:10Z", "host": "www.sec.gov", "last_at": "2026-11-01T14:35:47Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 24}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:35:48Z", "host": "data.sec.gov", "last_at": "2026-11-01T14:35:50Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 6}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:36:40Z", "host": "data.sec.gov", "last_at": "2026-11-01T14:36:40Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 2}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:37:02Z", "host": "www.sec.gov", "last_at": "2026-11-01T14:37:02Z", "purpose": "ověření příčiny pohybu BUUU (6-K)", "requests": 1}
+{"day": "2026-11-01", "first_at": "2026-11-01T14:37:02Z", "host": "www.sec.gov", "last_at": "2026-11-01T14:37:02Z", "purpose": "ověření příčiny pohybu FRGT (6-K)", "requests": 1}
