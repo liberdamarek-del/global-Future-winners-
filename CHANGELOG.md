@@ -4,6 +4,31 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-02 · v0.17.9 — Dny svíček Yahoo v časové zóně burzy (oprava po konci letního času)
+
+Důvod: denní rutina 2. 11. Karta oceli v kauzálním radaru ukazovala za 4 týdny +9,8 % a přechod kontraktu z 28. 10.
+(+4,0 %) se neodečetl. Řady komodit měly víkendové dny (25. 10.) a chyběly pátky.
+
+Příčina: `sources/yahoo.parse_chart` převáděl čas každé svíčky dnešním `gmtoffset`. Od konce letního času v USA
+(1. 11.) je posun −5 h, ale letní svíčky futures mají čas 04:00 UTC (půlnoc v New Yorku). Padly proto na předchozí
+den. Stejně postižené jsou měnové páry (svíčky 23:00 UTC během britského letního času).
+
+- `sources/yahoo.py`: `_exchange_tz(meta)` vezme `exchangeTimezoneName` (zoneinfo) a `_bar_day` převádí podle ní.
+  Bez názvu zóny nebo tzdata se použije dřívější `gmtoffset` (záloha).
+- Kontrola na skutečných datech (17 symbolů, 6 měsíců): futures HRC, HE, NG, TIO, GC, ZC, KC a EURUSD=X měly
+  posunutých 125–152 svíček (24–50 víkendových dnů), nový převod 0 víkendových (kromě nedělních seancí TIO=F).
+  SPY, ^VIX, ^TNX a akcie TSX, TSE, ASX, KRX, Kodaň a Londýn beze změny (0 rozdílů).
+- Komodity znovu staženy (`causal`, běh #35). Přechody kontraktů se najdou ve správné dny: ocel +4,0 % 28. 10.,
+  prasata −11,9 % 15. 10. Ocel za 4 týdny po odečtení +5,9 % místo +9,8 %. Zamčený test řetězců beze změny
+  (načten z registru, žádný nový pokus).
+- Před 1. 11. se to neprojevilo: letní posun platil pro letní svíčky. Chyba se objeví po každém podzimním přechodu
+  času, a to až do dalšího jarního.
+
+Test: `test_sources.py::test_bar_day_uses_exchange_timezone_not_todays_offset` (pondělí 26. 10. zůstane pondělím;
+bez zóny záloha posune; akcie 13:30 UTC beze změny). `python -m pytest`: vše prošlo.
+
+Poučení #29 (oprava #30: kurzy měn v cache zatím nejsou, stáhne je až sobotní objevování opraveným kódem).
+
 ## 2026-11-02 · v0.17.8 — Experiment týdne N-18: energetický model se učí z průměru 5 fází panelu
 
 Důvod: návrh N-18 (29. 10.). Panel „každých 5 obchodních dní“ posouval fázi každý den, takže model každý den viděl

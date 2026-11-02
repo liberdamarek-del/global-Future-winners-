@@ -187,3 +187,27 @@ def test_prices_fetched_before_last_session_close_are_refetched():
                        fetched_at="2026-10-24T07:00:00Z")                    # po závěrce
     now = datetime(2026, 10, 24, 7, 30, tzinfo=timezone.utc)
     assert download.pending_symbols(c, max_age_days=6, now=now) == ["OLD"]
+
+
+def test_bar_day_uses_exchange_timezone_not_todays_offset():
+    """Po konci letního času (1. 11. 2026) je gmtoffset −5 h, ale letní svíčky futures mají čas 04:00 UTC (= půlnoc
+    EDT). S dnešním posunem by padly na předchozí den (pondělí → neděle); se zónou burzy zůstanou správně."""
+    from datetime import datetime, timezone
+    from stockradar.sources.yahoo import parse_chart
+
+    def ts(s):
+        return int(datetime.fromisoformat(s).replace(tzinfo=timezone.utc).timestamp())
+
+    payload = {"chart": {"result": [{
+        "meta": {"currency": "USD", "gmtoffset": -18000, "exchangeTimezoneName": "America/New_York"},
+        "timestamp": [ts("2026-10-26T04:00:00"), ts("2026-10-30T04:00:00"), ts("2026-11-02T05:00:00")],
+        "indicators": {"quote": [{"close": [1292.0, 1347.0, 1406.0], "volume": [1, 1, 1]}]}}]}}
+    days = [b[0] for b in parse_chart("HRC=F", payload).bars]
+    assert days == ["2026-10-26", "2026-10-30", "2026-11-02"]          # pondělí, pátek, pondělí — žádný víkend
+    # bez názvu zóny se použije dřívější posun (záloha) — ten letní svíčky posune
+    del payload["chart"]["result"][0]["meta"]["exchangeTimezoneName"]
+    assert [b[0] for b in parse_chart("HRC=F", payload).bars][0] == "2026-10-25"
+    # akcie (13:30 UTC) mají den stejný oběma způsoby
+    payload["chart"]["result"][0]["meta"]["exchangeTimezoneName"] = "America/New_York"
+    payload["chart"]["result"][0]["timestamp"] = [ts("2026-10-26T13:30:00"), ts("2026-10-30T13:30:00"), ts("2026-11-02T14:30:00")]
+    assert [b[0] for b in parse_chart("SPY", payload).bars] == ["2026-10-26", "2026-10-30", "2026-11-02"]

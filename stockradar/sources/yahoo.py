@@ -12,6 +12,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from stockradar.timeutil import to_iso, utcnow
 
@@ -31,6 +32,21 @@ class Quote:
     bars: list[tuple[str, float, float | None]]  # (YYYY-MM-DD, close, volume)
 
 
+def _bar_day(ts: int, tz, offset: int) -> str:
+    """Den svíčky v časové zóně burzy. `gmtoffset` platí jen pro DNEŠNÍ čas (letní / zimní), proto se použije jen
+    jako záloha: po přechodu na zimní čas posunul letní svíčky futures a měn (04:00 UTC) na předchozí den (v0.17.9)."""
+    if tz is not None:
+        return datetime.fromtimestamp(ts, tz=tz).date().isoformat()
+    return datetime.fromtimestamp(ts + offset, tz=timezone.utc).date().isoformat()
+
+
+def _exchange_tz(meta: dict):
+    try:
+        return ZoneInfo(meta["exchangeTimezoneName"]) if meta.get("exchangeTimezoneName") else None
+    except Exception:          # neznámá zóna nebo chybějící tzdata → záložní gmtoffset
+        return None
+
+
 def parse_chart(symbol: str, payload: dict) -> Quote:
     result = (payload.get("chart") or {}).get("result")
     if not result:
@@ -39,6 +55,7 @@ def parse_chart(symbol: str, payload: dict) -> Quote:
     r = result[0]
     meta = r.get("meta", {})
     offset = int(meta.get("gmtoffset") or 0)
+    tz = _exchange_tz(meta)
     stamps = r.get("timestamp") or []
     quote = (r.get("indicators", {}).get("quote") or [{}])[0]
     closes = quote.get("close") or []
@@ -48,7 +65,7 @@ def parse_chart(symbol: str, payload: dict) -> Quote:
         close = closes[i] if i < len(closes) else None
         if close is None or close <= 0:
             continue
-        day = datetime.fromtimestamp(ts + offset, tz=timezone.utc).date().isoformat()
+        day = _bar_day(ts, tz, offset)
         volume = volumes[i] if i < len(volumes) else None
         bars[day] = (day, float(close), float(volume) if volume is not None else None)
     price_time = meta.get("regularMarketTime")
