@@ -4,6 +4,28 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-02 · v0.17.8 — Experiment týdne N-18: energetický model se učí z průměru 5 fází panelu
+
+Důvod: návrh N-18 (29. 10.). Panel „každých 5 obchodních dní“ posouval fázi každý den, takže model každý den viděl
+jinou pětinu dnů. Váhy proto kmitaly: denní změna byla 3–4× větší než za 5 dní a nová verze modelu vznikala každý den.
+Denní zprávy to hlásily jako „nová data změnila váhy“.
+
+| Soubor/modul | Změna | Test |
+|---|---|---|
+| `model.py` | `PANEL_PHASES = 5`, `phase_panels` (panely posunuté o 0–4 obchodní dny), `combine`; `learn(..., phases=)` dělí efektivní počet vzorků počtem fází (překrývají se); `out_of_sample(..., train_panel=, phases=)` učí jen ze vzorků před testem | `test_model.py::test_phases_do_not_inflate_evidence` (5 kopií panelu s `phases=5` = stejné váhy jako 1 panel; bez dělení by data přetlačila apriorní odhad) |
+| `update.py` | učení ze spojených fází; kalibrace a testovací vzorky dál z fáze 0 | celý `pytest` (228) |
+
+Přehrání 20 posledních obchodních dní (kritéria dána předem v N-18):
+
+| | Průměrná denní \|Δw\| | Nových verzí | IC mimo vzorek |
+|---|---|---|---|
+| 1 fáze (dosud) | 0,040 | 19 z 19 | 0,0624 |
+| 5 fází | 0,0048 | 0 z 19 | 0,0631 |
+
+Všechna 3 kritéria splněna (změna aspoň poloviční, nejvýš 6 verzí, IC v pásmu ±0,01). První přehrání bez dělení
+efektivního počtu vzorků dalo jiné váhy (data přetlačila apriorní odhady) — chyba opravena dřív, než šla do kódu.
+Vratné: `PANEL_PHASES = 1`. Ledger se nemění; nové verze modelu vzniknou, až se váhy posunou o ≥ 0,02 skutečně.
+
 ## 2026-10-31 · v0.17.7 — Smart money: úpis v emisi s kódem P není nákup na trhu
 
 Důvod: ruční kontrola originálního Form 4 u prvního signálu týdne (SBLK, STŘEDNÍ): ředitel „koupil“ 15. 9. 2026

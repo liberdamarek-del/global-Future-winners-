@@ -26,6 +26,7 @@ from stockradar.universe import HYPERSCALERS
 
 HORIZON = 21            # obchodních dní ≈ 30 kalendářních
 PANEL_STEP = 5          # vzorek každých 5 obchodních dní
+PANEL_PHASES = 5        # N-18 (v0.17.8): učit z průměru všech 5 posunů panelu; 1 = dřívější chování (jedna fáze, šum)
 PANEL_YEARS = 3
 OOS_DATES = 26          # posledních ~6 měsíců panelu pro test mimo vzorek
 N0 = 12.0               # síla apriorního odhadu (v počtu nezávislých 30denních období)
@@ -268,8 +269,9 @@ def build_panel(u: Universe, *, end_day: str | None = None) -> list[PanelDate]:
     return panel
 
 
-def learn(panel: list[PanelDate], *, as_of: str) -> tuple[dict[str, float], dict[str, dict]]:
-    """Váhy = apriorní odhad smíchaný s naměřeným IC (novější data váží víc)."""
+def learn(panel: list[PanelDate], *, as_of: str, phases: int = 1) -> tuple[dict[str, float], dict[str, dict]]:
+    """Váhy = apriorní odhad smíchaný s naměřeným IC (novější data váží víc). `phases` = kolik posunutých panelů
+    je v `panel` spojeno — překrývají se, proto se efektivní počet vzorků dělí počtem fází."""
     today = date.fromisoformat(as_of)
     acc = {f: {"w": 0.0, "wic": 0.0, "wic2": 0.0, "n": 0} for f in FACTORS}
     for p in panel:
@@ -293,7 +295,7 @@ def learn(panel: list[PanelDate], *, as_of: str) -> tuple[dict[str, float], dict
     weights, metrics = {}, {}
     for f, meta in FACTORS.items():
         a = acc[f]
-        n_eff = a["w"] * PANEL_STEP / HORIZON
+        n_eff = a["w"] * PANEL_STEP / HORIZON / phases
         ic = a["wic"] / a["w"] if a["w"] else 0.0
         sd = math.sqrt(max(a["wic2"] / a["w"] - ic * ic, 0.0)) if a["w"] else 0.0
         t_stat = ic / (sd / math.sqrt(n_eff)) if sd > 0 and n_eff > 0 else 0.0
@@ -336,12 +338,27 @@ def bin_for(score: float, calibration: list[dict]) -> dict:
     return calibration[-1]
 
 
-def out_of_sample(panel: list[PanelDate]) -> dict:
-    """Váhy naučené jen na starších datech, test na posledních OOS_DATES vzorcích."""
+def phase_panels(u: Universe, phases: int = PANEL_PHASES) -> list[list[PanelDate]]:
+    """Panely posunuté o 0 … phases−1 obchodních dní (N-18): jedna fáze vidí jen každý 5. den a denní posun fáze
+    dělal z „učení“ hlavně šum (2026-10-29: denní změna vah 3–4× větší než za 5 dní)."""
+    spy = u.series.get(config.BENCHMARK_SYMBOL)
+    if not spy or not spy.dates:
+        return [[]]
+    return [build_panel(u, end_day=spy.dates[-1 - o]) for o in range(min(phases, len(spy.dates)))]
+
+
+def combine(panels: list[list[PanelDate]]) -> list[PanelDate]:
+    return sorted((p for pan in panels for p in pan), key=lambda p: p.day)
+
+
+def out_of_sample(panel: list[PanelDate], *, train_panel: list[PanelDate] | None = None, phases: int = 1) -> dict:
+    """Váhy naučené jen na starších datech, test na posledních OOS_DATES vzorcích `panel`. `train_panel` = spojené
+    fáze (N-18) — z nich se učí jen vzorky před začátkem testu."""
     if len(panel) <= OOS_DATES + 20:
         return {"poznamka": "málo historie pro test mimo vzorek"}
-    train, test = panel[:-OOS_DATES], panel[-OOS_DATES:]
-    weights, _ = learn(train, as_of=train[-1].day)
+    test = panel[-OOS_DATES:]
+    train = [p for p in (train_panel or panel) if p.day < test[0].day]
+    weights, _ = learn(train, as_of=train[-1].day, phases=phases)
     ics, hits, excess = [], [], []
     for p in test:
         scores = composite({f: ranks(p.raw[f]) for f in FACTORS}, weights)

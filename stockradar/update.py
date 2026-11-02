@@ -273,10 +273,11 @@ def run_update(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path | Non
     evaluated = evaluate_predictions(conn, u, now)
     steps["Vyhodnocení predikcí"] = f"DONE ({len(evaluated)} nových)"
 
-    panel = m.build_panel(u)
-    weights, metrics = m.learn(panel, as_of=data_day)
+    panels = m.phase_panels(u)                      # N-18: učení z průměru všech posunů panelu
+    panel, combined = panels[0], m.combine(panels)
+    weights, metrics = m.learn(combined, as_of=data_day, phases=len(panels))
     calibration = m.calibrate(panel, weights)
-    metrics["_oos"] = m.out_of_sample(panel)
+    metrics["_oos"] = m.out_of_sample(panel, train_panel=combined, phases=len(panels))
     window = f"{panel[0].day}..{panel[-1].day}" if panel else "žádná data"
     n_samples = sum(len(p.excess) for p in panel)
     version_id, changed, reason = m.save_version_if_changed(conn, weights, metrics, calibration, window=window,

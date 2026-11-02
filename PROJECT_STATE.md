@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-10-31 · **Verze:** v0.17.7 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-11-02 · **Verze:** v0.17.8 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -56,6 +56,7 @@
 | Predikce v ledgeru | 35 živých: #35 SO (energie, update běh #7, 2026-10-05), 5 nových raket na 6 měsíců z běhu objevování #4 (2026-10-05: PNR.AX, 4DX.AX, MGNX, ELS.AX, KOS; ostatní z TOP 10 už v ledgeru byly), 12 smart money z 2026-10-05 (#18–#29; WATCH „lépe než S&P 500 za 6 m“; WIX #19 neplatná — poučení SM-ESPP-FLIP-WIX) a 17 starších: 7 energetických (HPS-A.TO, VST, RR.L, 6501.T, DJT, FLR, NKT; „lépe než S&P 500 za 30 dní“) a 10 raket na 6 měsíců z 2026-10-03 (8338.T, MLX.AX, DSV.TO, PDI.AX, NXL.AX, IRWD, SBC, 010950.KS, 7389.T, 8550.T; cíl +50 % do 2027-04-01) |
 | MAIN PICK | ŽÁDNÝ (nikdo nesplnil skóre ≥ 70 a šanci ≥ 55 %) |
 | Model | verze vah 3 (2026-10-05: Trend 120 dní 0,68 → 0,58, malá firma 0,13 → 0,05, objem 0,08 → 0,02); původně verze 1; test mimo vzorek (03–09/2026): IC +0,07, TOP 5 porazilo S&P 500 v 45 % případů |
+| Učení energetického modelu (N-18, v0.17.8, 2026-11-02) | z průměru 5 posunutých panelů místo jedné fáze; přehrání 20 dní: denní změna vah 0,040 → 0,0048, nových verzí 19 → 0, IC mimo vzorek 0,062 → 0,063; vratně `model.PANEL_PHASES = 1`. Dřívější hlášení „model víc váží X“ byla z velké části šum fáze |
 | XTB | žebříček jen z nabídky XTB (ověřeno na xtb.com 2026-10-05); ledger bez podmínky XTB, u predikcí v ledgeru se XTB nezapisuje |
 
 ## Globální objevování (Growth Engine) — první běh 2026-10-02

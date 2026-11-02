@@ -72,3 +72,16 @@ def test_calibration_and_out_of_sample():
     assert m.bin_for(99.9, cal)["do"] == 101
     assert "poznamka" in m.out_of_sample(panel[:30])
     assert m.out_of_sample(panel)["ic"] is not None
+
+
+def test_phases_do_not_inflate_evidence():
+    """N-18 (2026-11-02): spojené posunuté panely se překrývají — 5 kopií téhož panelu s phases=5 musí dát stejné
+    váhy jako jeden panel (víc fází nesmí znamenat víc „nezávislých“ důkazů); bez dělení by data přetlačila prior."""
+    panel = _panel(True)
+    w1, met1 = m.learn(panel, as_of="2026-03-31")
+    w5, met5 = m.learn(panel * 5, as_of="2026-03-31", phases=5)
+    assert w5 == w1 and met5["mom_120"]["n_eff"] == met1["mom_120"]["n_eff"]
+    w5_bad, _ = m.learn(panel * 5, as_of="2026-03-31")
+    assert w5_bad["mom_120"] > w1["mom_120"]                       # bez dělení by data převážila apriorní odhad
+    oos = m.out_of_sample(panel, train_panel=m.combine([panel, panel]), phases=2)
+    assert oos["ic"] == m.out_of_sample(panel)["ic"]
