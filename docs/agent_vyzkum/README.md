@@ -61,6 +61,9 @@ zapsané hypotézy (`docs/VYZKUM.md`, E1–E4), studie událostí s kontrolní s
 6. **Raketový deník** (viz níže).
 7. **Report** `reporty/RRRR-MM-DD.md`: nejdůležitější nové poznatky (nebo výslovně „nic nového“), ověřené zdroje,
    nejlepší nový nápad, doporučený experiment, míra jistoty, další krok; rakety dne s ověřenou příčinou.
+   Čísla, která počítá kód, se do reportu opisují z kódu, nepočítají ručně — např. shoda AUTO × ověřeno a SEC ×
+   ověřeno z `discovery.moves.cause_agreement` (na webu `shoda_pricin`; poslední ověřená příčina, bez CHYBA_DAT).
+   Ruční součty v reportech 10-30 až 11-01 se lišily pravidlem (2026-11-03).
 8. `python -m pytest`, commit + push; uživateli 3–6 vět česky.
 
 ## Raketový deník (rakety za týden / 14 dní / měsíc)
