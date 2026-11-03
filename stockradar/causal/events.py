@@ -60,8 +60,13 @@ def relevant(cid: str, title: str, source: str | None = None) -> bool:
     return c["skupina"] in NO_CONTEXT or bool(CONTEXT.search(t))
 
 
+# Poctivá identifikace automatického klienta (bez e-mailu). Od 2026-11-03 GDACS odmítá falešný prohlížečový
+# řetězec „Mozilla/5.0“ (HTML „Request Rejected“ místo JSON); skript se za prohlížeč nevydává (v0.17.10).
+CLIENT_UA = "GlobalFutureWinners-research (automated script)"
+
+
 def _get(url: str, timeout: int = 30) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": CLIENT_UA})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read()
 

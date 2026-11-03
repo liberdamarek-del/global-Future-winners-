@@ -235,3 +235,28 @@ def test_news_pulse_ignores_headlines_where_commodity_word_is_a_name():
     assert events.relevant("COPPER", "BHP Escondida Workers Approve Deal, Averting Copper Strike - Bloomberg.com")
     assert events.relevant("DRYBULK", "Drone attack sinks ship off Bulgaria's Black Sea coast, PM says - Al Jazeera")
     assert not events.relevant("CORN", "2 stabbed inside massive California corn maze - New York Post")
+
+
+def test_gdacs_client_identifies_itself_honestly(monkeypatch):
+    """GDACS od 3. 11. 2026 odmítá falešný prohlížeč „Mozilla/5.0“; klient se představí jako automatický skript."""
+    import urllib.request
+    from stockradar.causal import events
+    sent = {}
+
+    class Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b'{"features": []}'
+
+    def fake_urlopen(req, timeout=None):
+        sent["ua"] = req.get_header("User-agent")
+        return Resp()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    assert events.gdacs(date(2026, 11, 3)) == []
+    assert sent["ua"] == events.CLIENT_UA and "Mozilla" not in sent["ua"] and "@" not in sent["ua"]

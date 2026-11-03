@@ -4,6 +4,22 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-03 · v0.17.10 — GDACS: klient se nevydává za prohlížeč
+
+Důvod: denní rutina 3. 11. `causal` hlásil „GDACS nedostupný: Expecting value“. Kauzální radar měl jen 6 karet místo
+16, chyběly výstrahy přírodních katastrof.
+
+Příčina: firewall GDACS od 3. 11. na falešný prohlížečový řetězec `User-Agent: Mozilla/5.0` vrací HTML
+„Request Rejected“ (HTTP 200) místo JSON. Bez hlavičky nebo s poctivým názvem automatického klienta API odpovídá
+normálně (ověřeno: HTTP 200, JSON, 16 kB).
+
+- `causal/events.py`: `CLIENT_UA = "GlobalFutureWinners-research (automated script)"` místo „Mozilla/5.0“. Bez e-mailu.
+- Neobchází se tím žádná blokace: odmítnut byl řetězec předstírající prohlížeč, ne tento klient. Skript se nově
+  představuje pravdivě (pravidlo autonomního režimu: nevydávat se za člověka). Ostatní zdroje (Yahoo, Google News)
+  beze změny.
+
+Test: `test_causal.py::test_gdacs_client_identifies_itself_honestly` (hlavička bez „Mozilla“ a bez e-mailu).
+
 ## 2026-11-02 · v0.17.9 — Dny svíček Yahoo v časové zóně burzy (oprava po konci letního času)
 
 Důvod: denní rutina 2. 11. Karta oceli v kauzálním radaru ukazovala za 4 týdny +9,8 % a přechod kontraktu z 28. 10.
