@@ -195,8 +195,8 @@ def record_outcomes(conn, cache_conn, *, today: date | None = None, spy=None) ->
         by_symbol.setdefault(r["symbol"], []).append(r)
     stamp = to_iso(utcnow())
     for sym, evs in by_symbol.items():
-        snaps = [(date.fromisoformat(d).toordinal(), c, p, v) for d, c, p, v in cache_conn.execute(
-            "SELECT day, close, prev_close, volume FROM nasdaq_snap WHERE symbol = ? ORDER BY day", (sym,))]
+        snaps = [(date.fromisoformat(d).toordinal(), c, p, v, n) for d, c, p, v, n in cache_conn.execute(
+            "SELECT day, close, prev_close, volume, name FROM nasdaq_snap WHERE symbol = ? ORDER BY day", (sym,))]
         series = _merged(cache_conn, sym, snaps)
         if series is None:
             out["bez_ceny"] += len(evs)

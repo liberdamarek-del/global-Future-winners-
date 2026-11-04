@@ -106,3 +106,22 @@ def test_one_day_dip_in_the_window_anchor_is_not_a_rocket():
     assert "21d" in D.detect(days, real, vols)["okna"]
     jump = [5.0] * 29 + [6.5]                                                                    # skok za den dál proti včerejšku
     assert "1d" in D.detect(days, jump, vols)["okna"] and D.anchor(jump, 29, 1) == 5.0
+
+
+def test_merge_series_rejects_new_security_under_same_ticker():
+    """SUPN 2026-11-03: po fúzi s Indivior nese ticker SUPN nová firma (výměna 1,5401 nové akcie za starou); snímek
+    nemá předchozí závěr, takže kontrola splitu mlčí a v datech vznikl falešný propad −33 %."""
+    days, closes, vols = [100, 101, 102], [41.8, 41.9, 41.92], [1, 1, 1]
+    snaps = [(102, 41.92, 41.84, 5, "Supernus Pharmaceuticals Inc. Common Stock"),
+             (106, 28.15, None, 9, "Supernus Inc. Common Stock")]
+    problem = D.merge_series(days, closes, vols, snaps)[3]
+    assert problem and "jiný cenný papír" in problem
+    # jen jiný zápis názvu (tečka, „Class A“) při běžném pohybu není problém
+    same = [(102, 41.92, 41.84, 5, "Supernus Pharmaceuticals Inc. Common Stock"),
+            (106, 43.0, 41.92, 9, "Supernus Pharmaceuticals Inc Common Stock")]
+    assert D.merge_series(days, closes, vols, same)[3] is None
+    # přejmenování bez skoku ceny řadu nezahodí (stejný cenný papír)
+    renamed = [(102, 41.92, 41.84, 5, "Old Name Corp Common Stock"), (106, 42.5, None, 9, "New Name Inc. Common Stock")]
+    assert D.merge_series(days, closes, vols, renamed)[3] is None
+    # starší snímky bez názvu (4 pole) fungují jako dřív
+    assert D.merge_series(days, closes, vols, [(106, 43.0, 41.92, 9)])[3] is None

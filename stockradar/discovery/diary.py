@@ -16,6 +16,7 @@ a toho, co následuje po raketě (hypotéza H-R1, docs/agent_vyzkum/README.md).
 
 import json
 import math
+import re
 import statistics
 from datetime import date, datetime, timedelta, timezone
 
@@ -188,12 +189,27 @@ def safety_snapshot(main_conn, cache_conn, *, now: datetime | None = None, fetch
         return {"stav": "CHYBA", "duvod": f"{type(e).__name__}: {str(e)[:100]}"}
 
 
+_NAME_NOISE = re.compile(r"(?i)\b(common|ordinary|stock|shares?|class [a-z]|inc|corp(oration)?|ltd|limited|plc|"
+                         r"holdings?|co|company|group|n\.?v|s\.?a|ads|american depositary)\b|[^a-z0-9 ]")
+
+
+def _norm_name(name: str | None) -> str:
+    return " ".join(_NAME_NOISE.sub(" ", (name or "").lower()).split())
+
+
 def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list, list, str | None]:
-    """Yahoo řada + dny snímků po jejím konci. snaps = [(den_ordinal, close, prev_close, volume)] seřazené podle dne.
-    Vrací (dny, ceny, objemy, problém); problém = důvod, proč řadu nepoužít (split, stará data)."""
+    """Yahoo řada + dny snímků po jejím konci. snaps = [(den_ordinal, close, prev_close, volume[, název])] seřazené
+    podle dne. Vrací (dny, ceny, objemy, problém); problém = důvod, proč řadu nepoužít (split, stará data, jiný
+    cenný papír pod stejným tickerem — SUPN 2026-11-03: po fúzi s Indivior nese ticker nová firma, výměna 1,5401:1,
+    v datech falešný propad −33 %)."""
     d, c, v = list(days), list(closes), list(volumes)
     recent = dict(zip(d[-40:], c[-40:]))
-    for day, close, prev, vol in snaps:
+    last_name = None
+    for snap in snaps:
+        day, close, prev, vol = snap[:4]
+        name = snap[4] if len(snap) > 4 else None
+        changed = bool(name and last_name and _norm_name(name) != _norm_name(last_name))
+        old_name, last_name = last_name, name or last_name
         if d and day <= d[-1]:
             # týž den v obou zdrojích: Yahoo někdy upraví zpětný split jen u části dnů (DKI 1:50 k 22. 10. 2026)
             y = recent.get(day)
@@ -204,6 +220,9 @@ def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list,
             return d, c, v, "stará data — mezi cenami z Yahoo a snímkem je mezera"
         if prev and c[-1] > 0 and abs(prev / c[-1] - 1) > MAX_GAP:
             return d, c, v, f"předchozí závěr {prev:.4g} nesedí na {c[-1]:.4g} — pravděpodobně split / chyba dat"
+        if changed and c[-1] > 0 and abs(close / c[-1] - 1) > MAX_GAP:
+            return d, c, v, (f"název „{old_name}“ → „{name}“ a cena {c[-1]:.4g} → {close:.4g} — jiný cenný papír pod "
+                             "stejným tickerem (fúze / přejmenování), chyba dat")
         d.append(day); c.append(close); v.append(vol or 0.0)
     return d, c, v, None
 
@@ -298,9 +317,9 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
     """Rakety a propady ke dni posledního snímku (americké akcie)."""
     cache_conn.executescript(SNAP_SCHEMA)
     snaps: dict[str, list[tuple]] = {}
-    for day, sym, close, prev, vol in cache_conn.execute(
-            "SELECT day, symbol, close, prev_close, volume FROM nasdaq_snap ORDER BY day"):
-        snaps.setdefault(sym, []).append((date.fromisoformat(day).toordinal(), close, prev, vol))
+    for day, sym, close, prev, vol, name in cache_conn.execute(
+            "SELECT day, symbol, close, prev_close, volume, name FROM nasdaq_snap ORDER BY day"):
+        snaps.setdefault(sym, []).append((date.fromisoformat(day).toordinal(), close, prev, vol, name))
     from stockradar.discovery.bestideas import is_fund
     from stockradar.discovery.study import anomalous
     from stockradar.discovery.winners import adjust_reverse_splits
@@ -322,7 +341,7 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
         bars, _ = adjust_reverse_splits(bars)         # neupravené zpětné splity (poučení CHYBA-DAT-REVERSE-SPLIT)
         d, c, v, problem = merge_series(bars.days, bars.closes, bars.volumes, snaps.get(sym, []))
         if problem:
-            stats["split_nebo_chyba" if "split" in problem else "stara_data"] += 1
+            stats["stara_data" if "stará data" in problem else "split_nebo_chyba"] += 1
             continue
         for direction in (1, -1):
             hit = detect(d, c, v, direction)

@@ -4,6 +4,26 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-04 · v0.17.11 — Raketový deník: jiný cenný papír pod stejným tickerem (fúze)
+
+Důvod: deník 4. 11. zapsal u SUPN propad −33 % za den. Ve skutečnosti Indivior 2. 11. dokončila převzetí Supernus
+Pharmaceuticals a přejmenovala se na Supernus, Inc.; ticker SUPN od 3. 11. nese nová firma. Stará akcie se vyměnila
+za 1,5401 nové, takže pro akcionáře šlo zhruba o +3 % (1,5401 × 28,15 = 43,35 USD proti 41,92). Snímek Nasdaq neměl
+předchozí závěr, takže kontrola splitu mlčela; změnil se jen název.
+
+- `discovery/diary.py`: `merge_series` bere ze snímku i název (5. pole, nepovinné). Když se název po normalizaci
+  (bez „Inc.“, „Common Stock“, „Class A“ apod.) změní a cena zároveň skočí o víc než 25 % (`MAX_GAP`), řada se
+  nepoužije („jiný cenný papír pod stejným tickerem“). Samotné přejmenování bez skoku ceny řadu nezahodí.
+- `scan` a `moves` (co následovalo 5 / 20 / 60 dní) předávají název ze snímku. Nová firma pod starým tickerem tak
+  nevyrobí ani falešné „co následovalo“.
+- Statistika: přeskočené řady se počítají jako „split / chyba“ vždy, když nejde o stará data.
+- Kontrola na všech 5 900 řadách: pravidlo zachytilo jen SUPN, jinou řadu nezahodilo.
+
+Příčina pohybu #500 zapsána jako CHYBA_DAT (8-K 2. 11.). Poučení #31.
+
+Test: `test_diary.py::test_merge_series_rejects_new_security_under_same_ticker` (fúze zachycena; jiný zápis názvu
+a přejmenování bez skoku projdou; staré 4polové snímky fungují).
+
 ## 2026-11-03 · v0.17.10 — GDACS: klient se nevydává za prohlížeč
 
 Důvod: denní rutina 3. 11. `causal` hlásil „GDACS nedostupný: Expecting value“. Kauzální radar měl jen 6 karet místo
