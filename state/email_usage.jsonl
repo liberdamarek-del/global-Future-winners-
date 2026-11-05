@@ -179,3 +179,5 @@
 {"day": "2026-11-03", "first_at": "2026-11-03T13:20:38Z", "host": "www.sec.gov", "last_at": "2026-11-03T13:22:17Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 12}
 {"day": "2026-11-04", "first_at": "2026-11-04T13:21:51Z", "host": "data.sec.gov", "last_at": "2026-11-04T13:21:56Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 24}
 {"day": "2026-11-04", "first_at": "2026-11-04T13:22:27Z", "host": "www.sec.gov", "last_at": "2026-11-04T13:25:11Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 9}
+{"day": "2026-11-05", "first_at": "2026-11-05T13:23:40Z", "host": "data.sec.gov", "last_at": "2026-11-05T13:23:53Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 57}
+{"day": "2026-11-05", "first_at": "2026-11-05T13:25:11Z", "host": "www.sec.gov", "last_at": "2026-11-05T13:26:39Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 11}
