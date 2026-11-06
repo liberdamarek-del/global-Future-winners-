@@ -26,7 +26,9 @@ from stockradar.universe import HYPERSCALERS
 
 HORIZON = 21            # obchodních dní ≈ 30 kalendářních
 PANEL_STEP = 5          # vzorek každých 5 obchodních dní
-PANEL_PHASES = 5        # N-18 (v0.17.8): učit z průměru všech 5 posunů panelu; 1 = dřívější chování (jedna fáze, šum)
+PANEL_PHASES = 1        # N-18 (v0.17.8 zavedeno 5, v0.17.12 vráceno na 1): živé kritérium z 2. 11. „nejvýš 1 nová
+                        # verze vah za týden“ nesplněno (2 verze; denní |Δw| 0,006 splněno) → vrácení podle předem daného
+                        # pravidla. Kód fází zůstává (phase_panels, combine, learn(phases=)); 1 = dřívější chování.
 PANEL_YEARS = 3
 OOS_DATES = 26          # posledních ~6 měsíců panelu pro test mimo vzorek
 N0 = 12.0               # síla apriorního odhadu (v počtu nezávislých 30denních období)

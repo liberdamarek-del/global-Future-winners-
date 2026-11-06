@@ -4,6 +4,28 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-06 · v0.17.12 — N-18 vráceno: živé kritérium nesplněno
+
+Důvod: týden experimentu N-18 (2.–6. 11.) skončil. Kritéria stanovená 2. 11. před prvním živým během:
+
+| Kritérium | Výsledek | Splněno |
+|---|---|---|
+| průměrná denní \|Δw\| ≤ 0,01 | 0,006 / 0,0061 / 0,0062 (3., 4., 5. 11.) | ano |
+| nejvýš 1 nová verze vah za týden | 2 (v23 přechod 2. 11., v24 4. 11.) | **ne** |
+
+Podle pravidla z 2. 11. („pokud se to nesplní, vrátí se `PANEL_PHASES = 1`“) se vrací dřívější učení z jedné fáze.
+
+- `model.py`: `PANEL_PHASES = 1`. Kód fází (`phase_panels`, `combine`, `learn(phases=)`, `out_of_sample(train_panel=)`)
+  zůstává; s jednou fází dává přesně dřívější výsledek (`build_panel` k poslednímu dni, učení jen z dat před oknem).
+- Proč kritérium selhalo: verzi v24 nevyrobil šum fáze, ale posun stejným směrem tři dny po sobě (volatilita −0,012,
+  −0,013, −0,013; blízkost ročního maxima +0,010, +0,011, +0,010). Součet přesáhl práh 0,02 pro novou verzi.
+  Kritérium „≤ 1 verze za týden“ tak nerozlišilo šum od skutečné změny dat. Přehrání 20 dní (19 → 0 verzí, denní
+  změna 0,040 → 0,005) platí dál, ale o zavedení rozhoduje předem dané živé kritérium, ne dodatečný výklad.
+- Očekávaný důsledek: večerní `update` 6. 11. se učí znovu z jedné fáze a pravděpodobně vytvoří novou verzi
+  (přechod zpět).
+
+Návrh N-18 → ZAMITNUTO. Poučení #32. Testy beze změny (`test_phases_do_not_inflate_evidence` ověřuje funkce fází).
+
 ## 2026-11-04 · v0.17.11 — Raketový deník: jiný cenný papír pod stejným tickerem (fúze)
 
 Důvod: deník 4. 11. zapsal u SUPN propad −33 % za den. Ve skutečnosti Indivior 2. 11. dokončila převzetí Supernus
