@@ -1,0 +1,11 @@
+{"beh": "plna", "vypusteno": 0.0, "seminko": 0, "firem": 12193, "razeni": "raketa", "auc_test": 0.7413, "top10": ["SATL", "PEPG", "RXT", "ZSQR", "IPSC", "RZLT", "ADCT", "FEAM", "GSIT", "INDI"], "sekund": 130}
+{"beh": "bez1_1", "vypusteno": 0.01, "seminko": 1, "firem": 12052, "razeni": "raketa", "auc_test": 0.7413, "top10": ["SATL", "PEPG", "RXT", "ZSQR", "IPSC", "RZLT", "ADCT", "FEAM", "GSIT", "INDI"], "sekund": 127}
+{"beh": "bez1_2", "vypusteno": 0.01, "seminko": 2, "firem": 12069, "razeni": "raketa", "auc_test": 0.7415, "top10": ["SATL", "PEPG", "RXT", "ZSQR", "IPSC", "RZLT", "ADCT", "FEAM", "GSIT", "INDI"], "sekund": 128}
+{"beh": "bez1_3", "vypusteno": 0.01, "seminko": 3, "firem": 12064, "razeni": "raketa", "auc_test": 0.7412, "top10": ["SATL", "PEPG", "RXT", "IPSC", "ZSQR", "RZLT", "APUS", "FEAM", "CLSK", "DAIC"], "sekund": 129}
+{"beh": "bez1_4", "vypusteno": 0.01, "seminko": 4, "firem": 12070, "razeni": "raketa", "auc_test": 0.741, "top10": ["SATL", "PEPG", "RXT", "ZSQR", "IPSC", "RZLT", "ADCT", "FEAM", "GSIT", "INDI"], "sekund": 125}
+{"beh": "bez1_5", "vypusteno": 0.01, "seminko": 5, "firem": 12088, "razeni": "raketa", "auc_test": 0.7413, "top10": ["SATL", "RXT", "PEPG", "ZSQR", "IPSC", "RZLT", "ADCT", "FEAM", "GSIT", "INDI"], "sekund": 126}
+{"beh": "bez5_1", "vypusteno": 0.05, "seminko": 1, "firem": 11548, "razeni": "raketa", "auc_test": 0.7415, "top10": ["SATL", "PEPG", "RXT", "IPSC", "RZLT", "APUS", "FEAM", "GSIT", "INDI", "CLSK"], "sekund": 120}
+{"beh": "bez5_2", "vypusteno": 0.05, "seminko": 2, "firem": 11586, "razeni": "raketa", "auc_test": 0.741, "top10": ["SATL", "RXT", "PEPG", "ZSQR", "IPSC", "RZLT", "ADCT", "FEAM", "DAIC", "GSIT"], "sekund": 121}
+{"beh": "bez5_3", "vypusteno": 0.05, "seminko": 3, "firem": 11596, "razeni": "raketa", "auc_test": 0.7426, "top10": ["SATL", "RXT", "IPSC", "ZSQR", "RZLT", "APUS", "FEAM", "PRLD", "INDI", "GSIT"], "sekund": 128}
+{"beh": "bez5_4", "vypusteno": 0.05, "seminko": 4, "firem": 11598, "razeni": "raketa", "auc_test": 0.7401, "top10": ["SATL", "PEPG", "RXT", "ZSQR", "IPSC", "ADCT", "APUS", "FEAM", "GSIT", "INDI"], "sekund": 125}
+{"beh": "bez5_5", "vypusteno": 0.05, "seminko": 5, "firem": 11588, "razeni": "raketa", "auc_test": 0.742, "top10": ["SATL", "RXT", "ZSQR", "IPSC", "RZLT", "ADCT", "PRLD", "GSIT", "FEAM", "CLSK"], "sekund": 124}
