@@ -68,7 +68,7 @@ COMMODITIES = [
      "retez": [(1, r"metal mining|steel/iron ore", +1, "tržby těžařů rudy"),
                (2, r"marine transportation", +1, "objem námořní přepravy rudy")]},
     {"id": "STEEL", "symbol": "HRC=F", "nazev": "Ocel (US HRC)", "skupina": "kovy", "slova": r"\b(steel|tariff\w* on steel)\b",
-     "vyrobci": ["Čína", "Indie", "Japonsko", "USA", "Rusko"], "uzly": [],
+     "vyrobci": ["Čína", "Indie", "USA", "Japonsko", "Rusko", "Jižní Korea"], "uzly": [],
      "retez": [(1, r"steel/iron ore", +1, "ceny a marže oceláren"),
                (2, r"auto manufacturing|motor vehicles|construction/ag equipment|industrial machinery|metal fabrications", -1,
                 "ocel je hlavní vstup strojírenství a aut")]},
@@ -170,6 +170,10 @@ VERIFIED_PRODUCERS = {
                "url": "https://apps.fas.usda.gov/psdonline/circulars/livestock_poultry.pdf", "rok": "2026",
                "podily": {"Brazílie": 0.202, "USA": 0.188, "Čína": 0.113, "EU": 0.105, "Indie": 0.081, "Argentina": 0.051, "Austrálie": 0.050},
                "overeno": "2026-10-31"},
+    "STEEL": {"zdroj": "worldsteel — World Steel in Figures 2026 (surová ocel 2025, svět 1 848,9 mil. t; data uzavřena 8. 6. 2026)",
+              "url": "https://worldsteel.org/wp-content/uploads/World-Steel-in-Figures-2026.pdf", "rok": "2025",
+              "podily": {"Čína": 0.520, "Indie": 0.089, "USA": 0.044, "Japonsko": 0.044, "Rusko": 0.037, "Jižní Korea": 0.034},
+              "overeno": "2026-11-07"},
 }
 
 
@@ -212,7 +216,7 @@ def producers_in(country_text: str) -> list[str]:
                "Jižní Afrika": ["south africa"], "Zimbabwe": ["zimbabwe"], "Namibie": ["namibia"], "Niger": ["niger "],
                "Uzbekistán": ["uzbekistan"], "Thajsko": ["thailand"], "Pákistán": ["pakistan"], "Paraguay": ["paraguay"],
                "Bolívie": ["bolivia"], "Guinea (bauxit)": ["guinea"], "Bahrajn": ["bahrain"], "Švédsko": ["sweden"],
-               "USA (Florida)": ["florida"], "Japonsko": ["japan"],
+               "USA (Florida)": ["florida"], "Japonsko": ["japan"], "Jižní Korea": ["south korea", "republic of korea", "korea, south"],
                "EU": ["european union", "europe", "france", "germany", "poland", "spain", "italy", "romania"],
                "Hormuzský průliv": ["hormuz"], "Rudé moře / Bab al-Mandab": ["red sea", "bab el-mandeb", "houthi"],
                "Rudé moře": ["red sea", "houthi"], "Suezský průplav": ["suez"], "Panamský průplav": ["panama canal"],

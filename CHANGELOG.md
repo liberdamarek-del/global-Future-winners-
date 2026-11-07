@@ -21,6 +21,11 @@ v `system` ani v `diag` vidět nebylo. Deník přitom snese mezeru nejvýš 7 dn
 Test: `test_diary.py::test_snapshot_lag_counts_trading_days_without_valid_snapshot` (bez SPY ROZPRACOVÁNO; 2 dny
 VAROVÁNÍ; 1 den OK; 5 dní CHYBA).
 
+Kauzální radar, data: ocel (HRC) má ověřené podíly výrobních zemí z worldsteel, World Steel in Figures 2026
+(surová ocel 2025, svět 1 848,9 mil. t). Čína 52,0 %, Indie 8,9 %, USA 4,4 %, Japonsko 4,4 %, Rusko 3,7 %, Jižní
+Korea 3,4 %. Doplněna Jižní Korea do výrobců i do aliasů zemí pro GDACS. Otisk zamčeného testu řetězců se nemění
+(b3e10705103a8221; výrobci nejsou jeho součástí). Test `test_verified_producer_shares_have_primary_source` prošel.
+
 ## 2026-11-06 · v0.17.12 — N-18 vráceno: živé kritérium nesplněno
 
 Důvod: týden experimentu N-18 (2.–6. 11.) skončil. Kritéria stanovená 2. 11. před prvním živým během:
