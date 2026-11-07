@@ -109,10 +109,17 @@ class Panel:
         return [k for k in range(len(self)) if pred(k)]
 
 
+PANEL_EPOCH = date(2000, 1, 7).toordinal()   # pevná kalendářní mřížka panelu (v0.17.15)
+
+
 def panel_days(data: study.Data) -> list[int]:
+    """Dny panelu po STEP_DAYS na pevné kalendářní mřížce. Do v0.17.14 se mřížka počítala od začátku dat v cache
+    (data_start + 200): GitHub (cache stažená jindy) měl 7. 11. 2026 panel posunutý o týden (2022-05-13 × 2022-05-20),
+    na validaci vybral jiné řazení (vydrzi_asym × raketa) a TOP 10 raket se shodoval 0,0 — při AUC testu 0,7345 × 0,7326.
+    Stejná data k témuž dni teď dají stejný panel bez ohledu na to, kdy cache vznikla."""
     end = data.data_end
     first = data.data_start + 200
-    d = end - (end - first) % STEP_DAYS
+    d = end - (end - PANEL_EPOCH) % STEP_DAYS
     days = []
     while d >= first:
         days.append(d)

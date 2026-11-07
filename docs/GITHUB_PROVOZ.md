@@ -100,6 +100,18 @@ a zapíše `docs/provoz/srovnani_DEN.md`. O přepnutí do režimu `ostry` rozhod
   - Doporučení před přepnutím: zkontrolovat stabilitu výběru (opakovaný běh na mírně jiných datech; samostatný
     návrh).
   - O přepnutí do režimu `ostry` rozhoduje uživatel.
+- **Týdenní běh 7. 11.** (den dat 6. 11.; `docs/provoz/srovnani_2026-11-07.md`):
+  - Žebříčky 14 dní, 1 měsíc, 6 měsíců (vše i velké firmy) shodné, překryv TOP 10 = 1,0. Vyhodnocení 170 = 170 a
+    karty 231 = 231 také shodné.
+  - Rakety: překryv TOP 10 **0,0** a predikce 106 × 97. GitHub zapsal 10 nových raket a Claude 3; zbytek našeho
+    TOP 10 už v ledgeru byl.
+  - Příčina nalezena v kódu: mřížka panelu modelu raket se počítala od začátku dat v cache (`data_start + 200`).
+    GitHub má cache staženou jindy, takže měl panel posunutý o týden (2022-05-13 × 2022-05-20). Na validaci pak
+    vybral jiné řazení (`vydrzi_asym` × `raketa`) při téměř stejném AUC testu (0,7345 × 0,7326).
+  - Oprava v0.17.15: pevná kalendářní mřížka (`rocket.PANEL_EPOCH`). Projeví se při příštím týdenním běhu 14. 11.
+  - Měření N-20 (6. 11.) ukázalo stabilitu vůči vypuštění 1–5 % firem, ale tuhle příčinu (fázi panelu) nezachytilo.
+  - Smart money se lišilo také (6 × 9 nových signálů). Claude běžel dvakrát kvůli opravě v0.17.14 (SBLK) a GitHub
+    běžel na v0.17.12.
 - Oprava (31. 10. odpoledne): druhý týdenní běh (09:16 UTC, druhý slot cronu kvůli konci letního času) **nic
   nespustil**. Ve frontě počkal na skupinu `radar-provoz`, po skončení prvního běhu našel značku
   `radar-beh-tyden-…` v cache a všechny kroky přeskočil (`bezet=false`, joby „skipped“). Ochrana proti dvojímu

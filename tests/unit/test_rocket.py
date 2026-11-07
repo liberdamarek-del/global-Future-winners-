@@ -105,3 +105,18 @@ def test_broken_price_series_is_not_a_rocket_candidate():
     assert R.broken_recent(glitchy, vols)
     split = calm[:180] + [c * 10 for c in calm[180:]]                                              # skok 10× bez objemu
     assert R.broken_recent(split, vols[:180] + [10_000.0] * 20)
+
+
+def test_panel_days_do_not_depend_on_when_the_cache_started():
+    """GitHub × Claude 2026-11-07: cache stažená v jiný den → mřížka panelu posunutá o týden → jiné řazení na validaci
+    a TOP 10 raket se shodou 0,0. Mřížka je teď pevná v kalendáři: stejný konec dat = stejné dny panelu."""
+    from datetime import date
+    from stockradar.discovery import rocket, study
+    end = date(2026, 11, 6).toordinal()
+    a = rocket.panel_days(study.Data(secs={}, fx={}, data_start=date(2021, 10, 25).toordinal(), data_end=end))
+    b = rocket.panel_days(study.Data(secs={}, fx={}, data_start=date(2021, 11, 1).toordinal(), data_end=end))
+    common = sorted(set(a) & set(b))
+    assert common and common == [d for d in a if d >= b[0]] == [d for d in b if d >= a[0]]   # stejná mřížka
+    assert all((d - rocket.PANEL_EPOCH) % rocket.STEP_DAYS == 0 for d in a + b)
+    c = rocket.panel_days(study.Data(secs={}, fx={}, data_start=date(2021, 10, 25).toordinal(), data_end=end + 7))
+    assert set(a) <= set(c)                                                   # o týden později: stejné dny + nové

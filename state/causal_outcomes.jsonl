@@ -20,3 +20,9 @@
 {"end_date": "2026-10-30", "evaluated_at": "2026-10-31T10:29:48Z", "forecast_id": 22, "hit": 1, "industry_excess": -0.20720849244074152}
 {"end_date": "2026-10-30", "evaluated_at": "2026-10-31T10:29:48Z", "forecast_id": 23, "hit": 1, "industry_excess": 0.10063410540984014}
 {"end_date": "2026-10-30", "evaluated_at": "2026-10-31T10:29:48Z", "forecast_id": 26, "hit": 0, "industry_excess": -0.18829775137458038}
+{"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 28, "hit": 1, "industry_excess": -0.05807349273486484}
+{"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 29, "hit": 1, "industry_excess": -0.21064305668437544}
+{"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 30, "hit": 0, "industry_excess": -0.05807349273486484}
+{"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 32, "hit": 1, "industry_excess": -0.15047313946002805}
+{"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 33, "hit": 0, "industry_excess": -0.21064305668437544}
+{"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 34, "hit": 0, "industry_excess": -0.22454073060198165}

@@ -182,3 +182,13 @@
 {"day": "2026-11-05", "first_at": "2026-11-05T13:23:40Z", "host": "data.sec.gov", "last_at": "2026-11-05T13:23:53Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 57}
 {"day": "2026-11-05", "first_at": "2026-11-05T13:25:11Z", "host": "www.sec.gov", "last_at": "2026-11-05T13:26:39Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 11}
 {"day": "2026-11-06", "first_at": "2026-11-06T21:54:01Z", "host": "www.sec.gov", "last_at": "2026-11-06T21:54:01Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 1}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:39Z", "host": "www.sec.gov", "last_at": "2026-11-07T09:54:39Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:39Z", "host": "data.sec.gov", "last_at": "2026-11-07T09:54:41Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:42Z", "host": "data.sec.gov", "last_at": "2026-11-07T09:54:42Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:42Z", "host": "data.sec.gov", "last_at": "2026-11-07T09:54:43Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:43Z", "host": "data.sec.gov", "last_at": "2026-11-07T09:54:44Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:44Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:36:05Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 3}
+{"day": "2026-11-07", "first_at": "2026-11-07T09:54:48Z", "host": "data.sec.gov", "last_at": "2026-11-07T10:36:06Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 3}
+{"day": "2026-11-07", "first_at": "2026-11-07T10:09:15Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:36:04Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 43}
+{"day": "2026-11-07", "first_at": "2026-11-07T10:24:35Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:37:01Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 22}
+{"day": "2026-11-07", "first_at": "2026-11-07T10:27:55Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:27:55Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 1}

@@ -4,6 +4,23 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-07 · v0.17.15 — Model raket: pevná kalendářní mřížka panelu (reprodukovatelnost GitHub × Claude)
+
+Důvod: srovnání N-13 po týdenním běhu 7. 11. Žebříčky signálů se shodovaly 1,0, ale TOP 10 raket **0,0**.
+Příčina: `rocket.panel_days` počítal dny panelu (po 14) od začátku dat v cache (`data_start + 200`). GitHub má cache
+staženou jindy a měl celou mřížku posunutou o 7 dní (první den panelu 2022-05-13 × 2022-05-20). Na validačních
+pololetích pak vyšlo jiné pravidlo řazení (`vydrzi_asym` × `raketa`), i když AUC testu bylo téměř stejné
+(0,7345 × 0,7326). Výsledek modelu tak závisel na tom, kdy vznikla cache, ne na datech.
+
+- `discovery/rocket.py`: `PANEL_EPOCH = date(2000, 1, 7)`. Dny panelu leží na pevné kalendářní mřížce po
+  `STEP_DAYS`, takže stejný konec dat dá stejné dny panelu. Mřížka je stabilní i mezi týdny: dny se jen přidávají.
+- Je to změna konfigurace modelu raket. Model nemá zamčený test v registru (test mimo vzorek se počítá v každém
+  běhu), proto se pravidlo stanovuje předem bez ladění na výsledku: mřížka je pevná, výběr řazení zůstává na validaci.
+- Dnešní predikce raket (3) zůstávají v ledgeru beze změny. Model se dnes znovu nespouští, aby nevznikly predikce
+  z druhého běhu. Nová mřížka platí od týdenního běhu 14. 11. na GitHubu i u Claude.
+
+Test: `test_rocket.py::test_panel_days_do_not_depend_on_when_the_cache_started`.
+
 ## 2026-11-07 · v0.17.14 — Smart money: nákup za cenu doložené emise téhož dne není nákup na trhu
 
 Důvod: ruční kontrola Form 4 u signálů STŘEDNÍ (týdenní rutina). SBLK měl verdikt STŘEDNÍ, ačkoli v0.17.7 úpis
