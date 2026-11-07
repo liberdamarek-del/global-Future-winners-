@@ -221,6 +221,7 @@ def current_signals(market, fund, bb, sc, cache_conn, *, today: int, ev: dict, l
                 days = [t["date"] for t in x["transakce"] if t["code"] == "P" and t["date"]]
                 k = market.idx_on_or_before(c["ticker"], ordinal(min(days)[:10])) if days else None
                 x["typ"] = current.form4_type(x, s.prep.bars.closes[k] if k is not None else None)
+            current.propagate_offering(v)
             c["overeni"] = v
             if not any(x["typ"] == "AKTIVNÍ NÁKUP" for x in v):
                 c["vyrazeno"] = f"Form 4: nejde o aktivní nákup ({', '.join(sorted({x['typ'] for x in v}))})"

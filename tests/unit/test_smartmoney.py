@@ -220,3 +220,22 @@ def test_closed_end_fund_is_not_a_smart_money_signal():
     from stockradar.smartmoney import report
     assert is_fund("Pimco New York Municipal Income Fund II") and not is_fund("Outset Medical, Inc.")
     assert "is_fund(name)" in inspect.getsource(report.current_signals)
+
+
+def test_same_day_same_price_as_documented_offering_is_not_open_market_buy():
+    """SBLK 2026-11-07: Zagari v poznámce Form 4 dokládá úpis v paralelní emisi za 28,27 USD (15. 9.); Plakantonaki
+    koupil týž den 3 000 ks za 28,27 bez poznámky a prošel jako aktivní nákup → teď také úpis. Jiná cena / den zůstane."""
+    def v(txs, notes=()):
+        x = {"plan10b51": False, "poznamky": list(notes),
+             "transakce": [{"code": c, "date": d, "shares": n, "price": p} for c, d, n, p in txs]}
+        x["typ"] = current.form4_type(x)
+        return x
+    zagari = v([("P", "2026-09-15", 10000.0, 28.27)], ["Participation in the Parallel Offering undertaken by STAR BULK "
+                                                         "CARRIERS CORP in Greece, pursuant to which I personally subscribed"])
+    plak = v([("P", "2026-09-15", 3000.0, 28.27)])
+    other = v([("P", "2026-09-16", 500.0, 29.10)])
+    assert plak["typ"] == "AKTIVNÍ NÁKUP"
+    current.propagate_offering([zagari, plak, other])
+    assert plak["typ"].startswith(current.OFFERING_TYPE) and other["typ"] == "AKTIVNÍ NÁKUP"
+    lone = v([("P", "2026-09-15", 3000.0, 28.27)])
+    assert current.propagate_offering([lone])[0]["typ"] == "AKTIVNÍ NÁKUP"       # bez doložené emise beze změny

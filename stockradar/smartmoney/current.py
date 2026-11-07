@@ -87,6 +87,7 @@ DISCOUNT = 0.88  # nákup za cenu pod 88 % tržní ceny téhož dne = zvýhodně
 # úpis nových akcií v emisi s kódem P (2026-10-31: SBLK — „Participation in the Parallel Offering … subscribed to
 # 10,000 new common shares“, Euronext Athens) není nákup na trhu; pozná se jen z poznámek (footnotes) ve Form 4
 OFFERING = re.compile(r"(?i:\b(?:offering|subscri\w*|private placement|underwrit\w*|rights issue)\b)|\bPIPE\b")
+OFFERING_TYPE = "PASIVNÍ (úpis v emisi, ne nákup na trhu)"
 
 
 def form4_type(v: dict, market_close: float | None = None) -> str:
@@ -104,11 +105,32 @@ def form4_type(v: dict, market_close: float | None = None) -> str:
     if bought and sold >= 0.5 * bought:
         return "NEJASNÉ (hned prodáno)"
     if any(OFFERING.search(n or "") for n in v.get("poznamky") or []):
-        return "PASIVNÍ (úpis v emisi, ne nákup na trhu)"
+        return OFFERING_TYPE
     price = sum((t["shares"] or 0) * (t["price"] or 0) for t in buys) / bought if bought else None
     if market_close and price and price < DISCOUNT * market_close:
         return "PASIVNÍ (nákup se slevou, zaměstnanecký plán)"
     return "AKTIVNÍ NÁKUP"
+
+
+SAME_PRICE = 0.002   # cena se liší nejvýš o 0,2 % = cena emise
+
+
+def propagate_offering(verifications: list[dict]) -> list[dict]:
+    """Když jeden Form 4 téže firmy výslovně dokládá úpis v emisi (poznámka), je úpisem i nákup jiného insidera ve stejný
+    den za stejnou cenu, i když poznámku nemá (2026-11-07: SBLK — Zagari „Participation in the Parallel Offering …
+    at the offering price“ 28,27 USD 15. 9.; Plakantonaki 3 000 ks 15. 9. za 28,27 bez poznámky prošel jako aktivní
+    nákup). Mění jen typ, transakce zůstávají."""
+    offers = {(t["date"][:10], t["price"]) for x in verifications if x.get("typ") == OFFERING_TYPE
+              for t in x["transakce"] if t["code"] == "P" and t["date"] and t["price"]}
+    if not offers:
+        return verifications
+    for x in verifications:
+        if x.get("typ") != "AKTIVNÍ NÁKUP":
+            continue
+        buys = [t for t in x["transakce"] if t["code"] == "P" and t["date"] and t["price"]]
+        if buys and all(any(t["date"][:10] == d and abs(t["price"] / p - 1) <= SAME_PRICE for d, p in offers) for t in buys):
+            x["typ"] = OFFERING_TYPE + " — stejný den a cena jako doložená emise"
+    return verifications
 
 
 def verify_form4(url: str, cache_conn=None) -> dict:

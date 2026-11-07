@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-11-07 · **Verze:** v0.17.13 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-11-07 · **Verze:** v0.17.14 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -62,6 +62,7 @@
 | Deník — ticker po fúzi (v0.17.11, 2026-11-04) | změna názvu ve snímku Nasdaq + skok ceny > 25 % = jiný cenný papír pod stejným tickerem → řada se nepoužije (SUPN 3. 11.: falešný propad −33 % po fúzi s Indivior, výměna 1,5401:1). Na 5 900 řadách zachyceno jen SUPN; poučení #31 |
 | Screener Nasdaq — dohled (v0.17.13, 2026-11-07) | `diary.snapshot_lag`: obchodní dny bez platného snímku → zdroj v `system` (CHYBA od 2 dní) a kontrola v `diag` (VAROVÁNÍ 2–4, CHYBA ≥ 5). 5.–6. 11. API vracelo zamrzlé ceny z 5. 11.; deník snese mezeru 7 dní, pak by hlásil stará data |
 | Ocel — výrobní země (2026-11-07) | OVĚŘENO z worldsteel, World Steel in Figures 2026 (2025: Čína 52,0 %, Indie 8,9 %, USA 4,4 %, Japonsko 4,4 %, Rusko 3,7 %, Jižní Korea 3,4 %); dříve NEOVĚŘENO |
+| Smart money — úpis bez poznámky (v0.17.14, 2026-11-07) | nákup jiného insidera ve stejný den za cenu doložené emise (±0,2 %) = PASIVNÍ úpis, ne nákup na trhu (SBLK: Plakantonaki 15. 9. za 28,27 USD jako Zagariho doložený úpis) |
 | Energetický radar — TOP 5 (2026-11-02) | test mimo vzorek nyní t −2,12 (úspěšnost 29 %, −5,7 % proti S&P 500) → centrum CHYBA „horší než náhoda“. Není to N-18 (1 i 5 fází dávají 29 %); jde o posun testovacího okna. Přes 5 posunů okna: t −1,18 až −2,12, průměr −1,63, ve všech pod S&P 500 (−1,3 až −5,7 %). Závěr: výhodu nemá, spíš zaostává; hranici −2 překračuje jen jeden posun. Hodnocení se dnes nemění |
 | XTB | žebříček jen z nabídky XTB (ověřeno na xtb.com 2026-10-05); ledger bez podmínky XTB, u predikcí v ledgeru se XTB nezapisuje |
 

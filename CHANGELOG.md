@@ -4,6 +4,22 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-07 · v0.17.14 — Smart money: nákup za cenu doložené emise téhož dne není nákup na trhu
+
+Důvod: ruční kontrola Form 4 u signálů STŘEDNÍ (týdenní rutina). SBLK měl verdikt STŘEDNÍ, ačkoli v0.17.7 úpis
+v emisi pozná. Zagari má v poznámce Form 4 „Participation in the Parallel Offering … subscribed to 10,000 new common
+shares at the offering price“ (28,27 USD, 15. 9.) a je správně PASIVNÍ. Plakantonaki ale koupil týž den 3 000 ks za
+28,27 USD bez poznámky a prošel jako aktivní nákup. Signál firmy tak zůstal aktivní.
+
+- `smartmoney/current.py`: `propagate_offering(verifications)`. Když jeden Form 4 téže firmy výslovně dokládá úpis
+  v emisi, je úpisem i nákup jiného insidera ve stejný den za stejnou cenu (rozdíl nejvýš 0,2 %), i bez poznámky.
+  Jiný den nebo jiná cena zůstávají aktivním nákupem.
+- `smartmoney/report.py`: volá se po určení typu každého Form 4, před vyřazením signálu.
+- Role „Aktivní nákup insiderů“ (OVĚŘENO, t 4,17) se nepřepočítává. Studie událostí stojí na čtvrtletních sadách
+  SEC, tohle je jen ověření aktuálních signálů.
+
+Test: `test_smartmoney.py::test_same_day_same_price_as_documented_offering_is_not_open_market_buy`.
+
 ## 2026-11-07 · v0.17.13 — Zastaralý screener Nasdaq je vidět v přehledu zdrojů i v diag
 
 Důvod: 5.–6. 11. vracelo API screeneru Nasdaq (s hlavičkou no-cache) ceny zamrzlé z průběhu obchodování 5. 11., ráno
