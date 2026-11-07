@@ -125,3 +125,24 @@ def test_merge_series_rejects_new_security_under_same_ticker():
     assert D.merge_series(days, closes, vols, renamed)[3] is None
     # starší snímky bez názvu (4 pole) fungují jako dřív
     assert D.merge_series(days, closes, vols, [(106, 43.0, 41.92, 9)])[3] is None
+
+
+def test_snapshot_lag_counts_trading_days_without_valid_snapshot(conn):
+    """5.–6. 11. 2026: API screeneru vracelo zamrzlé ceny z 5. 11., snímky se správně neukládaly — nově to hlásí
+    přehled zdrojů i diag (počet obchodních dní podle SPY bez platného snímku)."""
+    cache = sqlite3.connect(":memory:")
+    assert D.snapshot_lag(conn, cache)["stav"] == "ROZPRACOVÁNO"            # bez cen SPY nelze posoudit
+    for d in ("2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"):
+        conn.execute("INSERT INTO price_bars (symbol, date, close, volume, source, fetched_at) VALUES ('SPY', ?, 600, 1, 'test', ?)",
+                     (d, d + "T22:00:00Z"))
+    cache.execute("INSERT INTO nasdaq_snap (day, symbol, close, prev_close, volume, mcap, name, fetched_at)"
+                  " VALUES ('2026-11-04', 'AAA', 10, 9.9, 1, 1, 'A', '2026-11-05T13:20:00Z')")
+    lag = D.snapshot_lag(conn, cache)
+    assert (lag["posledni"], lag["obchodni_den"], lag["chybi"], lag["stav"]) == ("2026-11-04", "2026-11-06", 2, "VAROVÁNÍ")
+    cache.execute("INSERT INTO nasdaq_snap (day, symbol, close, prev_close, volume, mcap, name, fetched_at)"
+                  " VALUES ('2026-11-05', 'AAA', 10, 9.9, 1, 1, 'A', '2026-11-06T13:20:00Z')")
+    assert D.snapshot_lag(conn, cache)["stav"] == "OK"                      # jeden den = ranní snímek ještě nepřišel
+    cache.execute("DELETE FROM nasdaq_snap")
+    cache.execute("INSERT INTO nasdaq_snap (day, symbol, close, prev_close, volume, mcap, name, fetched_at)"
+                  " VALUES ('2026-10-30', 'AAA', 10, 9.9, 1, 1, 'A', '2026-11-01T13:20:00Z')")
+    assert D.snapshot_lag(conn, cache)["stav"] == "CHYBA"                   # 5 obchodních dní bez snímku

@@ -4,6 +4,23 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-07 · v0.17.13 — Zastaralý screener Nasdaq je vidět v přehledu zdrojů i v diag
+
+Důvod: 5.–6. 11. vracelo API screeneru Nasdaq (s hlavičkou no-cache) ceny zamrzlé z průběhu obchodování 5. 11., ráno
+i večer stejné (FLNC 5,175 při oficiálním závěru 5,095 a 6. 11. 5,27). Kontrola `data_day` je správně odmítla
+(27 z 91 firem), raketový deník proto neměl snímek. Varování ale zachytil jen ruční pohled do výstupu `rakety`,
+v `system` ani v `diag` vidět nebylo. Deník přitom snese mezeru nejvýš 7 dní.
+
+- `discovery/diary.py`: `snapshot_lag(main, cache)` spočítá obchodní dny (podle SPY v hlavní DB) po posledním
+  uloženém snímku. 0–1 = OK (ranní snímek posledního dne může ještě přijít), 2–4 = VAROVÁNÍ, ≥ 5 = CHYBA.
+- `hub/registry.py`: nový zdroj „Nasdaq screener — denní snímek trhu (raketový deník)“ s posledním platným dnem,
+  počtem dní bez snímku a výsledkem posledního pokusu z deníku běhů.
+- `diag.py`: kontrola „Snímek Nasdaq (raketový deník)“.
+- Dnes: diag VAROVÁNÍ (poslední platný 4. 11., chybí 2 obchodní dny), zdroj CHYBA.
+
+Test: `test_diary.py::test_snapshot_lag_counts_trading_days_without_valid_snapshot` (bez SPY ROZPRACOVÁNO; 2 dny
+VAROVÁNÍ; 1 den OK; 5 dní CHYBA).
+
 ## 2026-11-06 · v0.17.12 — N-18 vráceno: živé kritérium nesplněno
 
 Důvod: týden experimentu N-18 (2.–6. 11.) skončil. Kritéria stanovená 2. 11. před prvním živým během:

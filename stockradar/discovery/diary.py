@@ -114,6 +114,22 @@ def data_day(rows, reference: dict[str, dict[str, float]], *, tol: float = 0.001
     return day, n, compared
 
 
+SNAP_LAG_WARN, SNAP_LAG_ERROR = 2, 5   # obchodní dny bez platného snímku: varování / chyba (deník snese mezeru 7 dní)
+
+
+def snapshot_lag(main_conn, cache_conn, *, benchmark: str = "SPY") -> dict:
+    """Kolik obchodních dní (podle SPY v hlavní DB) po posledním uloženém snímku Nasdaq chybí platný snímek. 5.–6. 11.
+    2026 vracelo API screeneru ceny zamrzlé z průběhu 5. 11.; kontrola je správně odmítla, ale v přehledu zdrojů ani
+    v diag to vidět nebylo (v0.17.13)."""
+    cache_conn.executescript(SNAP_SCHEMA)
+    last = cache_conn.execute("SELECT MAX(day) FROM nasdaq_snap").fetchone()[0]
+    days = [r[0] for r in main_conn.execute("SELECT date FROM price_bars WHERE symbol = ? ORDER BY date", (benchmark,))]
+    missing = None if not days else sum(1 for d in days if last is None or d > last)
+    stav = ("ROZPRACOVÁNO" if missing is None else "CHYBA" if missing >= SNAP_LAG_ERROR
+            else "VAROVÁNÍ" if missing >= SNAP_LAG_WARN else "OK")
+    return {"posledni": last, "obchodni_den": days[-1] if days else None, "chybi": missing, "stav": stav}
+
+
 def _trusted(day, n, compared) -> bool:
     return day is not None and n >= 3 and n >= 0.6 * compared
 

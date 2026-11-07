@@ -96,6 +96,12 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
         ct = cache_conn.execute("SELECT COUNT(*), MAX(fetched_at) FROM ct_studies").fetchone()
         a = _age_days(ct[1], now)
         add("VAROVÁNÍ" if a is None or a > 8 else "OK", "ClinicalTrials.gov", f"{ct[0]} studií, staženo {ct[1]}")
+        from stockradar.discovery.diary import snapshot_lag
+        lag = snapshot_lag(conn, cache_conn)
+        if lag["stav"] != "ROZPRACOVÁNO":
+            add({"OK": "OK", "VAROVÁNÍ": "VAROVÁNÍ"}.get(lag["stav"], "CHYBA"), "Snímek Nasdaq (raketový deník)",
+                f"poslední platný {lag['posledni']}, poslední obchodní den {lag['obchodni_den']}, chybí {lag['chybi']} dní"
+                + ("" if lag["stav"] == "OK" else " — screener vrací ceny, které nesedí na závěry (deník snese 7 dní mezery)"))
 
     # 6) web: velikost dokumentů vůči limitu serveru
     from stockradar.site import DOC_LIMIT

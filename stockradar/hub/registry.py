@@ -238,6 +238,15 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
         f13 = _one(cache_conn, "SELECT COUNT(*), MAX(fetched_at) FROM f13_files") or (0, None)
         add("SEC 13F — zprávy fondů (+ Fails-to-Deliver)", "OK" if f13[0] else "ROZPRACOVÁNO",
             f"{f13[0]} čtvrtletních sad, naposledy {f13[1]}" if f13[0] else "zatím nestaženo (python -m stockradar funds)")
+        from stockradar.discovery.diary import snapshot_lag
+        lag = snapshot_lag(conn, cache_conn)
+        last_try = _last_with(conn, "snimek")
+        tried = f"; poslední pokus {last_try[0][:16]}: {last_try[1]['snimek']}" if last_try else ""
+        add("Nasdaq screener — denní snímek trhu (raketový deník)",
+            {"OK": "OK", "VAROVÁNÍ": "CHYBA", "CHYBA": "CHYBA"}.get(lag["stav"], "ROZPRACOVÁNO"),
+            "zatím žádný snímek" if lag["posledni"] is None else
+            f"poslední platný snímek {lag['posledni']}, obchodních dní bez snímku {lag['chybi']}" + tried
+            + (" (ceny screeneru nesedí na závěry z Yahoo — zdroj vrací zastaralá data)" if lag["stav"] != "OK" else ""))
         ct = _one(cache_conn, "SELECT COUNT(*), MAX(fetched_at) FROM ct_studies") or (0, None)
         add("ClinicalTrials.gov", "OK" if ct[0] else "ROZPRACOVÁNO", f"{ct[0]} studií, staženo {ct[1] or '–'}")
         x = _one(cache_conn, "SELECT COUNT(*), MAX(checked_at) FROM xtb_offer") or (0, None)
