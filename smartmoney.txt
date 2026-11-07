@@ -1,0 +1,27 @@
+Databáze už existuje: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db (schema v12)
+Ceny: SPY je 1 dní staré — stahování přeskočeno.
+  SEC insider 2026Q3: 22876 transakcí
+  SEC insider 2026Q4: HTTP Error 404: Not Found
+SEC insider: {'kvartalu': 1, 'transakci': 22876}
+SEC index: {'dotazu': 1, 'filingu': 14670}
+SEC buybacky: {'dotazu': 1}
+  Sněmovna 2025: 515 výkazů transakcí
+  Sněmovna 2026: 457 výkazů transakcí
+Sněmovna: {'vykazu': 10, 's_textem': 10, 'bez_textu': 0, 'transakci': 25}
+  Senát (efdsearch.senate.gov) nedostupný: HTTP 403 — použita dříve stažená hlášení
+Senát: {'stav': 'BLOKOVÁNO', 'duvod': 'HTTP 403'}
+  Ceny: 12294 firem, z toho 5450 v USA
+  Událostí: 114149
+    změřeno 0/114149
+    změřeno 50000/114149
+    změřeno 100000/114149
+  CSV: 107479 událostí, 4958 obchodů politiků
+  Skóre: 17893 nákupů k učení, 8631 k testu
+  Aktuální nákupy (openinsider, 60 dní): 863
+    HEI: vyřazeno — Form 4: nejde o aktivní nákup (PASIVNÍ (nákup se slevou, zaměstnanecký plán))
+Běh smart money #8: 10 signálů, do ledgeru 8
+Centrum: 828 firem (příležitost 271, riziko 13, rozpor 6), záznam OK #216, web 135 kB
+E-mail dnes: 48× — data.sec.gov 20×, www.sec.gov 28×
+SEC Fails-to-Deliver (CUSIP → symbol): {'souboru': 0}
+SEC 13F: {'baliku': 0}
+Žádná nová čtvrtletní sada 13F od posledního běhu (2026-10-11T09:58:59Z) → studie se nepočítá znovu (--force přepočítá).
