@@ -191,4 +191,5 @@
 {"day": "2026-11-07", "first_at": "2026-11-07T09:54:48Z", "host": "data.sec.gov", "last_at": "2026-11-07T10:36:06Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 3}
 {"day": "2026-11-07", "first_at": "2026-11-07T10:09:15Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:36:04Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 43}
 {"day": "2026-11-07", "first_at": "2026-11-07T10:24:35Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:37:01Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 22}
-{"day": "2026-11-07", "first_at": "2026-11-07T10:27:55Z", "host": "www.sec.gov", "last_at": "2026-11-07T10:27:55Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 1}
+{"day": "2026-11-07", "first_at": "2026-11-07T10:27:55Z", "host": "www.sec.gov", "last_at": "2026-11-07T13:18:37Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 10}
+{"day": "2026-11-07", "first_at": "2026-11-07T13:15:17Z", "host": "data.sec.gov", "last_at": "2026-11-07T13:16:54Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 124}
