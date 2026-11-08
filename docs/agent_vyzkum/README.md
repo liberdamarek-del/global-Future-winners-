@@ -64,6 +64,9 @@ zapsané hypotézy (`docs/VYZKUM.md`, E1–E4), studie událostí s kontrolní s
    Čísla, která počítá kód, se do reportu opisují z kódu, nepočítají ručně — např. shoda AUTO × ověřeno a SEC ×
    ověřeno z `discovery.moves.cause_agreement` (na webu `shoda_pricin`; poslední ověřená příčina, bez CHYBA_DAT).
    Ruční součty v reportech 10-30 až 11-01 se lišily pravidlem (2026-11-03).
+   Čísla a data ze SEC podání do záznamů OVĚŘENO brát ze surového textu podání (contact.http_get + hledání úryvku),
+   ne ze shrnutí nástrojem (WebFetch / WebSearch shrnuje malým modelem); shrnutí je jen vodítko (FinanceBench:
+   81 % chyb nebo odmítnutí u otázek nad podáními, 2026-11-08).
 8. `python -m pytest`, commit + push; uživateli 3–6 vět česky.
 
 ## Raketový deník (rakety za týden / 14 dní / měsíc)
