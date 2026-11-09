@@ -1,0 +1,8 @@
+{"horizont": 10, "jev": "růst", "n": 140, "zakladni_cetnost": 0.214, "prumer_p": 0.293, "S": 0.1784, "MCB": 0.011, "DSC": 0.001, "UNC": 0.1684, "MCB_95_pod_kalibraci": 0.0143, "tydnu": 4}
+{"horizont": 10, "jev": "pokles", "n": 140, "zakladni_cetnost": 0.436, "prumer_p": 0.272, "S": 0.2735, "MCB": 0.0396, "DSC": 0.0119, "UNC": 0.2459, "MCB_95_pod_kalibraci": 0.0227, "tydnu": 4}
+{"horizont": 20, "jev": "růst", "n": 91, "zakladni_cetnost": 0.088, "prumer_p": 0.236, "S": 0.104, "MCB": 0.0243, "DSC": 0.0005, "UNC": 0.0802, "MCB_95_pod_kalibraci": 0.0154, "tydnu": 2}
+{"horizont": 20, "jev": "pokles", "n": 91, "zakladni_cetnost": 0.527, "prumer_p": 0.215, "S": 0.344, "MCB": 0.1113, "DSC": 0.0165, "UNC": 0.2492, "MCB_95_pod_kalibraci": 0.0279, "tydnu": 2}
+{"horizont": 10, "jev": "růst", "MCB": 0.011, "MCB_95": 0.0542, "podil_sim_MCB_vetsi": 0.517, "S_minus_UNC": 0.01, "S_minus_UNC_95": 0.0328}
+{"horizont": 10, "jev": "pokles", "MCB": 0.0396, "MCB_95": 0.046, "podil_sim_MCB_vetsi": 0.072, "S_minus_UNC": 0.0276, "S_minus_UNC_95": 0.023}
+{"horizont": 20, "jev": "růst", "MCB": 0.0243, "MCB_95": 0.1185, "podil_sim_MCB_vetsi": 0.336, "S_minus_UNC": 0.0238, "S_minus_UNC_95": 0.0949}
+{"horizont": 20, "jev": "pokles", "MCB": 0.1113, "MCB_95": 0.0984, "podil_sim_MCB_vetsi": 0.04, "S_minus_UNC": 0.0948, "S_minus_UNC_95": 0.0664}

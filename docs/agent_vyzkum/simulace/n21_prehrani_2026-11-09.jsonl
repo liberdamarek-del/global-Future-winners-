@@ -1,0 +1,21 @@
+{"den": "2026-10-12", "t_1": -0.86, "t_5": -0.64, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0045, "nad_spy_5": 0.0085}
+{"den": "2026-10-13", "t_1": -0.71, "t_5": -0.72, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": 0.0151, "nad_spy_5": 0.0092}
+{"den": "2026-10-14", "t_1": -1.02, "t_5": -0.86, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": 0.0061, "nad_spy_5": 0.0061}
+{"den": "2026-10-15", "t_1": -1.33, "t_5": -1.0, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0131, "nad_spy_5": 0.003}
+{"den": "2026-10-16", "t_1": -1.26, "t_5": -1.04, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": 0.0014, "nad_spy_5": 0.001}
+{"den": "2026-10-19", "t_1": -1.33, "t_5": -1.13, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0173, "nad_spy_5": -0.0016}
+{"den": "2026-10-20", "t_1": -0.86, "t_5": -1.16, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": 0.0065, "nad_spy_5": -0.0033}
+{"den": "2026-10-21", "t_1": -1.41, "t_5": -1.24, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0036, "nad_spy_5": -0.0052}
+{"den": "2026-10-22", "t_1": -1.41, "t_5": -1.26, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0148, "nad_spy_5": -0.0056}
+{"den": "2026-10-23", "t_1": -1.41, "t_5": -1.29, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0061, "nad_spy_5": -0.0071}
+{"den": "2026-10-26", "t_1": -1.33, "t_5": -1.29, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0193, "nad_spy_5": -0.0075}
+{"den": "2026-10-27", "t_1": -1.1, "t_5": -1.33, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0092, "nad_spy_5": -0.0106}
+{"den": "2026-10-28", "t_1": -1.73, "t_5": -1.4, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0139, "nad_spy_5": -0.0127}
+{"den": "2026-10-29", "t_1": -1.8, "t_5": -1.47, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0304, "nad_spy_5": -0.0158}
+{"den": "2026-10-30", "t_1": -1.8, "t_5": -1.55, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0281, "nad_spy_5": -0.0202}
+{"den": "2026-11-02", "t_1": -2.12, "t_5": -1.71, "stav_1": "CHYBA", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0498, "nad_spy_5": -0.0263}
+{"den": "2026-11-03", "t_1": -1.41, "t_5": -1.77, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.035, "nad_spy_5": -0.0314}
+{"den": "2026-11-04", "t_1": -1.88, "t_5": -1.8, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0401, "nad_spy_5": -0.0367}
+{"den": "2026-11-05", "t_1": -2.2, "t_5": -1.88, "stav_1": "CHYBA", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0581, "nad_spy_5": -0.0422}
+{"den": "2026-11-06", "t_1": -1.96, "t_5": -1.91, "stav_1": "NEOVĚŘENO", "stav_5": "NEOVĚŘENO", "nad_spy_1": -0.0589, "nad_spy_5": -0.0484}
+{"souhrn": true, "sd_t_1": 0.413, "sd_t_5": 0.362, "sd_denni_zmeny_1": 0.335, "sd_denni_zmeny_5": 0.042, "zmen_stavu_1": 4, "zmen_stavu_5": 0, "prumer_t_1": -1.446, "prumer_t_5": -1.323}
