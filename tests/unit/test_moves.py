@@ -316,3 +316,65 @@ def test_market_day_refuses_snapshot_that_disagrees_with_sp500(conn):
                          [("2026-10-21", 7757.17), ("2026-10-22", 7757.17 * 1.006)])
     res = MD.build(conn, cconn, "2026-10-22", fetch=None)
     assert res["stav"] == "NEOVĚŘENO" and "S&P 500" in res["duvod"] and not MD.record(conn, res)
+
+
+# ------------------------------------------------------------------ N-23 (v0.17.16): korporátní akce
+
+def test_corporate_action_flag_from_form_25_and_item_301():
+    assert M.corporate_action([{"form": "25-NSE", "items": ""}]) == ["25-NSE"]                        # CDLR
+    assert M.corporate_action([{"form": "8-K", "items": "3.01,7.01,9.01"}]) == ["8-K 3.01"]           # ARI, SITC
+    assert M.corporate_action([{"form": "8-K", "items": "2.02,9.01"}, {"form": "424B5", "items": ""}]) == []
+    assert M.corporate_action([{"form": "8-K", "items": "13.01"}]) == []                              # ne podřetězec
+
+
+def test_payout_explains_special_distribution_but_not_real_drop():
+    sitc = {"vyplaty": [{"den": "2026-11-06", "castka": 3.0}], "splity": []}
+    assert "výplata 3 USD" in M.payout_explains(-0.813, 3.57, "2026-11-06", sitc)                    # SITC 3,57 → 0,67
+    ari = {"vyplaty": [{"den": "2026-10-30", "castka": 4.10}], "splity": []}
+    assert M.payout_explains(-0.639, 6.45, "2026-10-30", ari)                                         # ARI 6,45 → 2,33
+    assert M.payout_explains(-0.639, 6.45, "2026-10-29", ari) is None                                 # jiný den
+    small = {"vyplaty": [{"den": "2026-11-03", "castka": 0.5}], "splity": []}
+    assert M.payout_explains(-0.40, 10.0, "2026-11-03", small) is None                                # výplata nevysvětlí pokles
+    split = {"vyplaty": [], "splity": [{"den": "2026-11-03", "pomer": 2.0}, {"den": "2026-11-04", "pomer": 0.1}]}
+    assert M.payout_explains(-0.50, 20.0, "2026-11-03", split).startswith("split 2:1")
+    assert M.payout_explains(-0.50, 20.0, "2026-11-04", split) is None                                # zpětný split ne
+
+
+def test_paused_moves_leave_stats_until_verified_and_payouts_become_data_errors(conn):
+    end = date(2026, 11, 6)
+    pay = dict(_found("PAY", -1, end), cena=2.0)
+    pay["moves"] = dict(pay["moves"], **{"1d": -0.6})
+    new = D.record_new(conn, [dict(_found(s, -1, end), symbol=s) for s in ("CA1", "REAL")] + [pay], today=end, log=QUIET)
+    ids = {r["symbol"]: r["id"] for r in new}
+    for sym in ("CA1", "REAL"):
+        with conn:
+            conn.execute("INSERT INTO move_sec (event_id, cik, status, filings_json, checked_at) VALUES (?, 1, 'OK', ?, 'x')",
+                         (ids[sym], json.dumps([{"form": "25-NSE", "items": "", "datum": "2026-11-05", "url": "https://u"}])))
+    for i, sym in enumerate(("CA1", "REAL", "PAY")):
+        with conn:
+            conn.execute("INSERT INTO move_outcomes (event_id, horizon, base_day, base_price, day, price, return_pct,"
+                         " spy_return_pct, recorded_at) VALUES (?, 20, '2026-11-06', 5, '2026-12-04', 5, ?, 0.0, 'x')",
+                         (ids[sym], [-50.0, 3.0, 4.0][i]))
+    assert M.paused_moves(conn) == {ids["CA1"], ids["REAL"]}
+    st = M.live_stats(conn)
+    assert st["pozastaveno"] == 2 and st["propady"]["pohybu"] == 1                                   # jen PAY
+    D.record_cause(conn, ids["REAL"], code="ACQUISITION", status="OVĚŘENO", summary="FAKT: převzetí", source="8-K",
+                   source_url="https://www.sec.gov/x", published_on="2026-11-05")                    # ručně ověřený
+    assert M.paused_moves(conn) == {ids["CA1"]} and M.live_stats(conn)["propady"]["pohybu"] == 2
+    calls = []
+
+    def fetch(sym):
+        calls.append(sym)
+        return {"vyplaty": [{"den": "2026-11-06", "castka": 3.0}], "splity": [], "url": "https://query1.finance.yahoo.com/x"}
+
+    res = M.check_payouts(conn, today=end, fetch=fetch, log=QUIET)
+    assert res["chyba_dat"] == 1 and calls == ["PAY"]
+    c = conn.execute("SELECT cause_code, status FROM rocket_causes WHERE event_id = ?", (ids["PAY"],)).fetchone()
+    assert tuple(c) == ("CHYBA_DAT", "NEOVĚŘENO")                                                    # automaticky = neověřeno
+    assert M.check_payouts(conn, today=end, fetch=fetch, log=QUIET)["kontrolovano"] == 0              # podruhé se neptá
+    assert M.live_stats(conn)["propady"]["pohybu"] == 1
+    M.FLAG_CORP_ACTIONS = False
+    try:                                                                                              # přepínač: vratně
+        assert M.paused_moves(conn) == set() and M.check_payouts(conn, today=end, fetch=fetch)["stav"] == "VYPNUTO"
+    finally:
+        M.FLAG_CORP_ACTIONS = True

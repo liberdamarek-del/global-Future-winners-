@@ -99,6 +99,33 @@ def fetch_chart(symbol: str, range_: str = "2y", *, retries: int = 3, timeout: i
     raise RuntimeError(f"{symbol}: stažení z Yahoo selhalo: {last_error}")
 
 
+EVENTS_URL = CHART_URL + "&events=div%7Csplit"
+
+
+def parse_events(payload: dict) -> dict:
+    """Výplaty (dividendy, i mimořádné) a splity z odpovědi chart s events=div|split; den = ex-den v časové zóně burzy.
+    Ceny `close` Yahoo o výplaty neupravuje (SITC 6. 11. 2026: výplata 3,00 USD → −81 % v datech, N-23)."""
+    res = ((payload or {}).get("chart") or {}).get("result") or []
+    if not res:
+        raise ValueError("Yahoo nevrátil data")
+    meta = res[0].get("meta") or {}
+    tz, offset = _exchange_tz(meta), int(meta.get("gmtoffset") or 0)
+    ev = res[0].get("events") or {}
+    divs = [{"den": _bar_day(int(x["date"]), tz, offset), "castka": float(x["amount"])}
+            for x in (ev.get("dividends") or {}).values() if x.get("date") and x.get("amount") is not None]
+    splits = [{"den": _bar_day(int(x["date"]), tz, offset), "pomer": float(x["numerator"]) / float(x["denominator"])}
+              for x in (ev.get("splits") or {}).values() if x.get("date") and x.get("numerator") and x.get("denominator")]
+    return {"vyplaty": sorted(divs, key=lambda x: x["den"]), "splity": sorted(splits, key=lambda x: x["den"])}
+
+
+def fetch_events(symbol: str, range_: str = "3mo", *, timeout: int = 20) -> dict:
+    """Jeden dotaz (bez opakování a bez e-mailu); chyba se předá volajícímu."""
+    url = EVENTS_URL.format(symbol=urllib.parse.quote(symbol), range=range_)
+    req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return parse_events(json.load(resp)) | {"url": url}
+
+
 def store_bars(conn: sqlite3.Connection, quote: Quote, *, fetched_at: datetime | None = None) -> int:
     fetched = to_iso(fetched_at or utcnow())
     with conn:

@@ -4,6 +4,35 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-10 · v0.17.16 — Deník: korporátní akce mimo statistiky (N-23) a výpadek screeneru už deník nezastaví
+
+Důvod 1 (experiment týdne N-23, kritérium dané 7. 11.): korporátní akce vyrobily za 5 dní 3 falešné pohyby (SUPN fúze,
+CDLR přesídlení, SITC mimořádná výplata). Ceny Yahoo `close` nejsou upravené o výplaty ani výměny cenných papírů.
+Přehrání 10. 11. nad všemi 702 pohyby: (1) formulář 25 / 25-NSE nebo 8-K položka 3.01 v okně zachytí SUPN, SITC i CDLR
+a ze 42 ověřených skutečných pohybů pozastaví 2 (TCRT, ELME; kritérium ≤ 3) → splněno. (2) dotaz na výplaty a splity
+u 31 jednodenních poklesů ≥ 30 % zachytil SITC (3,00 USD, 84 % ceny) a nově **ARI** (likvidační výplata 4,10 USD
+s ex-dnem 30. 10., −64 % v datech), u žádného ověřeného skutečného pohybu nic.
+
+- `discovery/moves.py`: přepínač `FLAG_CORP_ACTIONS` (vratně). `corporate_action()` čte podání v okně;
+  `paused_moves()` = pohyby s příznakem bez ručního ověření (příčina ≠ CHYBA_DAT) → mimo `live_stats`
+  („co následovalo“), počet `pozastaveno`. `payout_explains()` + `check_payouts()`: u nových jednodenních poklesů
+  ≥ 30 % (zapsaných za 3 dny) jeden dotaz na Yahoo bez e-mailu. Když výplata nebo split s ex-dnem v den poklesu
+  vysvětlí ≥ 80 % poklesu, zapíše se CHYBA_DAT jako NEOVĚŘENO (automaticky; ruční ověření zůstává nejvyšší úrovní).
+- `sources/yahoo.py`: `parse_events()` a `fetch_events()` (chart s `events=div|split`, den podle časové zóny burzy).
+- `cli rakety` volá kontrolu výplat po podáních SEC. `diag` ukazuje počet pozastavených pohybů a web ho uvádí pod
+  výsledky pohybů.
+- Historická studie (5 let) se nemění: index podání SEC v cache neobsahuje formulář 25 ani položky 8-K.
+
+Důvod 2: 10. 11. screener Nasdaq vrátil HTTP 403 a `rakety` spadl celý (žádné podání SEC, výsledky ani přehled).
+`diary.take_snapshot`: chyba zdroje se vrátí jako stav `BLOKOVÁNO` (401/403/429) nebo `CHYBA`, zbytek deníku poběží.
+Blokace se neobchází (žádné opakování s jinými hlavičkami). Registr zdrojů ukáže BLOKOVÁNO, mezeru hlídá `snapshot_lag`.
+
+Test: `test_moves.py::test_corporate_action_flag_from_form_25_and_item_301`,
+`::test_payout_explains_special_distribution_but_not_real_drop`,
+`::test_paused_moves_leave_stats_until_verified_and_payouts_become_data_errors`,
+`test_sources.py::test_parse_events_reads_payouts_and_splits_on_exchange_day`,
+`test_diary.py::test_snapshot_source_refusal_is_recorded_not_raised`.
+
 ## 2026-11-07 · v0.17.15 — Model raket: pevná kalendářní mřížka panelu (reprodukovatelnost GitHub × Claude)
 
 Důvod: srovnání N-13 po týdenním běhu 7. 11. Žebříčky signálů se shodovaly 1,0, ale TOP 10 raket **0,0**.

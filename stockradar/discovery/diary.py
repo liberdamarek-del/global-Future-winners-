@@ -169,7 +169,15 @@ def take_snapshot(cache_conn, *, now: datetime | None = None, fetch=None, refere
     if fetch is None:
         from stockradar.discovery import listings
         fetch = lambda: json.loads(listings._get(listings.NASDAQ_SCREENER))["data"]["rows"]
-    rows = parse_snapshot(fetch())
+    try:
+        raw = fetch()
+    except (OSError, ValueError, KeyError, TypeError) as e:     # HTTPError ⊂ URLError ⊂ OSError; JSON ⊂ ValueError
+        # 10. 11. 2026: screener vrátil HTTP 403 a celý deník spadl → výpadek zdroje se zapíše, zbytek deníku poběží.
+        # Blokace se neobchází (žádné opakování s jinými hlavičkami); mezeru hlídá snapshot_lag v diag.
+        code = getattr(e, "code", None)
+        return {"stav": "BLOKOVÁNO" if code in (401, 403, 429) else "CHYBA",
+                "duvod": f"screener Nasdaq: {type(e).__name__} {code or ''} {str(e)[:120]}".strip()}
+    rows = parse_snapshot(raw)
     if reference:
         actual, n, comp = data_day(rows, reference)
         if _trusted(actual, n, comp):

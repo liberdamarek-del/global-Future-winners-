@@ -243,6 +243,90 @@ def best_cause(conn, event: dict) -> dict:
     return {"kod": None, "zdroj": None, "text": None, "url": None}
 
 
+# ------------------------------------------------------------------ N-23: korporátní akce (v0.17.16, vratně)
+# Ze 6 chyb dat do 7. 11. měly 3 v okně formulář 25 nebo 8-K 3.01 (SUPN fúze, CDLR přesídlení, SITC mimořádná výplata);
+# přehrání 10. 11.: příznak zachytí všechny 3 a ze 42 ověřených skutečných pohybů pozastaví 2 (TCRT, ELME).
+FLAG_CORP_ACTIONS = True          # přepínač N-23: False = statistiky jako do v0.17.15
+CORP_ACTION_FORMS = {"25", "25-NSE", "25/A", "25-NSE/A"}
+PAYOUT_DROP = -0.30               # jednodenní pokles, u kterého se ptáme Yahoo na výplaty a splity
+PAYOUT_SHARE = 0.8                # výplata / split musí vysvětlit aspoň 80 % poklesu
+PAYOUT_DAYS = 3                   # kontrolují se pohyby zapsané za poslední 3 dny (jeden dotaz na pohyb)
+
+
+def corporate_action(filings: list[dict]) -> list[str]:
+    """Podání v okně pohybu, která znamenají stažení z burzy / výměnu cenného papíru (formulář 25, 8-K položka 3.01)."""
+    out = []
+    for f in filings or []:
+        form = (f.get("form") or "").upper()
+        if form in CORP_ACTION_FORMS:
+            out.append(form)
+        elif form.startswith("8-K") and "3.01" in [x.strip() for x in (f.get("items") or "").split(",")]:
+            out.append("8-K 3.01")
+    return out
+
+
+def paused_moves(conn) -> set[int]:
+    """Pohyby s podezřením na korporátní akci, které ještě nikdo ručně neověřil jako skutečný pohyb (příčina ≠ CHYBA_DAT);
+    pohyby už zapsané jako CHYBA_DAT sem nepatří."""
+    if not FLAG_CORP_ACTIONS:
+        return set()
+    suspect = {r[0] for r in conn.execute("SELECT event_id, filings_json FROM move_sec WHERE status = 'OK'")
+               if corporate_action(json.loads(r[1]))}
+    cleared = {r[0] for r in conn.execute(
+        "SELECT event_id FROM rocket_causes c WHERE status = 'OVĚŘENO' AND cause_code != 'CHYBA_DAT'"
+        " AND id = (SELECT MAX(id) FROM rocket_causes WHERE event_id = c.event_id)")}
+    errors = {r[0] for r in conn.execute("SELECT event_id FROM rocket_causes WHERE cause_code = 'CHYBA_DAT'")}
+    return suspect - cleared - errors                 # chyby dat jsou ze statistik venku tak jako tak
+
+
+def payout_explains(drop: float, prev_close: float, day: str, events: dict) -> str | None:
+    """Výplata nebo split s ex-dnem v den poklesu, který vysvětlí aspoň PAYOUT_SHARE poklesu → popis, jinak None."""
+    if not prev_close or prev_close <= 0 or drop >= 0:
+        return None
+    need = PAYOUT_SHARE * -drop
+    for d in events.get("vyplaty") or []:
+        if d["den"] == day and d["castka"] / prev_close >= need:
+            return f"výplata {d['castka']:g} USD s ex-dnem {day} ({d['castka'] / prev_close:.0%} předchozí ceny)"
+    for x in events.get("splity") or []:
+        if x["den"] == day and x["pomer"] > 1 and 1 - 1 / x["pomer"] >= need:
+            return f"split {x['pomer']:g}:1 s ex-dnem {day}"
+    return None
+
+
+def check_payouts(conn, *, today: date | None = None, fetch=None, log=print) -> dict:
+    """N-23 (2): u nových jednodenních poklesů ≥ 30 % jeden dotaz na Yahoo (výplaty a splity, bez e-mailu); vysvětlí-li
+    výplata nebo split pokles, zapíše se CHYBA_DAT jako NEOVĚŘENO (automaticky, ruční ověření zůstává nejvyšší úrovní)."""
+    if not FLAG_CORP_ACTIONS:
+        return {"stav": "VYPNUTO"}
+    from stockradar.sources import yahoo
+    fetch = fetch or yahoo.fetch_events
+    today = today or utcnow().date()
+    since = (today - timedelta(days=PAYOUT_DAYS)).isoformat()
+    rows = conn.execute("SELECT id, symbol, end_day, price, move_1d FROM rocket_events WHERE direction = -1 AND move_1d <= ?"
+                        " AND detected_on >= ? AND id NOT IN (SELECT event_id FROM rocket_causes WHERE cause_code = 'CHYBA_DAT')",
+                        (PAYOUT_DROP, since)).fetchall()
+    out = {"stav": "OK", "kontrolovano": 0, "chyba_dat": 0, "chyb": 0}
+    for r in rows:
+        try:
+            ev = fetch(r["symbol"])
+        except Exception as e:  # noqa: BLE001 — výpadek zdroje nezastaví deník
+            out["chyb"] += 1
+            log(f"Výplaty {r['symbol']}: {str(e)[:80]}")
+            continue
+        out["kontrolovano"] += 1
+        why = payout_explains(r["move_1d"], r["price"] / (1 + r["move_1d"]), r["end_day"], ev)
+        if why:
+            diary.record_cause(conn, r["id"], code="CHYBA_DAT", status="NEOVĚŘENO",
+                               summary=f"FAKT (Yahoo, výplaty a splity): {why}; cena {r['price']:.2f} USD po poklesu"
+                                       f" {r['move_1d'] * 100:.0f} %. ÚSUDEK (automaticky, N-23): pokles je výplata nebo split,"
+                                       " ne pohyb ceny; Yahoo close o výplaty neupravuje.",
+                               source="Yahoo Finance chart (events=div|split), automatická kontrola N-23",
+                               source_url=ev.get("url") or "https://finance.yahoo.com/", published_on=r["end_day"])
+            out["chyba_dat"] += 1
+            log(f"CHYBA_DAT {r['symbol']} #{r['id']}: {why}")
+    return out
+
+
 def _summ(rets: list[float], excess: list[float], direction: int) -> dict:
     n = len(rets)
     if not n:
@@ -261,9 +345,10 @@ def live_stats(conn) -> dict:
         outs.setdefault(r[0], {})[r[1]] = (r[2], r[3])
     events = [dict(r) for r in conn.execute("SELECT * FROM rocket_events")]
     errors = {r[0] for r in conn.execute("SELECT event_id FROM rocket_causes WHERE cause_code = 'CHYBA_DAT'")}
-    res = {}
+    paused = paused_moves(conn)
+    res = {"pozastaveno": len(paused), "pozastaveno_pravidlo": "formulář 25 nebo 8-K 3.01 v okně, bez ručního ověření (N-23)"}
     for direction, key in ((1, "rakety"), (-1, "propady")):
-        evs = [e for e in events if (e.get("direction") or 1) == direction and e["id"] not in errors]
+        evs = [e for e in events if (e.get("direction") or 1) == direction and e["id"] not in errors and e["id"] not in paused]
         groups: dict[str, list] = {"všechny": evs}
         for e in evs:
             code = best_cause(conn, e)["kod"]

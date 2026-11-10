@@ -75,6 +75,22 @@ def test_snapshot_skips_holiday_with_unchanged_prices():
     assert D.take_snapshot(c, now=datetime(2026, 10, 13, 15, 0, tzinfo=timezone.utc), fetch=lambda: rows)["stav"] == "PŘESKOČENO"
 
 
+def test_snapshot_source_refusal_is_recorded_not_raised():
+    """10. 11. 2026: screener vrátil HTTP 403 a `rakety` spadl celý. Výpadek zdroje se zapíše a deník běží dál."""
+    import urllib.error
+    c = sqlite3.connect(":memory:")
+    when = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
+
+    def refused():
+        raise urllib.error.HTTPError("https://api.nasdaq.com/x", 403, "Forbidden", None, None)
+
+    res = D.take_snapshot(c, now=when, fetch=refused, log=lambda m: None)
+    assert res["stav"] == "BLOKOVÁNO" and "403" in res["duvod"]
+    res = D.take_snapshot(c, now=when, fetch=lambda: (_ for _ in ()).throw(urllib.error.URLError("timeout")), log=lambda m: None)
+    assert res["stav"] == "CHYBA" and "URLError" in res["duvod"]
+    assert c.execute("SELECT COUNT(*) FROM nasdaq_snap").fetchone()[0] == 0
+
+
 def test_hub_shows_rockets_as_context_but_not_data_errors(conn):
     from stockradar.hub import evidence as E
     found = [{"symbol": s, "nazev": s, "mcap": 1e8, "okna": ["5d"], "moves": {"5d": 0.5, "10d": 0.5, "21d": 0.5},

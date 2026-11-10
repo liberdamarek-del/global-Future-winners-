@@ -1,0 +1,52 @@
+{"cast": 1, "id": 5, "symbol": "NCPL", "smer": 1, "podani": ["8-K 3.01"], "pricina": ["JINE", "NEOVĚŘENO"]}
+{"cast": 1, "id": 34, "symbol": "XRPN", "smer": 1, "podani": ["8-K 3.01"], "pricina": null}
+{"cast": 1, "id": 72, "symbol": "BETR", "smer": 1, "podani": ["8-K 3.01"], "pricina": null}
+{"cast": 1, "id": 88, "symbol": "BURU", "smer": -1, "podani": ["8-K 3.01"], "pricina": null}
+{"cast": 1, "id": 100, "symbol": "NXH", "smer": -1, "podani": ["25-NSE"], "pricina": null}
+{"cast": 1, "id": 174, "symbol": "AREC", "smer": -1, "podani": ["8-K 3.01"], "pricina": null}
+{"cast": 1, "id": 180, "symbol": "BKKT", "smer": -1, "podani": ["25-NSE"], "pricina": null}
+{"cast": 1, "id": 183, "symbol": "MEDS", "smer": -1, "podani": ["8-K 3.01"], "pricina": null}
+{"cast": 1, "id": 213, "symbol": "XRPN", "smer": -1, "podani": ["8-K 3.01"], "pricina": null}
+{"cast": 1, "id": 280, "symbol": "SHFS", "smer": -1, "podani": ["8-K 3.01"], "pricina": ["JINE", "NEOVĚŘENO"]}
+{"cast": 1, "id": 283, "symbol": "TCRT", "smer": 1, "podani": ["8-K 3.01", "8-K 3.01"], "pricina": ["ACQUISITION", "OVĚŘENO"]}
+{"cast": 1, "id": 408, "symbol": "ELME", "smer": -1, "podani": ["8-K 3.01", "25-NSE"], "pricina": ["DELISTING", "OVĚŘENO"]}
+{"cast": 1, "id": 410, "symbol": "ARI", "smer": -1, "podani": ["8-K 3.01", "25"], "pricina": ["CHYBA_DAT", "OVĚŘENO"]}
+{"cast": 1, "id": 500, "symbol": "SUPN", "smer": -1, "podani": ["25-NSE", "8-K 3.01"], "pricina": ["CHYBA_DAT", "OVĚŘENO"]}
+{"cast": 1, "id": 579, "symbol": "SITC", "smer": -1, "podani": ["8-K 3.01"], "pricina": ["CHYBA_DAT", "OVĚŘENO"]}
+{"cast": 1, "id": 580, "symbol": "CDLR", "smer": -1, "podani": ["25-NSE"], "pricina": ["CHYBA_DAT", "OVĚŘENO"]}
+{"cast": 2, "id": 76, "symbol": "SXTC", "den": "2026-10-22", "pokles": -0.342, "zachyceno": null, "priciny": ["FINANCING", "OVĚŘENO"]}
+{"cast": 2, "id": 112, "symbol": "AVTX", "den": "2026-10-22", "pokles": -0.392, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 191, "symbol": "NVEC", "den": "2026-10-22", "pokles": -0.337, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 280, "symbol": "SHFS", "den": "2026-10-23", "pokles": -0.615, "zachyceno": null, "priciny": ["JINE", "NEOVĚŘENO"]}
+{"cast": 2, "id": 285, "symbol": "NANO", "den": "2026-10-23", "pokles": -0.393, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 286, "symbol": "MGNX", "den": "2026-10-23", "pokles": -0.38, "zachyceno": null, "priciny": ["CLINICAL", "OVĚŘENO"]}
+{"cast": 2, "id": 287, "symbol": "NCPL", "den": "2026-10-23", "pokles": -0.404, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 314, "symbol": "XP", "den": "2026-10-26", "pokles": -0.484, "zachyceno": null, "priciny": ["GOVERNMENT", "NEOVĚŘENO"]}
+{"cast": 2, "id": 316, "symbol": "BAK", "den": "2026-10-26", "pokles": -0.353, "zachyceno": null, "priciny": ["GOVERNMENT", "NEOVĚŘENO"]}
+{"cast": 2, "id": 317, "symbol": "INTR", "den": "2026-10-26", "pokles": -0.349, "zachyceno": null, "priciny": ["GOVERNMENT", "NEOVĚŘENO"]}
+{"cast": 2, "id": 319, "symbol": "AGBK", "den": "2026-10-26", "pokles": -0.376, "zachyceno": null, "priciny": ["GOVERNMENT", "NEOVĚŘENO"]}
+{"cast": 2, "id": 321, "symbol": "PICS", "den": "2026-10-26", "pokles": -0.364, "zachyceno": null, "priciny": ["GOVERNMENT", "NEOVĚŘENO"]}
+{"cast": 2, "id": 339, "symbol": "ORIC", "den": "2026-10-26", "pokles": -0.32, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 352, "symbol": "ARTV", "den": "2026-10-27", "pokles": -0.307, "zachyceno": null, "priciny": ["CLINICAL", "OVĚŘENO"]}
+{"cast": 2, "id": 371, "symbol": "XRX", "den": "2026-10-29", "pokles": -0.403, "zachyceno": null, "priciny": ["FINANCING", "OVĚŘENO"]}
+{"cast": 2, "id": 377, "symbol": "IOVA", "den": "2026-10-29", "pokles": -0.354, "zachyceno": null, "priciny": ["CLINICAL", "OVĚŘENO"]}
+{"cast": 2, "id": 409, "symbol": "ABOS", "den": "2026-10-30", "pokles": -0.908, "zachyceno": null, "priciny": ["CLINICAL", "OVĚŘENO"]}
+{"cast": 2, "id": 410, "symbol": "ARI", "den": "2026-10-30", "pokles": -0.639, "zachyceno": "výplata 4.1 (64% ceny)", "priciny": ["DELISTING", "NEOVĚŘENO"]}
+{"cast": 2, "id": 416, "symbol": "ATEC", "den": "2026-10-30", "pokles": -0.381, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 449, "symbol": "DRUG", "den": "2026-11-02", "pokles": -0.523, "zachyceno": null, "priciny": ["FDA", "OVĚŘENO"]}
+{"cast": 2, "id": 450, "symbol": "OFRM", "den": "2026-11-02", "pokles": -0.372, "zachyceno": null, "priciny": ["PRODUCT", "OVĚŘENO"]}
+{"cast": 2, "id": 500, "symbol": "SUPN", "den": "2026-11-03", "pokles": -0.328, "zachyceno": null, "priciny": ["CHYBA_DAT", "OVĚŘENO"]}
+{"cast": 2, "id": 527, "symbol": "NRIX", "den": "2026-11-04", "pokles": -0.382, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 552, "symbol": "DOX", "den": "2026-11-04", "pokles": -0.301, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 579, "symbol": "SITC", "den": "2026-11-06", "pokles": -0.813, "zachyceno": "výplata 3.0 (84% ceny)", "priciny": ["CHYBA_DAT", "OVĚŘENO"]}
+{"cast": 2, "id": 581, "symbol": "BDSX", "den": "2026-11-06", "pokles": -0.57, "zachyceno": null, "priciny": ["EARNINGS", "OVĚŘENO"]}
+{"cast": 2, "id": 585, "symbol": "STLN", "den": "2026-11-06", "pokles": -0.46, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 604, "symbol": "KRT", "den": "2026-11-06", "pokles": -0.348, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 607, "symbol": "PRAA", "den": "2026-11-06", "pokles": -0.367, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 632, "symbol": "NRDS", "den": "2026-11-06", "pokles": -0.31, "zachyceno": null, "priciny": null}
+{"cast": 2, "id": 636, "symbol": "IRTC", "den": "2026-11-06", "pokles": -0.307, "zachyceno": null, "priciny": null}
+{"rucni_kontrola": "2026-11-10", "id": 280, "symbol": "SHFS", "falesne_pozastaveni": true, "fakt": "8-K 3.01 20. 10.: Nasdaq prodloužil lhůtu 180 dní (do 19. 4. 2027) na splnění minimální ceny 1 USD — upozornění, ne korporátní akce", "url": "https://www.sec.gov/Archives/edgar/data/1854963/000149315226047774/form8-k.htm"}
+{"rucni_kontrola": "2026-11-10", "id": 5, "symbol": "NCPL", "falesne_pozastaveni": true, "fakt": "8-K 3.01 25. 9.: dopis Nasdaq kvůli nepodanému 10-Q a 10-K (pravidlo 5250(c)(1)) — upozornění, ne korporátní akce", "url": "https://www.sec.gov/Archives/edgar/data/1414767/000149315226044363/form8-k.htm"}
+{"rucni_kontrola": "2026-11-10", "id": 88, "symbol": "BURU", "falesne_pozastaveni": true, "fakt": "8-K 3.01 19. 10.: veřejné varování NYSE American za pozdní zveřejnění (Section 401(a)) — upozornění, ne korporátní akce", "url": "https://www.sec.gov/Archives/edgar/data/1814215/000119312526427115/buru-20261015.htm"}
+{"rucni_kontrola": "2026-11-10", "id": 180, "symbol": "BKKT", "falesne_pozastaveni": true, "fakt": "Form 25-NSE 15. 10.: stažení WARRANTŮ (1/25 akcie za 287,50 USD) z NYSE, kmenová akcie se netýká", "url": "https://www.sec.gov/Archives/edgar/data/1820302/000087666126000837/xslF25X02/primary_doc.xml"}
+{"rucni_kontrola": "2026-11-10", "id": 100, "symbol": "NXH", "falesne_pozastaveni": true, "fakt": "Form 25-NSE 6. 10.: stažení WARRANTŮ z Nasdaq, kmenová akcie se netýká", "url": "https://www.sec.gov/Archives/edgar/data/1130713/000135445726000958/xslF25X02/primary_doc.xml"}

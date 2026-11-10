@@ -101,7 +101,13 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
         if lag["stav"] != "ROZPRACOVÁNO":
             add({"OK": "OK", "VAROVÁNÍ": "VAROVÁNÍ"}.get(lag["stav"], "CHYBA"), "Snímek Nasdaq (raketový deník)",
                 f"poslední platný {lag['posledni']}, poslední obchodní den {lag['obchodni_den']}, chybí {lag['chybi']} dní"
-                + ("" if lag["stav"] == "OK" else " — screener vrací ceny, které nesedí na závěry (deník snese 7 dní mezery)"))
+                + ("" if lag["stav"] == "OK" else " — screener vrací zastaralé ceny nebo odmítá dotazy (deník snese 7 dní mezery)"))
+        from stockradar.discovery import moves as _moves
+        if _moves.FLAG_CORP_ACTIONS:
+            paused = _moves.paused_moves(conn)
+            add("OK", "Pohyby s podezřením na korporátní akci (N-23)",
+                f"{len(paused)} pohybů mimo statistiku „co následovalo“, dokud je někdo ručně neověří"
+                " (formulář 25 / 8-K 3.01 v okně)")
 
     # 6) web: velikost dokumentů vůči limitu serveru
     from stockradar.site import DOC_LIMIT

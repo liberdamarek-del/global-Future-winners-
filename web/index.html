@@ -989,7 +989,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     const agl = (k, label) => ag[k] && ag[k].z ? `<li>${esc(label)}: shoda s ručně ověřenou příčinou ${fmt(ag[k].shoda, 0)} z ${fmt(ag[k].z, 0)} (${pct(ag[k].podil)})</li>` : `<li>${esc(label)}: zatím bez srovnání s ověřenými příčinami</li>`;
     const measured = L ? (L.skupiny || []).filter((g, i) => i === 0 || ["5d", "20d", "60d"].some((h) => (g[h] || {}).n)).slice(0, 9) : [];
     $("pm-live").innerHTML = `${L ? histTable(measured, `Pohyby z deníku (${fmt(L.pohybu, 0)}): výsledek proti S&P 500`, "Měří se samo 5, 20 a 60 obchodních dní po posledním dni pohybu; skupiny podle nejlepší dostupné příčiny (jen ty, kde už je výsledek).") : ""}
-      <ul class="facts small">${agl("SEC", "Podání u SEC (typ podání)")}${agl("AUTO", "Titulky (automaticky)")}</ul>`;
+      <ul class="facts small">${agl("SEC", "Podání u SEC (typ podání)")}${agl("AUTO", "Titulky (automaticky)")}${(PM.vysledky || {}).pozastaveno ? `<li>Mimo statistiku do ručního ověření: ${fmt(PM.vysledky.pozastaveno, 0)} pohybů s formulářem 25 nebo 8-K 3.01 v okně (možná fúze, stažení z burzy nebo výměna cenného papíru)</li>` : ""}</ul>`;
   }
 
   function renderAll() { renderTop(); renderEnergy(); renderChain(); renderSources(); renderPreds(); }

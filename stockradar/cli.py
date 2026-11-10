@@ -386,6 +386,8 @@ def cmd_rakety(args) -> int:
               + " ".join(f"{k} {v * 100:+.0f} %" for k, v in m.items()) + f" · AUTO: {auto}")
     sec_res = {"stav": "VYPNUTO"} if args.bez_sec else moves.attach_sec(conn, cconn, log=log)
     print("Podání u SEC:", sec_res)
+    payouts = moves.check_payouts(conn, log=log)          # N-23: výplaty a splity u poklesů ≥ 30 % za den (Yahoo)
+    print("Výplaty a splity (N-23):", payouts, "· pozastaveno (formulář 25 / 8-K 3.01):", len(moves.paused_moves(conn)))
     outc = moves.record_outcomes(conn, cconn)
     print("Co následovalo (5 / 20 / 60 dní):", outc)
     brief = market_day.run(conn, cconn, fetch=None if args.bez_zprav else news.fetch_headlines, log=log)
@@ -408,7 +410,8 @@ def cmd_rakety(args) -> int:
     print(f"Web stav_pohyby.json: {size // 1024} kB")
     _note(args, raket=stats["raket"], propadu=stats["propadu"], novych=len(new), snimek=snap.get("stav"),
           split=stats["split_nebo_chyba"], sec=sec_res.get("zapsano"), sec_dotazu=sec_res.get("dotazu"),
-          vysledku=outc.get("zapsano"), prehled=brief.get("stav"), studie=bool(study))
+          vysledku=outc.get("zapsano"), prehled=brief.get("stav"), studie=bool(study),
+          vyplaty_chyba_dat=payouts.get("chyba_dat"), pozastaveno=len(moves.paused_moves(conn)))
     _refresh_hub(args, conn, cconn)
     _print_email_today(conn)
     return 0

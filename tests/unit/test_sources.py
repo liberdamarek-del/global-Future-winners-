@@ -211,3 +211,15 @@ def test_bar_day_uses_exchange_timezone_not_todays_offset():
     payload["chart"]["result"][0]["meta"]["exchangeTimezoneName"] = "America/New_York"
     payload["chart"]["result"][0]["timestamp"] = [ts("2026-10-26T13:30:00"), ts("2026-10-30T13:30:00"), ts("2026-11-02T14:30:00")]
     assert [b[0] for b in parse_chart("SPY", payload).bars] == ["2026-10-26", "2026-10-30", "2026-11-02"]
+
+
+def test_parse_events_reads_payouts_and_splits_on_exchange_day():
+    from stockradar.sources import yahoo
+    payload = {"chart": {"result": [{"meta": {"exchangeTimezoneName": "America/New_York", "gmtoffset": -18000},
+                                     "events": {"dividends": {"1": {"amount": 3.0, "date": 1793975400}},       # 6. 11. 2026 14:30 UTC
+                                                "splits": {"2": {"numerator": 1, "denominator": 10, "date": 1793021400}}}}]}}
+    ev = yahoo.parse_events(payload)
+    assert ev["vyplaty"] == [{"den": "2026-11-06", "castka": 3.0}]
+    assert ev["splity"][0]["pomer"] == 0.1 and ev["splity"][0]["den"] == "2026-10-26"
+    with pytest.raises(ValueError):
+        yahoo.parse_events({"chart": {"result": []}})
