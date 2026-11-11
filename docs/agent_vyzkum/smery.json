@@ -1,5 +1,5 @@
 {
- "aktualizovano": "2026-11-10",
+ "aktualizovano": "2026-11-11",
  "pravidlo": "hlavní směr = nejvyšší priorita, průzkumný = nejméně běhů; 3 prázdné běhy po sobě → priorita / 2 a stav UTLUMENY; nové zjištění s návrhem → priorita + 0,1 (max 1)",
  "smery": [
   {
@@ -17,9 +17,9 @@
    "nazev": "Sebehodnocení a kalibrace: proper scoring, konformní predikce, abstence",
    "proc_pro_nas": "karty mají pravděpodobnosti a NEVÍM; chybí intervaly s garantovaným pokrytím a průběžné měření kalibrace na živých výsledcích",
    "priorita": 1.0,
-   "behu": 5,
+   "behu": 6,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-09",
+   "posledni_beh": "2026-11-11",
    "stav": "AKTIVNI"
   },
   {
@@ -66,10 +66,10 @@
    "id": "S7",
    "nazev": "Plánování a orchestrace agentů (workflow vs agent, planner/executor)",
    "proc_pro_nas": "rutiny jsou pevné scénáře; adaptivní plán by mohl šetřit čas a přesouvat úsilí tam, kde je přínos",
-   "priorita": 0.6,
-   "behu": 4,
+   "priorita": 0.7,
+   "behu": 5,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-06",
+   "posledni_beh": "2026-11-11",
    "stav": "AKTIVNI"
   },
   {

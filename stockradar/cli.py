@@ -373,6 +373,7 @@ def cmd_rakety(args) -> int:
     reference = diary.reference_closes(conn)          # závěry z Yahoo s datem → ze kterého dne snímek opravdu je
     diary.repair_snapshots(cconn, reference, log=log)
     snap = {"stav": "VYPNUTO"} if args.bez_snimku else diary.take_snapshot(cconn, reference=reference, log=log)
+    snap = diary.with_fallback(cconn, snap, reference, log=log)          # N-25: záloha z Yahoo spark při výpadku
     print("Snímek trhu:", snap)
     found, stats = diary.scan(cconn)
     new = diary.record_new(conn, found, today=date.today(), auto=None if args.bez_zprav else news.explain_event,
@@ -409,6 +410,7 @@ def cmd_rakety(args) -> int:
     size = write_pohyby_doc(conn, web_dir())
     print(f"Web stav_pohyby.json: {size // 1024} kB")
     _note(args, raket=stats["raket"], propadu=stats["propadu"], novych=len(new), snimek=snap.get("stav"),
+          zaloha=(snap.get("zaloha") or {}).get("stav"),
           split=stats["split_nebo_chyba"], sec=sec_res.get("zapsano"), sec_dotazu=sec_res.get("dotazu"),
           vysledku=outc.get("zapsano"), prehled=brief.get("stav"), studie=bool(study),
           vyplaty_chyba_dat=payouts.get("chyba_dat"), pozastaveno=len(moves.paused_moves(conn)))

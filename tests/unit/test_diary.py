@@ -162,3 +162,64 @@ def test_snapshot_lag_counts_trading_days_without_valid_snapshot(conn):
     cache.execute("INSERT INTO nasdaq_snap (day, symbol, close, prev_close, volume, mcap, name, fetched_at)"
                   " VALUES ('2026-10-30', 'AAA', 10, 9.9, 1, 1, 'A', '2026-11-01T13:20:00Z')")
     assert D.snapshot_lag(conn, cache)["stav"] == "CHYBA"                   # 5 obchodních dní bez snímku
+
+
+# ------------------------------------------------------------------ N-25 (v0.17.17): záloha snímku z Yahoo spark
+
+def test_parse_spark_reads_closes_per_symbol():
+    from stockradar.sources import yahoo
+    resp = lambda sym, closes: {"symbol": sym, "response": [{"meta": {"exchangeTimezoneName": "America/New_York",
+                                "gmtoffset": -18000}, "timestamp": [1793975400, 1794234600, 1794321000],   # 6., 9., 10. 11.
+                                "indicators": {"quote": [{"close": closes}]}}]}
+    out = yahoo.parse_spark({"spark": {"result": [resp("AAA", [10.0, None, 12.0]), resp("BBB", [5.0, 5.5, 6.0])]}})
+    assert out["AAA"] == [("2026-11-06", 10.0), ("2026-11-10", 12.0)]
+    assert [d for d, _ in out["BBB"]] == ["2026-11-06", "2026-11-09", "2026-11-10"]
+
+
+def _snap_db(day="2026-11-06", n=30):
+    c = sqlite3.connect(":memory:")
+    c.executescript(D.SNAP_SCHEMA)
+    c.executemany("INSERT INTO nasdaq_snap VALUES (?, ?, ?, ?, ?, ?, ?, 'x')",
+                  [(day, f"S{i}", 10.0 + i, 10.0 + i, 1e6, 1e8, f"Firma {i}") for i in range(n)])
+    return c
+
+
+def test_fallback_snapshot_fills_missing_days_only_when_it_matches_reference():
+    c = _snap_db()
+    when = datetime(2026, 11, 11, 12, 0, tzinfo=timezone.utc)                     # před otevřením v New Yorku
+    spark = {f"S{i}": [("2026-11-06", 10.0 + i), ("2026-11-09", 11.0 + i), ("2026-11-10", 12.0 + i)] for i in range(30)}
+    ref = {f"S{i}": {"2026-11-09": 11.0 + i, "2026-11-10": 12.0 + i} for i in range(5)}
+    calls = []
+    fetch = lambda syms: (calls.append(len(syms)), {s: spark[s] for s in syms})[1]
+    assert D.fallback_snapshot(c, {k: {"2026-11-09": v["2026-11-09"]} for k, v in ref.items()}, now=when, fetch=fetch,
+                               pause=0, log=lambda m: None)["stav"] == "NEPOTŘEBA"   # 1 chybějící den < 2
+    res = D.fallback_snapshot(c, ref, now=when, fetch=fetch, pause=0, log=lambda m: None)
+    assert res["stav"] == "OK" and [x["den"] for x in res["dny"]] == ["2026-11-09", "2026-11-10"] and calls == [20, 10]
+    row = c.execute("SELECT close, prev_close, volume, name FROM nasdaq_snap WHERE day = '2026-11-10' AND symbol = 'S3'").fetchone()
+    assert row == (15.0, 14.0, None, "Firma 3")                                   # objem NULL = záložní snímek
+    c2 = _snap_db()
+    bad = {k: {"2026-11-09": v["2026-11-09"] * 1.05, "2026-11-10": v["2026-11-10"]} for k, v in ref.items()}
+    res = D.fallback_snapshot(c2, bad, now=when, fetch=fetch, pause=0, log=lambda m: None)
+    assert [x["den"] for x in res["dny"]] == ["2026-11-10"]                       # 9. 11. nesedí → neuložen
+    assert D.fallback_snapshot(c2, ref, now=datetime(2026, 11, 11, 16, 0, tzinfo=timezone.utc), fetch=fetch,
+                               pause=0)["stav"] == "PŘESKOČENO"                    # během obchodování ne
+
+
+def test_with_fallback_uses_one_missing_day_when_screener_refuses():
+    c = _snap_db(day="2026-11-09")
+    when = datetime(2026, 11, 11, 12, 0, tzinfo=timezone.utc)
+    ref = {f"S{i}": {"2026-11-10": 12.0 + i} for i in range(5)}
+    spark = lambda syms: {s: [("2026-11-09", 10.0), ("2026-11-10", 12.0 + int(s[1:]))] for s in syms}
+    assert D.with_fallback(c, {"stav": "OK"}, ref, now=when, spark=spark) == {"stav": "OK"}
+    stale = D.with_fallback(c, {"stav": "NEOVĚŘENO"}, ref, now=when, spark=spark, log=lambda m: None)
+    assert stale["zaloha"]["stav"] == "NEPOTŘEBA"                                 # zastaralé ceny: až od 2 dní
+    res = D.with_fallback(c, {"stav": "BLOKOVÁNO"}, ref, now=when, spark=spark, log=lambda m: None)
+    assert res["stav"] == "BLOKOVÁNO" and res["zaloha"]["stav"] == "OK"           # odmítnutí: už od 1 dne
+
+
+def test_merge_series_without_volume_skips_split_check_conservatively():
+    days, closes, vols = list(range(1, 41)), [10.0] * 40, [1000.0] * 40
+    d, c, v, problem = D.merge_series(days, closes, vols, [(41, 11.0, 10.0, None, "x")])
+    assert problem is None and v[-1] == 1000.0                                    # neutrální objem, ne 0
+    *_, problem = D.merge_series(days, closes, vols, [(41, 30.0, 10.0, None, "x")])
+    assert problem and "bez údaje o objemu" in problem                            # skok 3× bez objemu = možný split

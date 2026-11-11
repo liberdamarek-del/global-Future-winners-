@@ -126,6 +126,33 @@ def fetch_events(symbol: str, range_: str = "3mo", *, timeout: int = 20) -> dict
         return parse_events(json.load(resp)) | {"url": url}
 
 
+SPARK_URL = "https://query1.finance.yahoo.com/v7/finance/spark?symbols={symbols}&range=5d&interval=1d"
+SPARK_BATCH = 20
+
+
+def parse_spark(payload: dict) -> dict[str, list[tuple[str, float]]]:
+    """Odpověď v7/finance/spark (až 20 symbolů) → {symbol: [(den, závěr), …]}; den podle časové zóny burzy."""
+    out: dict[str, list[tuple[str, float]]] = {}
+    for item in ((payload or {}).get("spark") or {}).get("result") or []:
+        for resp in item.get("response") or []:
+            meta = resp.get("meta") or {}
+            tz, offset = _exchange_tz(meta), int(meta.get("gmtoffset") or 0)
+            closes = (((resp.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
+            bars = [(_bar_day(int(t), tz, offset), float(c)) for t, c in zip(resp.get("timestamp") or [], closes)
+                    if c is not None and c > 0]
+            if bars and item.get("symbol"):
+                out[item["symbol"]] = bars
+    return out
+
+
+def fetch_spark(symbols: list[str], *, timeout: int = 20) -> dict[str, list[tuple[str, float]]]:
+    """Jeden dotaz na nejvýš SPARK_BATCH symbolů (bez e-mailu); chyba se předá volajícímu."""
+    url = SPARK_URL.format(symbols=",".join(urllib.parse.quote(s) for s in symbols[:SPARK_BATCH]))
+    req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return parse_spark(json.load(resp))
+
+
 def store_bars(conn: sqlite3.Connection, quote: Quote, *, fetched_at: datetime | None = None) -> int:
     fetched = to_iso(fetched_at or utcnow())
     with conn:

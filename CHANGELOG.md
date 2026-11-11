@@ -4,6 +4,30 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-11 · v0.17.17 — Deník: záloha denního snímku z Yahoo spark při výpadku screeneru (N-25)
+
+Důvod: screener Nasdaq od 10. 11. odmítá dotazy (HTTP 403, ráno i večer). Deník bez snímku vidí nové dny až po
+sobotní obnově cen, takže pohyby zjistí se zpožděním až 5 obchodních dní. Podmínka N-25 (≥ 2 obchodní dny bez platného
+snímku) je splněná. Jde o opravu výpadku zdroje, ne o experiment s modelem. Blokace screeneru se neobchází, data jdou
+z jiného bezplatného zdroje, který už používáme.
+
+- `sources/yahoo.py`: `parse_spark()`, `fetch_spark()`: v7/finance/spark, až 20 symbolů na dotaz, závěry posledních
+  5 dní, den podle časové zóny burzy.
+- `discovery/diary.py`: `fallback_snapshot()` stáhne závěry pro symboly posledního platného snímku (~338 dotazů,
+  pauza 0,3 s, bez e-mailu). Ukládá jen dny, které sedí na závěry sledovaných firem u ≥ 95 % (tol. 0,15 %).
+  Objem je NULL, což je poznávací znak zálohy. `with_fallback()`: při odmítnutí nebo chybě screeneru se záloha spustí
+  už od 1 chybějícího dne, při zastaralých cenách od 2. Volá se z `rakety` i ze záchranného snímku ve večerním
+  `update`. Přepínač `SPARK_FALLBACK`.
+- `merge_series`: den bez objemu dostane neutrální objem (medián 20 dní), takže obrat ani filtry nezkreslí nula.
+  Skok ≥ 2,9× za den bez objemu se vynechá jako možný neupravený split. `scan`: relativní objem epizody = neznámý.
+- První běh 11. 11.: 338 dotazů bez chyby; 9. 11. 6 226 akcií (shoda 97 z 97), 10. 11. 6 559 akcií (97 z 98) →
+  68 nových pohybů.
+
+Test: `test_diary.py::test_parse_spark_reads_closes_per_symbol`,
+`::test_fallback_snapshot_fills_missing_days_only_when_it_matches_reference`,
+`::test_with_fallback_uses_one_missing_day_when_screener_refuses`,
+`::test_merge_series_without_volume_skips_split_check_conservatively`.
+
 ## 2026-11-10 · v0.17.16 — Deník: korporátní akce mimo statistiky (N-23) a výpadek screeneru už deník nezastaví
 
 Důvod 1 (experiment týdne N-23, kritérium dané 7. 11.): korporátní akce vyrobily za 5 dní 3 falešné pohyby (SUPN fúze,

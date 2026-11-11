@@ -202,13 +202,88 @@ def take_snapshot(cache_conn, *, now: datetime | None = None, fetch=None, refere
     return {"stav": "OK", "den": day.isoformat(), "akcii": len(rows)}
 
 
+# ------------------------------------------------------------------ N-25: záloha snímku z Yahoo spark (v0.17.17)
+SPARK_FALLBACK = True     # přepínač
+SPARK_MIN_GAP = 2         # zapnout až při ≥ 2 obchodních dnech bez platného snímku (podle závěrů sledovaných firem)
+SPARK_MATCH = 0.95        # záložní snímek musí sedět na závěry z Yahoo chart u ≥ 95 % porovnaných firem
+SPARK_PAUSE = 0.3         # s mezi dotazy (~330 dotazů ≈ 2–3 min)
+SPLIT_JUMP = 2.9
+
+
+def fallback_snapshot(cache_conn, reference: dict, *, now: datetime | None = None, fetch=None, pause: float = SPARK_PAUSE,
+                      min_gap: int = SPARK_MIN_GAP, log=print) -> dict:
+    """Když screener Nasdaq odmítá dotazy nebo vrací zastaralé ceny (5.–11. 11. 2026), stáhnou se závěry posledních 5 dní
+    pro symboly posledního platného snímku z Yahoo spark (20 na dotaz, bez e-mailu). Ukládá se jen den, který sedí na
+    závěry sledovaných firem; objem chybí (NULL = poznávací znak zálohy) → kontroly podle objemu se pro ten den
+    vynechají (merge_series)."""
+    if not SPARK_FALLBACK:
+        return {"stav": "VYPNUTO"}
+    cache_conn.executescript(SNAP_SCHEMA)
+    now = now or utcnow()
+    today = session_day(now)
+    if today is None:
+        return {"stav": "PŘESKOČENO", "duvod": "trh v New Yorku právě obchoduje"}
+    last = cache_conn.execute("SELECT MAX(day) FROM nasdaq_snap").fetchone()[0]
+    if last is None:
+        return {"stav": "PŘESKOČENO", "duvod": "zatím žádný snímek, ze kterého vzít seznam akcií"}
+    missing = sorted({d for ref in reference.values() for d in ref if last < d <= today.isoformat()})
+    if len(missing) < min_gap:
+        return {"stav": "NEPOTŘEBA", "chybi": len(missing)}
+    base = {r[0]: (r[1], r[2]) for r in cache_conn.execute("SELECT symbol, mcap, name FROM nasdaq_snap WHERE day = ?", (last,))}
+    if fetch is None:
+        from stockradar.sources import yahoo
+        fetch = yahoo.fetch_spark
+    import time
+    syms, series, errors = sorted(base), {}, 0
+    for k in range(0, len(syms), 20):
+        try:
+            series.update(fetch(syms[k:k + 20]))
+        except Exception as e:  # noqa: BLE001 — jednotlivý výpadek nevadí, rozhodne shoda níže
+            errors += 1
+            if errors >= 10:
+                return {"stav": "CHYBA", "duvod": f"Yahoo spark: {errors} chyb, poslední {str(e)[:80]}"}
+        if pause:
+            time.sleep(pause)
+    stamp, saved = to_iso(utcnow()), []
+    for day in missing:
+        rows = []
+        for sym, bars in series.items():
+            idx = {d: i for i, (d, _) in enumerate(bars)}
+            if day in idx:
+                i = idx[day]
+                rows.append((sym, bars[i][1], bars[i - 1][1] if i > 0 else None, None, *base.get(sym, (None, None))))
+        compared = [r for r in rows if day in reference.get(r[0], {})]
+        ok = sum(1 for r in compared if abs(r[1] / reference[r[0]][day] - 1) < 0.0015)
+        if len(compared) < 3 or ok < SPARK_MATCH * len(compared):
+            log(f"Záložní snímek {day}: shoda se závěry {ok} z {len(compared)} — neukládá se")
+            continue
+        with cache_conn:
+            cache_conn.executemany("INSERT OR IGNORE INTO nasdaq_snap VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                   [(day, *r, stamp) for r in rows])
+        saved.append({"den": day, "akcii": len(rows), "shoda": f"{ok}/{len(compared)}"})
+        log(f"Záložní snímek (Yahoo spark) {day}: {len(rows)} akcií, shoda se závěry {ok} z {len(compared)}")
+    return {"stav": "OK" if saved else "NEOVĚŘENO", "zdroj": "Yahoo spark", "dny": saved, "symbolu": len(series),
+            "dotazu": (len(syms) + 19) // 20, "chyb": errors}
+
+
+def with_fallback(cache_conn, snap: dict, reference: dict, *, now: datetime | None = None, spark=None, log=print) -> dict:
+    """Po neúspěšném snímku screeneru záloha z Yahoo spark: při odmítnutí / chybě zdroje už od 1 chybějícího dne
+    (víme, že snímek nepřijde), při zastaralých cenách až od SPARK_MIN_GAP dnů (N-25)."""
+    if snap.get("stav") in ("OK", "UŽ JE", "VYPNUTO") or "obchoduje" in (snap.get("duvod") or ""):
+        return snap
+    gap = 1 if snap.get("stav") in ("BLOKOVÁNO", "CHYBA") else SPARK_MIN_GAP
+    fb = fallback_snapshot(cache_conn, reference, now=now, fetch=spark, min_gap=gap, log=log)
+    return {**snap, "zaloha": fb}
+
+
 def safety_snapshot(main_conn, cache_conn, *, now: datetime | None = None, fetch=None, log=print) -> dict:
     """Snímek i z večerního `update`: 29. 10. se ranní deník spustil až po otevření trhu v New Yorku a závěr 28. 10. by
     chyběl natrvalo. Ukládá se pod dnem, ze kterého ceny opravdu jsou; chyba sítě denní běh nezastaví."""
     try:
         reference = reference_closes(main_conn)
         repair_snapshots(cache_conn, reference, log=log)
-        return take_snapshot(cache_conn, now=now, fetch=fetch, reference=reference, log=log)
+        snap = take_snapshot(cache_conn, now=now, fetch=fetch, reference=reference, log=log)
+        return with_fallback(cache_conn, snap, reference, now=now, log=log)
     except Exception as e:  # noqa: BLE001 — záchranný krok
         return {"stav": "CHYBA", "duvod": f"{type(e).__name__}: {str(e)[:100]}"}
 
@@ -247,6 +322,12 @@ def merge_series(days, closes, volumes, snaps: list[tuple]) -> tuple[list, list,
         if changed and c[-1] > 0 and abs(close / c[-1] - 1) > MAX_GAP:
             return d, c, v, (f"název „{old_name}“ → „{name}“ a cena {c[-1]:.4g} → {close:.4g} — jiný cenný papír pod "
                              "stejným tickerem (fúze / přejmenování), chyba dat")
+        if vol is None and c[-1] > 0 and close / c[-1] >= SPLIT_JUMP:
+            # záložní snímek bez objemu (N-25): kontrolu neupraveného splitu podle objemu nejde udělat → raději vynechat
+            return d, c, v, f"skok {c[-1]:.4g} → {close:.4g} bez údaje o objemu (záložní snímek) — možný neupravený split"
+        if vol is None:                               # neutrální objem (medián 20 dní), aby obrat a filtry nezkreslila 0
+            known = [x for x in v[-20:] if x and x > 0]
+            vol = statistics.median(known) if known else 0.0
         d.append(day); c.append(close); v.append(vol or 0.0)
     return d, c, v, None
 
@@ -373,6 +454,8 @@ def scan(cache_conn, symbols: set[str] | None = None) -> tuple[list[dict], dict]
                 stats["split_nebo_chyba"] += 1
                 continue
             if hit:
+                if snaps.get(sym) and snaps[sym][-1][0] == d[-1] and snaps[sym][-1][3] is None:
+                    hit["rel_objem"] = None               # záložní snímek bez objemu (N-25)
                 found.append({"symbol": sym, "nazev": name, "mcap": cap, "obor": industry, **hit})
     stats["raket"] = sum(1 for r in found if r["smer"] > 0)
     stats["propadu"] = len(found) - stats["raket"]
