@@ -248,7 +248,8 @@ def sources_status(conn, cache_conn, now: datetime | None = None) -> list[dict]:
             {"OK": "OK", "VAROVÁNÍ": "CHYBA", "CHYBA": "CHYBA"}.get(lag["stav"], "ROZPRACOVÁNO"),
             "zatím žádný snímek" if lag["posledni"] is None else
             f"poslední platný snímek {lag['posledni']}, obchodních dní bez snímku {lag['chybi']}" + tried
-            + ("" if lag["stav"] == "OK" else " (web odmítl dotaz → neobchází se)" if blocked
+            + ((" — screener odmítá dotazy (403), snímek ze zálohy Yahoo spark (N-25)" if blocked else "")
+               if lag["stav"] == "OK" else " (web odmítl dotaz → neobchází se)" if blocked
                else " (ceny screeneru nesedí na závěry z Yahoo — zdroj vrací zastaralá data)"))
         ct = _one(cache_conn, "SELECT COUNT(*), MAX(fetched_at) FROM ct_studies") or (0, None)
         add("ClinicalTrials.gov", "OK" if ct[0] else "ROZPRACOVÁNO", f"{ct[0]} studií, staženo {ct[1] or '–'}")

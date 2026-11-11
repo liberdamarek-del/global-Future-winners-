@@ -4,6 +4,15 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-11 · v0.17.18 — Výpis `update`: výsledek zálohy snímku
+
+Důvod: večerní `update` 11. 11. vypsal jen „Snímek Nasdaq BLOKOVÁNO“, ačkoli záloha z Yahoo spark den 11. 11. uložila
+(6 220 akcií). Výpis i deník běhů (`system_runs`, pole `zaloha`) teď ukazují výsledek zálohy. V přehledu zdrojů
+(`system`) má řádek screeneru při odmítání dotazů a platném snímku ze zálohy poznámku „snímek ze zálohy Yahoo spark“
+(dřív jen OK). Logika se nemění.
+
+Test: celá sada `python -m pytest` (beze změny chování).
+
 ## 2026-11-11 · v0.17.17 — Deník: záloha denního snímku z Yahoo spark při výpadku screeneru (N-25)
 
 Důvod: screener Nasdaq od 10. 11. odmítá dotazy (HTTP 403, ráno i večer). Deník bez snímku vidí nové dny až po

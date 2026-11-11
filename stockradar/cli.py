@@ -183,9 +183,13 @@ def cmd_update(args) -> int:
         export_state(conn, state_dir())
     from stockradar.discovery import diary
     snap = diary.safety_snapshot(conn, dcache.connect(), log=lambda m: None)
-    print(f"  {'Snímek Nasdaq':<22} {snap['stav']} {snap.get('den') or snap.get('duvod') or ''}")
+    fb = snap.get("zaloha") or {}
+    print(f"  {'Snímek Nasdaq':<22} {snap['stav']} {snap.get('den') or snap.get('duvod') or ''}"
+          + (f"\n  {'Záloha (Yahoo spark)':<22} {fb.get('stav')} " + ", ".join(f"{d['den']} {d['akcii']} akcií (shoda {d['shoda']})"
+             for d in fb.get("dny") or []) if fb else ""))
     _note(args, den_dat=result.get("data_day"), beh=result["run_id"], varovani=len(result["warnings"]),
-          kroky={k: str(v)[:60] for k, v in result["steps"].items()}, vyzkum_vyhodnoceno=len(done), snimek=snap["stav"])
+          kroky={k: str(v)[:60] for k, v in result["steps"].items()}, vyzkum_vyhodnoceno=len(done), snimek=snap["stav"],
+          zaloha=fb.get("stav"))
     _refresh_hub(args, conn)
     _print_email_today(conn)
     return 0 if result["run_id"] else 1
