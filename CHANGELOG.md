@@ -4,6 +4,17 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-12 · v0.17.19 — Výzkum agenta: kontrolní otázky ke kritériu experimentu (N-30)
+
+Důvod: tři předem daná kritéria za 9 dní měřila něco jiného, než měla (N-18 → poučení #32, N-21 → #35, N-23 → #36).
+Poučení byla jen v textu, a chyba se přesto opakovala.
+
+- `tests/unit/test_agent_research.py::test_new_proposals_answer_the_criterion_checklist`: každý nový návrh od
+  12. 11. 2026 musí mít `kontrola_kriteria` s odpověďmi `trend_nebo_sum`, `presnost_a_zachyt` a
+  `vzorek_odpovida_nasazeni`. Jinak `pytest` selže a commit rutiny se nepovede.
+- `docs/agent_vyzkum/README.md`: popis pole. Modely ani data se nemění.
+- Vyhodnocení (N-30): do 7. 1. 2027 nejvýš 1 kritérium, které se dodatečně ukáže jako chybně mířené.
+
 ## 2026-11-11 · v0.17.18 — Výpis `update`: výsledek zálohy snímku
 
 Důvod: večerní `update` 11. 11. vypsal jen „Snímek Nasdaq BLOKOVÁNO“, ačkoli záloha z Yahoo spark den 11. 11. uložila

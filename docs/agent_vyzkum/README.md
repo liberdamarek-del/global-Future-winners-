@@ -37,6 +37,10 @@ lessons / VYZKUM.md), `implementace` (soubory, moduly, kroky), `naklady` (hodiny
 `zavislosti`, `metrika` (předem daná, objektivní), `experiment` (současná verze × nová: data, kontrola, minimální
 vzorek, kritérium úspěchu, kdy vyhodnotit), `priorita` (0–1), `stav` (NAVRZENO / EXPERIMENT / ZAVEDENO / ZAMITNUTO /
 ODLOZENO). Změna stavu: nový řádek `{"id", "datum", "stav", "duvod", "vysledek"}`.
+Od 2026-11-12 (N-30, poučení #32, #35, #36) má každý nový návrh i `kontrola_kriteria` se třemi odpověďmi:
+`trend_nebo_sum` (měří kritérium šum, nebo i skutečný posun úrovně?), `presnost_a_zachyt` (u příznaků a filtrů
+přesnost mezi označenými a záchyt, ne jen falešné mezi vybranými skutečnými) a `vzorek_odpovida_nasazeni` (přehrání
+na stejném typu dat, na kterém pravidlo poběží). Hlídá to test formátu.
 
 ## Co systém už má (aby se to znovu nenavrhovalo)
 

@@ -196,3 +196,6 @@
 {"day": "2026-11-10", "first_at": "2026-11-10T13:27:15Z", "host": "www.sec.gov", "last_at": "2026-11-10T21:50:31Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 8}
 {"day": "2026-11-11", "first_at": "2026-11-11T13:28:13Z", "host": "data.sec.gov", "last_at": "2026-11-11T13:29:35Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 68}
 {"day": "2026-11-11", "first_at": "2026-11-11T13:29:47Z", "host": "www.sec.gov", "last_at": "2026-11-11T13:31:05Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 8}
+{"day": "2026-11-12", "first_at": "2026-11-12T13:19:59Z", "host": "data.sec.gov", "last_at": "2026-11-12T13:20:05Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 30}
+{"day": "2026-11-12", "first_at": "2026-11-12T13:20:56Z", "host": "www.sec.gov", "last_at": "2026-11-12T13:21:59Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 10}
+{"day": "2026-11-12", "first_at": "2026-11-12T13:21:22Z", "host": "www.sec.gov", "last_at": "2026-11-12T13:21:22Z", "purpose": "ruční ověření příčiny pohybu (deník) — seznam příloh podání", "requests": 1}

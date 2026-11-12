@@ -53,3 +53,20 @@ def test_proposals_are_complete_and_status_changes_refer_to_them():
             full[n["id"]] = n
         else:
             assert n.get("duvod"), f"{n['id']}: změna stavu bez důvodu"
+
+
+KONTROLA_OD = "2026-11-12"          # N-30: poučení #32, #35, #36 — tři předem daná kritéria za 9 dní měřila něco jiného
+KONTROLA_OTAZKY = ("trend_nebo_sum", "presnost_a_zachyt", "vzorek_odpovida_nasazeni")
+
+
+def test_new_proposals_answer_the_criterion_checklist():
+    """Návrh zapsaný od 12. 11. 2026 musí mít `kontrola_kriteria` s odpovědí na tři otázky (procedurální paměť jako
+    kontrola v kódu, ne jen poučení v textu — ExpeL Z-20261107-2, Voyager Z-20261112-2)."""
+    seen = set()
+    for n in _jsonl("navrhy.jsonl"):
+        first = n["id"] not in seen
+        seen.add(n["id"])
+        if first and n["datum"] >= KONTROLA_OD:
+            k = n.get("kontrola_kriteria") or {}
+            for q in KONTROLA_OTAZKY:
+                assert len(str(k.get(q) or "").strip()) >= 15, f"{n['id']}: kontrola_kriteria.{q} chybí nebo je prázdná"
