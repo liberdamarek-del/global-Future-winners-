@@ -4,6 +4,24 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-14 · v0.17.20 — Nácvik záložní cesty snímku a počet dní ze zálohy v diag (N-28)
+
+Důvod (týdenní zlepšení): chybová cesta deníku se poprvé spustila až naostro. 10. 11. první HTTP 403 od screeneru
+shodil celý deník. Záloha N-25 je zřídka používaná cesta, a takové cesty podle SRE knihy Google (Z-20261111-2) bez
+nácviku často nefungují.
+
+- `discovery/diary.py`: `drill_fallback()` pošle jeden dotaz Yahoo spark na 20 sledovaných firem a porovná poslední
+  společný den se závěry z Yahoo chart (≥ 95 %). Nic neukládá. `fallback_days()` spočítá dny snímku ze zálohy za
+  30 dní (objem NULL).
+- `cli`: `python -m stockradar rakety --nacvik` provede jen nácvik a zapíše ho do deníku běhů (`nacvik`,
+  `nacvik_shoda`). Je součástí týdenního běhu.
+- `diag`: „Nácvik zálohy snímku (N-28)“. OK, když poslední nácvik prošel a není starší než 8 dní, jinak VAROVÁNÍ.
+  Ukazuje i počet dní ze zálohy.
+- První nácvik 14. 11.: OK, shoda 20 z 20.
+
+Test: `test_diary.py::test_drill_fallback_checks_format_and_match_without_saving`,
+`::test_fallback_days_counts_days_without_volume`.
+
 ## 2026-11-12 · v0.17.19 — Výzkum agenta: kontrolní otázky ke kritériu experimentu (N-30)
 
 Důvod: tři předem daná kritéria za 9 dní měřila něco jiného, než měla (N-18 → poučení #32, N-21 → #35, N-23 → #36).

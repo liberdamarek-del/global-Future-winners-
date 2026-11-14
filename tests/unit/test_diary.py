@@ -223,3 +223,27 @@ def test_merge_series_without_volume_skips_split_check_conservatively():
     assert problem is None and v[-1] == 1000.0                                    # neutrální objem, ne 0
     *_, problem = D.merge_series(days, closes, vols, [(41, 30.0, 10.0, None, "x")])
     assert problem and "bez údaje o objemu" in problem                            # skok 3× bez objemu = možný split
+
+
+# ------------------------------------------------------------------ N-28 (v0.17.20): nácvik záložní cesty
+
+def test_drill_fallback_checks_format_and_match_without_saving():
+    ref = {f"S{c}": {"2026-11-12": 10.0, "2026-11-13": 11.0} for c in "ABCDEFG"}
+    ok = D.drill_fallback(ref, fetch=lambda syms: {s: [("2026-11-12", 10.0), ("2026-11-13", 11.0)] for s in syms})
+    assert ok["stav"] == "OK" and ok["shoda"] == "7/7"
+    bad = D.drill_fallback(ref, fetch=lambda syms: {s: [("2026-11-13", 13.0)] for s in syms})
+    assert bad["stav"] == "CHYBA"                                                 # ceny nesedí
+    changed = D.drill_fallback(ref, fetch=lambda syms: {})
+    assert changed["stav"] == "CHYBA" and "0 z 7" in changed["duvod"]             # změněný formát odpovědi
+    import urllib.error
+    def refused(syms):
+        raise urllib.error.HTTPError("https://query1.finance.yahoo.com/x", 429, "Too Many", None, None)
+    assert D.drill_fallback(ref, fetch=refused)["stav"] == "CHYBA"
+    assert D.drill_fallback({}, fetch=refused)["stav"] == "PŘESKOČENO"
+
+
+def test_fallback_days_counts_days_without_volume():
+    c = _snap_db(day="2026-11-06")                                                # screener: objem vyplněn
+    c.executemany("INSERT INTO nasdaq_snap VALUES (?, ?, 1, 1, NULL, NULL, NULL, 'x')",
+                  [(d, f"S{i}") for d in ("2026-11-09", "2026-11-10") for i in range(3)])
+    assert D.fallback_days(c, today=date(2026, 11, 14)) == 2

@@ -266,6 +266,44 @@ def fallback_snapshot(cache_conn, reference: dict, *, now: datetime | None = Non
             "dotazu": (len(syms) + 19) // 20, "chyb": errors}
 
 
+DRILL_SYMBOLS = 20
+DRILL_MAX_AGE = 8        # dní: starší nácvik = VAROVÁNÍ v diag (N-28)
+
+
+def drill_fallback(reference: dict, *, fetch=None, n: int = DRILL_SYMBOLS) -> dict:
+    """N-28 (v0.17.20): nácvik záložní cesty snímku — jeden dotaz Yahoo spark na nejvýš `n` sledovaných firem a shoda
+    posledního společného dne se závěry z Yahoo chart (≥ SPARK_MATCH). Nic se neukládá do nasdaq_snap. Zřídka
+    používaná cesta se jinak pozná jako nefunkční až při skutečném výpadku (SRE kniha Google, Z-20261111-2)."""
+    syms = sorted(s for s, ref in reference.items() if ref and s.isalpha())[:n]
+    if not syms:
+        return {"stav": "PŘESKOČENO", "duvod": "žádné závěry sledovaných firem"}
+    if fetch is None:
+        from stockradar.sources import yahoo
+        fetch = yahoo.fetch_spark
+    try:
+        series = fetch(syms)
+    except Exception as e:  # noqa: BLE001 — výsledek nácviku je právě tohle
+        return {"stav": "CHYBA", "duvod": f"{type(e).__name__}: {str(e)[:100]}"}
+    compared = ok = 0
+    for sym in syms:
+        bars = dict(series.get(sym) or [])
+        common = sorted(set(bars) & set(reference.get(sym) or {}))
+        if common:
+            compared += 1
+            ok += abs(bars[common[-1]] / reference[sym][common[-1]] - 1) < 0.0015
+    if compared < 3:
+        return {"stav": "CHYBA", "duvod": f"Yahoo spark vrátil použitelná data jen pro {compared} z {len(syms)} firem"}
+    return {"stav": "OK" if ok >= SPARK_MATCH * compared else "CHYBA", "shoda": f"{ok}/{compared}", "symbolu": len(syms)}
+
+
+def fallback_days(cache_conn, *, today: date | None = None, days: int = 30) -> int:
+    """Kolik dní snímku za posledních `days` dní pochází ze zálohy (objem NULL u všech řádků dne)."""
+    cache_conn.executescript(SNAP_SCHEMA)
+    since = ((today or utcnow().date()) - timedelta(days=days)).isoformat()
+    return cache_conn.execute("SELECT COUNT(*) FROM (SELECT day FROM nasdaq_snap WHERE day >= ? GROUP BY day"
+                              " HAVING SUM(volume IS NOT NULL) = 0)", (since,)).fetchone()[0]
+
+
 def with_fallback(cache_conn, snap: dict, reference: dict, *, now: datetime | None = None, spark=None, log=print) -> dict:
     """Po neúspěšném snímku screeneru záloha z Yahoo spark: při odmítnutí / chybě zdroje už od 1 chybějícího dne
     (víme, že snímek nepřijde), při zastaralých cenách až od SPARK_MIN_GAP dnů (N-25)."""

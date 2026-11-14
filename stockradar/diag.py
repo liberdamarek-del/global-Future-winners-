@@ -102,6 +102,16 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
             add({"OK": "OK", "VAROVÁNÍ": "VAROVÁNÍ"}.get(lag["stav"], "CHYBA"), "Snímek Nasdaq (raketový deník)",
                 f"poslední platný {lag['posledni']}, poslední obchodní den {lag['obchodni_den']}, chybí {lag['chybi']} dní"
                 + ("" if lag["stav"] == "OK" else " — screener vrací zastaralé ceny nebo odmítá dotazy (deník snese 7 dní mezery)"))
+        from stockradar.discovery import diary as _diary
+        from stockradar.hub.registry import _last_with
+        drill = _last_with(conn, "nacvik")
+        age = _age_days(drill[0], now) if drill else None
+        fb_days = _diary.fallback_days(cache_conn)
+        add("OK" if drill and drill[1].get("nacvik") == "OK" and age is not None and age <= _diary.DRILL_MAX_AGE else "VAROVÁNÍ",
+            "Nácvik zálohy snímku (N-28)",
+            ("nácvik zatím neproběhl (python -m stockradar rakety --nacvik)" if not drill else
+             f"poslední nácvik {drill[0][:10]}: {drill[1].get('nacvik')} (shoda {drill[1].get('nacvik_shoda')})")
+            + f"; dní snímku ze zálohy za 30 dní: {fb_days}")
         from stockradar.discovery import moves as _moves
         if _moves.FLAG_CORP_ACTIONS:
             paused = _moves.paused_moves(conn)

@@ -372,6 +372,11 @@ def cmd_rakety(args) -> int:
         _note(args, pricina=cid)
         _refresh_hub(args, conn, None)
         return 0
+    if args.nacvik:                                   # N-28: jen nácvik záložní cesty snímku, nic se neukládá
+        res = diary.drill_fallback(diary.reference_closes(conn))
+        print("Nácvik zálohy snímku (Yahoo spark):", res)
+        _note(args, nacvik=res.get("stav"), nacvik_shoda=res.get("shoda"))
+        return 0 if res.get("stav") in ("OK", "PŘESKOČENO") else 1
     cconn = dcache.connect()
     log = lambda m: print(f"  {m}", flush=True)
     reference = diary.reference_closes(conn)          # závěry z Yahoo s datem → ze kterého dne snímek opravdu je
@@ -866,6 +871,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ce.set_defaults(func=cmd_ceny)
     p_rk = sub.add_parser("rakety", help="raketový deník: rakety a propady 1 / 5 / 10 / 21 dní, příčiny (SEC, titulky, ručně), co následovalo, přehled trhu")
     p_rk.add_argument("--bez-snimku", action="store_true", help="nestahovat denní snímek Nasdaq")
+    p_rk.add_argument("--nacvik", action="store_true", help="jen nácvik záložní cesty snímku (1 dotaz Yahoo spark, N-28)")
     p_rk.add_argument("--bez-zprav", action="store_true", help="bez automatické příčiny z titulků")
     p_rk.add_argument("--zpravy", type=int, default=30, help="u kolika největších nových pohybů hledat titulky (výchozí 30)")
     p_rk.add_argument("--bez-sec", action="store_true", help="bez dotazů na podání u SEC")
