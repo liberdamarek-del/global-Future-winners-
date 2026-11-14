@@ -212,3 +212,6 @@
 {"day": "2026-11-14", "first_at": "2026-11-14T10:08:31Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:08:38Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
 {"day": "2026-11-14", "first_at": "2026-11-14T10:14:08Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:14:21Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 18}
 {"day": "2026-11-14", "first_at": "2026-11-14T10:29:38Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:29:39Z", "purpose": "ruční kontrola Form 4 u signálu smart money", "requests": 4}
+{"day": "2026-11-14", "first_at": "2026-11-14T13:15:50Z", "host": "data.sec.gov", "last_at": "2026-11-14T13:16:00Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 44}
+{"day": "2026-11-14", "first_at": "2026-11-14T13:17:15Z", "host": "www.sec.gov", "last_at": "2026-11-14T13:17:48Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 6}
+{"day": "2026-11-14", "first_at": "2026-11-14T13:17:38Z", "host": "www.sec.gov", "last_at": "2026-11-14T13:17:38Z", "purpose": "ruční ověření příčiny pohybu (deník) — seznam příloh podání", "requests": 1}
