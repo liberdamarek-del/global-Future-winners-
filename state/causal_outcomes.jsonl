@@ -26,3 +26,4 @@
 {"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 32, "hit": 1, "industry_excess": -0.15047313946002805}
 {"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 33, "hit": 0, "industry_excess": -0.21064305668437544}
 {"end_date": "2026-11-06", "evaluated_at": "2026-11-07T10:40:30Z", "forecast_id": 34, "hit": 0, "industry_excess": -0.22454073060198165}
+{"end_date": "2026-11-13", "evaluated_at": "2026-11-14T10:28:57Z", "forecast_id": 35, "hit": 0, "industry_excess": -0.11740322780610729}

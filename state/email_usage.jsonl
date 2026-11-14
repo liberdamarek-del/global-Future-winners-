@@ -202,3 +202,13 @@
 {"day": "2026-11-13", "first_at": "2026-11-13T14:43:55Z", "host": "data.sec.gov", "last_at": "2026-11-13T14:44:00Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 25}
 {"day": "2026-11-13", "first_at": "2026-11-13T14:44:39Z", "host": "www.sec.gov", "last_at": "2026-11-13T14:45:20Z", "purpose": "ruční ověření příčiny pohybu (deník) — seznam příloh podání", "requests": 3}
 {"day": "2026-11-13", "first_at": "2026-11-13T14:44:50Z", "host": "www.sec.gov", "last_at": "2026-11-13T14:45:26Z", "purpose": "ruční ověření příčiny pohybu (deník)", "requests": 6}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:22Z", "host": "www.sec.gov", "last_at": "2026-11-14T09:57:22Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:23Z", "host": "data.sec.gov", "last_at": "2026-11-14T09:57:27Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:27Z", "host": "data.sec.gov", "last_at": "2026-11-14T09:57:28Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:28Z", "host": "data.sec.gov", "last_at": "2026-11-14T09:57:29Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:29Z", "host": "data.sec.gov", "last_at": "2026-11-14T09:57:30Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:30Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:08:38Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 2}
+{"day": "2026-11-14", "first_at": "2026-11-14T09:57:35Z", "host": "data.sec.gov", "last_at": "2026-11-14T10:08:39Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
+{"day": "2026-11-14", "first_at": "2026-11-14T10:08:31Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:08:38Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
+{"day": "2026-11-14", "first_at": "2026-11-14T10:14:08Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:14:21Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 18}
+{"day": "2026-11-14", "first_at": "2026-11-14T10:29:38Z", "host": "www.sec.gov", "last_at": "2026-11-14T10:29:39Z", "purpose": "ruční kontrola Form 4 u signálu smart money", "requests": 4}
