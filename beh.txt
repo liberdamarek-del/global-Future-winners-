@@ -1,0 +1,50 @@
+Databáze vytvořena a obnovena ze /home/runner/work/global-Future-winners-/global-Future-winners-/state: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db
+UPDATE 2026-11-12  (běh #64)
+  Firmy a řetězec        DONE
+  Ceny (Yahoo)           DONE 132/132
+  SEC EDGAR              TÝDNĚ (v sobotním objevování; každé použití e-mailu se eviduje)
+  Vyhodnocení predikcí   DONE (0 nových)
+  Učení modelu           DONE (verze 31, NOVÁ)
+  Skóre                  DONE (46 firem)
+  Nové predikce          DONE (0 nových)
+  Snapshot               PŘESKOČENO (poslední do 7 dní)
+  Export stavu           DONE
+  Data pro web           DONE
+Model: Nová data změnila váhy: Pohyb 20 dní +0.02 → +0.15; Odstup nad průměrem 50 dní -0.16 → -0.07; Malá firma (odhad z obratu) -0.03 → +0.00
+Data pro web: /home/runner/work/global-Future-winners-/global-Future-winners-/data/web
+  Vyhodnocení výzkumu    0 nových
+  Snímek Nasdaq          BLOKOVÁNO screener Nasdaq: HTTPError 403 HTTP Error 403: Forbidden
+  Záloha (Yahoo spark)   OK 2026-11-12 6298 akcií (shoda 98/98)
+Centrum: 983 firem (příležitost 290, riziko 18, rozpor 3), záznam OK #258, web 135 kB
+E-mail dnes: nepoužit
+  Komodity: staženo 27, chyb 0
+  Týdenní řady: 261 týdnů, 126 oborů, 3936 akcií, 27 komodit
+  Týdenní řady a citlivosti: přepočítány a uloženy (otisk 2c625476b48ed8c9)
+  Šoky komodit: 253 (týden × komodita), vazeb 4156
+  UCENI: šoků 107, empirické vazby 1120: za 13 týdnů -0.0026 (t -0.25)
+  VALIDACE: šoků 52, empirické vazby 754: za 13 týdnů -0.008 (t -0.54)
+  TEST: šoků 52, empirické vazby 930: za 13 týdnů 0.0095 (t 0.73)
+Kauzální radar (běh #47): karet 17, příležitostí 0, nových predikcí 0, vyhodnoceno 0; GDACS 7 výstrah; test řetězců za 13 týdnů 0.0094 (t 0.54); web 77 kB
+Centrum: 983 firem (příležitost 290, riziko 18, rozpor 3), záznam OK #259, web 135 kB
+E-mail dnes: nepoužit
+  Záložní snímek 2026-11-13: shoda se závěry 1 z 1 — neukládá se
+Snímek trhu: {'stav': 'BLOKOVÁNO', 'duvod': 'screener Nasdaq: HTTPError 403 HTTP Error 403: Forbidden', 'zaloha': {'stav': 'NEOVĚŘENO', 'zdroj': 'Yahoo spark', 'dny': [], 'symbolu': 6298, 'dotazu': 315, 'chyb': 0}}
+  Raketový deník: 71 raket, 161 propadů, nových epizod 0
+Řad 5945, přeskočeno kvůli splitu / chybě dat 75, starých 0; raket 71, propadů 161, nových epizod 0
+Podání u SEC: {'cekalo': 0, 'dotazu': 0, 'zapsano': 0, 'bez_cik': 0, 'chyb': 0}
+Výplaty a splity (N-23): {'stav': 'OK', 'kontrolovano': 9, 'chyba_dat': 0, 'chyb': 0} · pozastaveno (formulář 25 / 8-K 3.01): 12
+Co následovalo (5 / 20 / 60 dní): {'cekalo': 702, 'zapsano': 0, 'bez_ceny': 8}
+Přehled trhu a sektorů: {'stav': 'UŽ JE', 'den': '2026-11-12'}
+  Historie pohybů: 11190 raket, 13792 propadů
+Historická studie: 24982 pohybů ['2021-12-08', '2026-11-06']; raket 11190, propadů 13792
+  rakety · všechny (11190): 5d: -2.4 % proti trhu, dál 43 %, 20d: -7.0 % proti trhu, dál 40 %, 60d: -15.4 % proti trhu, dál 37 %
+  rakety · s emisí akcií (1152): 5d: -5.1 % proti trhu, dál 38 %, 20d: -14.1 % proti trhu, dál 32 %, 60d: -29.1 % proti trhu, dál 27 %
+  rakety · s výsledky (10-Q/10-K) (3180): 5d: -1.5 % proti trhu, dál 45 %, 20d: -3.7 % proti trhu, dál 45 %, 60d: -9.1 % proti trhu, dál 43 %
+  rakety · malé (pod 300 mil. USD) (4679): 5d: -5.1 % proti trhu, dál 37 %, 20d: -15.4 % proti trhu, dál 29 %, 60d: -30.8 % proti trhu, dál 23 %
+  propady · všechny (13792): 5d: -1.6 % proti trhu, dál 54 %, 20d: -4.9 % proti trhu, dál 57 %, 60d: -12.4 % proti trhu, dál 60 %
+  propady · s emisí akcií (2071): 5d: -4.9 % proti trhu, dál 62 %, 20d: -12.8 % proti trhu, dál 68 %, 60d: -27.9 % proti trhu, dál 72 %
+  propady · s výsledky (10-Q/10-K) (3799): 5d: -0.9 % proti trhu, dál 51 %, 20d: -2.5 % proti trhu, dál 53 %, 60d: -7.2 % proti trhu, dál 54 %
+  propady · malé (pod 300 mil. USD) (6523): 5d: -4.0 % proti trhu, dál 61 %, 20d: -12.1 % proti trhu, dál 67 %, 60d: -26.6 % proti trhu, dál 73 %
+Web stav_pohyby.json: 139 kB
+Centrum: 983 firem (příležitost 290, riziko 18, rozpor 3), záznam PŘESKOČENO #259, web 135 kB
+E-mail dnes: nepoužit

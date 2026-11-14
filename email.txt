@@ -1,0 +1,4 @@
+E-mail: nastaven (data/kontakt.txt nebo STOCKRADAR_CONTACT_EMAIL)
+Posílá se jen na: www.sec.gov, data.sec.gov
+Celkem od začátku: 1876 dotazů
+(za období nepoužit)

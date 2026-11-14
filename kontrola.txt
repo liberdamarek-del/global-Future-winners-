@@ -1,0 +1,16 @@
+127.0.0.1 - - [14/Nov/2026 01:12:04] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /provoz.json?t=1794618725218 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_aktualni.json?t=1794618725359 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_predikce.json?t=1794618725359 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_retezec.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_objevy.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_smartmoney.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_signaly.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_zebricek.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_zebricek6m.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_kauzalni.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_pohyby.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /stav_prehled.json?t=1794618725360 HTTP/1.1" 200 -
+127.0.0.1 - - [14/Nov/2026 01:12:05] code 404, message File not found
+127.0.0.1 - - [14/Nov/2026 01:12:05] "GET /favicon.ico HTTP/1.1" 404 -
+stranka OK (prohlizec)
