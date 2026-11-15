@@ -16,6 +16,7 @@ Překryv h6m 0,25 proto neříká, zda se liší model. Model se nelišil: řaze
 - `provoz.compare` a `report_md`: nový řádek „Model raket před XTB a ledgerem“ s překryvem TOP 10. Je jen
   informativní, předem daná kritéria N-13 se nemění.
 - Na GitHubu se projeví od příštího týdenního běhu (otisk vytváří stejný kód).
+- Když jedna strana pořadí nemá (starší otisk), překryv se neukazuje („–“), nepíše se 0,0.
 
 Test: `test_provoz.py::test_rocket_model_ranking_is_compared_outside_criteria`.
 

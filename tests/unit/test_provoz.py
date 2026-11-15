@@ -58,3 +58,4 @@ def test_rocket_model_ranking_is_compared_outside_criteria(conn):
     res = provoz.compare(_fp(model_rakety=rk), _fp(model_rakety={"razeni": "vydrzi_asym", "kandidati": ["ALK.AX", "X"]}))
     assert res["model_rakety"]["prekryv"] == 0.33 and res["splneno"]                     # mimo kritéria
     assert "Model raket před XTB" in provoz.report_md(res, _fp(model_rakety=rk), _fp())
+    assert provoz.compare(_fp(), _fp(model_rakety=rk))["model_rakety"]["prekryv"] is None    # GitHub bez pořadí

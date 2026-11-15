@@ -90,7 +90,8 @@ def compare(gh: dict, cl: dict) -> dict:
     ok = same_day and all(d["shoda"] for d in det.values()) and not (low and same_day) and not gh.get("kroky_chyba")
     mg, mc = gh.get("model_rakety") or {}, cl.get("model_rakety") or {}
     model = {"github": mg.get("kandidati"), "claude": mc.get("kandidati"), "razeni": [mg.get("razeni"), mc.get("razeni")],
-             "prekryv": jaccard(mg.get("kandidati"), mc.get("kandidati"))}      # informativně, mimo kritéria N-13
+             "prekryv": jaccard(mg.get("kandidati"), mc.get("kandidati")) if mg.get("kandidati") and mc.get("kandidati")
+             else None}                                                       # informativně, mimo kritéria N-13
     return {"splneno": ok, "stejny_den_dat": same_day, "deterministicke": det, "prekryv_top10": jac, "model_rakety": model,
             "email": {"github": gh.get("email"), "claude": cl.get("email")}, "problemy": problems}
 
@@ -128,4 +129,5 @@ def _model_md(m: dict) -> str:
         return ""
     five = lambda x: ", ".join(str(t) for t in (x or [])[:5])  # noqa: E731
     return ("Model raket před XTB a ledgerem (N-32, mimo kritéria): řazení " + " × ".join(str(r) for r in m.get("razeni") or [])
-            + f"; TOP 5 GitHub {five(m.get('github'))} × Claude {five(m.get('claude'))}; překryv TOP 10 {m.get('prekryv')}\n\n")
+            + f"; TOP 5 GitHub {five(m.get('github')) or '– (otisk bez pořadí)'} × Claude {five(m.get('claude')) or '–'};"
+            f" překryv TOP 10 {m.get('prekryv') if m.get('prekryv') is not None else '–'}\n\n")
