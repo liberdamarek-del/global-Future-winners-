@@ -40,10 +40,26 @@ def fingerprint(conn, web_dir: Path, *, day: str | None = None) -> dict:
     lists = {h: tick((z.get(h) or {}).get("firmy")) for h in ("h14", "h1m", "h6m")}
     lists.update({"6m": tick(z6.get("firmy")), "6m_velke": tick(z6.get("velke"))})
     email = conn.execute("SELECT COALESCE(SUM(requests), 0) FROM email_usage WHERE day = ?", (day,)).fetchone()[0]
-    return {"den": day, "den_dat": a.get("den_dat"), "verze": a.get("verze_aplikace"),
+    return {"den": day, "den_dat": a.get("den_dat"), "verze": a.get("verze_aplikace"), "model_rakety": rocket_ranking(conn),
             "model": (a.get("model") or {}).get("verze"),
             "kroky_chyba": [k for k, v in (a.get("kroky") or {}).items() if str(v).startswith("CHYBA")],
             "predikce": preds, "vyhodnoceni": outs, "karty": cards, "zebricky": lists, "email": email}
+
+
+def rocket_ranking(conn, n: int = 10) -> dict:
+    """N-32 (v0.17.21): pořadí kandidátů modelu raket PŘED filtrem XTB a před vynecháním firem s otevřenou predikcí
+    (discovery_runs.rakety_6m.kandidati). Žebříček h6m a predikce v ledgeru závisí na stavu, který GitHub načte až
+    po běhu Claude (14. 11.: GitHub viděl Claudových 10 predikcí a zapsal 9 dalších), tohle pořadí ne."""
+    try:
+        row = conn.execute("SELECT data_through, result_json FROM discovery_runs ORDER BY id DESC LIMIT 1").fetchone()
+    except Exception:  # noqa: BLE001 — starší databáze bez tabulky
+        return {}
+    if not row:
+        return {}
+    rk = (json.loads(row[1]) or {}).get("rakety_6m") or {}
+    return {"data_do": row[0], "razeni": rk.get("razeni"),
+            "kandidati": [(k.get("ticker") or k.get("symbol")) if isinstance(k, dict) else k
+                          for k in (rk.get("kandidati") or [])][:n]}
 
 
 def jaccard(a: list, b: list) -> float | None:
@@ -72,7 +88,10 @@ def compare(gh: dict, cl: dict) -> dict:
     if gh.get("kroky_chyba"):
         problems.append("GitHub: chyba v krocích " + ", ".join(gh["kroky_chyba"]))
     ok = same_day and all(d["shoda"] for d in det.values()) and not (low and same_day) and not gh.get("kroky_chyba")
-    return {"splneno": ok, "stejny_den_dat": same_day, "deterministicke": det, "prekryv_top10": jac,
+    mg, mc = gh.get("model_rakety") or {}, cl.get("model_rakety") or {}
+    model = {"github": mg.get("kandidati"), "claude": mc.get("kandidati"), "razeni": [mg.get("razeni"), mc.get("razeni")],
+             "prekryv": jaccard(mg.get("kandidati"), mc.get("kandidati"))}      # informativně, mimo kritéria N-13
+    return {"splneno": ok, "stejny_den_dat": same_day, "deterministicke": det, "prekryv_top10": jac, "model_rakety": model,
             "email": {"github": gh.get("email"), "claude": cl.get("email")}, "problemy": problems}
 
 
@@ -100,4 +119,13 @@ def report_md(res: dict, gh: dict, cl: dict) -> str:
             f"**Kritéria N-13 dnes: {'SPLNĚNA' if res['splneno'] else 'NESPLNĚNA'}**\n\n"
             "| Konečný stav | GitHub | Claude | Shoda |\n|---|---|---|---|\n" + rows + "\n\n"
             "| Žebříček | GitHub (TOP 5) | Claude (TOP 5) | Překryv TOP 10 |\n|---|---|---|---|\n" + jac + "\n\n"
+            + _model_md(res.get("model_rakety") or {}) +
             f"E-mail za den: GitHub {gh.get('email')}× · Claude {cl.get('email')}×\n\nProblémy:\n{probs}\n")
+
+
+def _model_md(m: dict) -> str:
+    if not (m.get("github") or m.get("claude")):
+        return ""
+    five = lambda x: ", ".join(str(t) for t in (x or [])[:5])  # noqa: E731
+    return ("Model raket před XTB a ledgerem (N-32, mimo kritéria): řazení " + " × ".join(str(r) for r in m.get("razeni") or [])
+            + f"; TOP 5 GitHub {five(m.get('github'))} × Claude {five(m.get('claude'))}; překryv TOP 10 {m.get('prekryv')}\n\n")

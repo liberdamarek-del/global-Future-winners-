@@ -4,6 +4,21 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-15 · v0.17.21 — Srovnání GitHub × Claude: pořadí modelu raket nezávisle na pořadí běhů (N-32)
+
+Důvod: srovnání 14. 11. ukázalo, že žebříček raket (h6m) a predikce v ledgeru nejsou nezávislé měření. GitHub běží
+ve stínu ze `state/` až po Claude, takže 14. 11. viděl Claudových 10 predikcí raket, přeskočil je a zapsal 9 dalších.
+Překryv h6m 0,25 proto neříká, zda se liší model. Model se nelišil: řazení `vydrzi_asym` na obou strojích, AUC
+0,7335 × 0,7336.
+
+- `provoz.rocket_ranking()`: TOP 10 kandidátů modelu raket z posledního `discovery_runs` (pole `rakety_6m.kandidati`,
+  tedy před filtrem XTB a před vynecháním firem s otevřenou predikcí) a zvolené řazení. Je součástí otisku.
+- `provoz.compare` a `report_md`: nový řádek „Model raket před XTB a ledgerem“ s překryvem TOP 10. Je jen
+  informativní, předem daná kritéria N-13 se nemění.
+- Na GitHubu se projeví od příštího týdenního běhu (otisk vytváří stejný kód).
+
+Test: `test_provoz.py::test_rocket_model_ranking_is_compared_outside_criteria`.
+
 ## 2026-11-14 · v0.17.20 — Nácvik záložní cesty snímku a počet dní ze zálohy v diag (N-28)
 
 Důvod (týdenní zlepšení): chybová cesta deníku se poprvé spustila až naostro. 10. 11. první HTTP 403 od screeneru

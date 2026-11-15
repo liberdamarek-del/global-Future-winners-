@@ -100,6 +100,21 @@ a zapíše `docs/provoz/srovnani_DEN.md`. O přepnutí do režimu `ostry` rozhod
   - Doporučení před přepnutím: zkontrolovat stabilitu výběru (opakovaný běh na mírně jiných datech; samostatný
     návrh).
   - O přepnutí do režimu `ostry` rozhoduje uživatel.
+- **Týdenní běh 14. 11.** (den dat 13. 11.; `docs/provoz/srovnani_2026-11-14.md`). GitHub běžel až 15:19 UTC,
+  sloty 7:41, 8:41 a 12:41 UTC se nespustily nebo se zpozdily:
+  - Shodné: 14 dní (1,0), 6 měsíců velké firmy (1,0), vyhodnocení 209 = 209, karty 281 = 281. Model raket vybral
+    na obou strojích stejné řazení (`vydrzi_asym`) při AUC testu 0,7335 × 0,7336.
+  - Oprava mřížky panelu (v0.17.15) tedy zabrala. Všech 10 Claudových predikcí raket je i ve stavu GitHubu a GitHub
+    k nim zapsal 9 dalších, nejspíš proto, že běžel až po Claude a obsazené firmy přeskočil (úsudek).
+  - Rozdílné: rakety na webu (h6m) 0,25, 1 měsíc 0,67, 6 měsíců 0,82, predikce 127 × 118. Příčiny:
+    - Pořadí běhů: GitHub načetl stav s Claudovými predikcemi z téhož dne, takže srovnání neběží nezávisle.
+    - Jiné vstupy:
+      - 13 162 × 13 107 symbolů ke stažení;
+      - Ibovespa 88 a FTSE MIB 40 jen na GitHubu (Wikipedia vrátila Claude 429);
+      - XTB 11 dotazů a 12 z cache × 80 dotazů a 0 z cache.
+    - Screener Nasdaq vrátil 0 firem na obou strojích (403).
+  - Pro rozhodnutí o `ostry`: model je reprodukovatelný. Zbylé rozdíly dělají vstupy a pořadí běhů, ne kód.
+    Rozhoduje uživatel.
 - **Týdenní běh 7. 11.** (den dat 6. 11.; `docs/provoz/srovnani_2026-11-07.md`):
   - Žebříčky 14 dní, 1 měsíc, 6 měsíců (vše i velké firmy) shodné, překryv TOP 10 = 1,0. Vyhodnocení 170 = 170 a
     karty 231 = 231 také shodné.

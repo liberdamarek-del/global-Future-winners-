@@ -44,3 +44,17 @@ def test_fingerprint_from_database(conn, tmp_path):
     assert fp["zebricky"]["h14"] == ["AAA"] and fp["predikce"] == [] and fp["email"] == 0
     md = provoz.report_md(provoz.compare(fp, fp), fp, fp)
     assert "SPLNĚNA" in md or "NESPLNĚNA" in md
+
+
+def test_rocket_model_ranking_is_compared_outside_criteria(conn):
+    """N-32 (v0.17.21): pořadí modelu raket před XTB a ledgerem — informativně, kritéria N-13 se nemění."""
+    with conn:
+        conn.execute("INSERT INTO discovery_runs (run_at, data_through, stats_json, result_json, models_json, app_version)"
+                     " VALUES ('2026-11-14T10:00:00Z', '2026-11-13', '{}', ?, '{}', 'x')",
+                     (json.dumps({"rakety_6m": {"razeni": "vydrzi_asym", "razeni_vybrano": "na validačních pololetích před testem",
+                                                "kandidati": [{"ticker": "ALK.AX"}, {"ticker": "VMM.AX"}]}}),))
+    rk = provoz.rocket_ranking(conn)
+    assert rk == {"data_do": "2026-11-13", "razeni": "vydrzi_asym", "kandidati": ["ALK.AX", "VMM.AX"]}
+    res = provoz.compare(_fp(model_rakety=rk), _fp(model_rakety={"razeni": "vydrzi_asym", "kandidati": ["ALK.AX", "X"]}))
+    assert res["model_rakety"]["prekryv"] == 0.33 and res["splneno"]                     # mimo kritéria
+    assert "Model raket před XTB" in provoz.report_md(res, _fp(model_rakety=rk), _fp())
