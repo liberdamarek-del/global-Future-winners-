@@ -16,6 +16,7 @@ není důkaz; neopakovat stejné návrhy; zdroje vždy s URL a datem. Do veřejn
 | `zdroje.jsonl` | jedno zjištění = jeden řádek (zdroj, URL, datum zdroje, zjištění, zralost, důvěryhodnost, využití) | jen přidávat |
 | `navrhy.jsonl` | návrh pro Stock Radar (problém, implementace, náklady, rizika, závislosti, metrika, experiment); změna stavu = nový řádek se stejným `id` | jen přidávat |
 | `reporty/RRRR-MM-DD.md` | report běhu (i „nic nového“) | nový soubor za běh |
+| `ukoly.json` | slíbené jednorázové úkoly s termínem (N-22): zadání, termín, kdy je hotovo, stav | nový úkol = nový záznam; rutina mění jen `stav` a `poznamka` |
 
 Formát hlídá `tests/unit/test_agent_research.py` (povinná pole, výčty, unikátní URL + klíč myšlenky).
 
@@ -71,7 +72,9 @@ zapsané hypotézy (`docs/VYZKUM.md`, E1–E4), studie událostí s kontrolní s
    Čísla a data ze SEC podání do záznamů OVĚŘENO brát ze surového textu podání (contact.http_get + hledání úryvku),
    ne ze shrnutí nástrojem (WebFetch / WebSearch shrnuje malým modelem); shrnutí je jen vodítko (FinanceBench:
    81 % chyb nebo odmítnutí u otázek nad podáními, 2026-11-08).
-8. `python -m pytest`, commit + push; uživateli 3–6 vět česky.
+8. Každý slib s termínem z reportu („zítra ověřit“, „vyhodnotit 8. 12.“) zapsat do `ukoly.json`; splněné označit
+   HOTOVO s poznámkou. Report vypíše úkoly po termínu (diag „Evidence úkolů (N-22)“).
+9. `python -m pytest`, commit + push; uživateli 3–6 vět česky.
 
 ## Raketový deník (rakety za týden / 14 dní / měsíc)
 

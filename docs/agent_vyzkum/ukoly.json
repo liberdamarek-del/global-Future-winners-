@@ -1,0 +1,135 @@
+{
+ "popis": "N-22: slíbené jednorázové úkoly s termínem. Rutiny smí měnit jen `stav` (OTEVRENO / HOTOVO / ZRUSENO) a `poznamka`; nový úkol = nový řádek s dalším id. diag hlásí VAROVÁNÍ u otevřeného úkolu po termínu.",
+ "ukoly": [
+  {
+   "id": "U-1",
+   "zadano": "2026-11-10",
+   "termin": "2026-12-08",
+   "popis": "Vyhodnotit N-23 (korporátní akce) podle živého kritéria ze 7. 11.",
+   "hotovo_kdyz": "nový řádek N-23 v navrhy.jsonl se stavem ZAVEDENO nebo ZAMITNUTO a výsledkem",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-10.md"
+  },
+  {
+   "id": "U-2",
+   "zadano": "2026-11-05",
+   "termin": "2026-11-24",
+   "popis": "Ověřit rozhodnutí FDA o deramiocelu (CAPR, PDUFA 22. 11.)",
+   "hotovo_kdyz": "katalyzátor #13 má stav OCCURRED / DELAYED / CANCELLED se zdrojem a pohyb CAPR má příčinu",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-05.md"
+  },
+  {
+   "id": "U-3",
+   "zadano": "2026-11-11",
+   "termin": "2026-12-16",
+   "popis": "Ověřit výsledek hlasování o fúzi DJT × TAE (14. 12.)",
+   "hotovo_kdyz": "katalyzátor #15 má stav OCCURRED / DELAYED se zdrojem",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "denní aktualizace 2026-11-11"
+  },
+  {
+   "id": "U-4",
+   "zadano": "2026-10-19",
+   "termin": "2026-12-14",
+   "popis": "Vyhodnotit N-5 (živá kalibrace karet, statické × ACI) po 8 týdnech",
+   "hotovo_kdyz": "řádek N-5 v navrhy.jsonl s výsledkem po 8 týdnech",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "navrhy.jsonl N-5"
+  },
+  {
+   "id": "U-5",
+   "zadano": "2026-11-16",
+   "termin": "2026-12-14",
+   "popis": "Vyhodnotit N-22 (tato evidence) po 4 týdnech",
+   "hotovo_kdyz": "řádek N-22 v navrhy.jsonl s podílem úkolů hotových do termínu",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "navrhy.jsonl N-22"
+  },
+  {
+   "id": "U-6",
+   "zadano": "2026-11-15",
+   "termin": "2026-12-13",
+   "popis": "N-32: 4 týdenní srovnání pořadí modelu raket GitHub × Claude (od 21. 11.)",
+   "hotovo_kdyz": "4 soubory docs/provoz/srovnani_*.md s řádkem „Model raket před XTB“ s daty z obou stran a zápis výsledku k N-32",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-15.md"
+  },
+  {
+   "id": "U-7",
+   "zadano": "2026-11-14",
+   "termin": "2026-11-27",
+   "popis": "Zavést N-29 (skupina NT v historické studii, H-R2) jako experiment týdne od 23. 11.",
+   "hotovo_kdyz": "N-29 se stavem EXPERIMENT nebo ODLOZENO s důvodem",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-14.md"
+  },
+  {
+   "id": "U-8",
+   "zadano": "2026-11-12",
+   "termin": "2027-01-07",
+   "popis": "Vyhodnotit N-30 (kontrolní otázky ke kritériu) a zopakovat třídění poučení (MAST)",
+   "hotovo_kdyz": "řádek N-30 s výsledkem a nové třídění poučení v reportu",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-12.md, 2026-11-13.md"
+  },
+  {
+   "id": "U-9",
+   "zadano": "2026-11-14",
+   "termin": "2027-01-09",
+   "popis": "Vyhodnotit N-28 (nácvik záložní cesty) po 8 týdnech",
+   "hotovo_kdyz": "řádek N-28 s výsledkem",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "navrhy.jsonl N-28"
+  },
+  {
+   "id": "U-10",
+   "zadano": "2026-10-11",
+   "termin": "2027-01-06",
+   "popis": "Vyhodnotit experiment N-1 (přísné pravidlo t ≥ 3 a BY)",
+   "hotovo_kdyz": "řádek N-1 s výsledkem",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "CLAUDE.md, docs/testy_hypotez.jsonl"
+  },
+  {
+   "id": "U-11",
+   "zadano": "2026-11-12",
+   "termin": "2026-11-14",
+   "popis": "Sobotní objevování bez screeneru Nasdaq: ověřit, že seznam firem jde z cache",
+   "hotovo_kdyz": "discover doběhne s USA z cache",
+   "stav": "HOTOVO",
+   "poznamka": "2026-11-14: USA (Nasdaq screener) 0, 12 293 firem z cache a ostatních burz",
+   "zdroj": "reporty/2026-11-12.md"
+  },
+  {
+   "id": "U-12",
+   "zadano": "2026-11-14",
+   "termin": "2026-11-16",
+   "popis": "Zkontrolovat týdenní běh GitHubu a udělat srovnání N-13",
+   "hotovo_kdyz": "docs/provoz/srovnani_2026-11-14.md",
+   "stav": "HOTOVO",
+   "poznamka": "2026-11-15: běh 14. 11. 15:19 UTC, srovnání a rozbor hotové",
+   "zdroj": "reporty/2026-11-14.md"
+  },
+  {
+   "id": "U-13",
+   "zadano": "2026-11-13",
+   "termin": "2026-11-18",
+   "popis": "ENVX: ověřit ex-den dividendy warrantů proti poklesu 12. 11.",
+   "hotovo_kdyz": "příčina #802 doplněna",
+   "stav": "HOTOVO",
+   "poznamka": "2026-11-16: pokles před ex-dnem, chyba dat vyloučena (#115)",
+   "zdroj": "reporty/2026-11-13.md"
+  }
+ ]
+}

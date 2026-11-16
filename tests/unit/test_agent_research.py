@@ -70,3 +70,24 @@ def test_new_proposals_answer_the_criterion_checklist():
             k = n.get("kontrola_kriteria") or {}
             for q in KONTROLA_OTAZKY:
                 assert len(str(k.get(q) or "").strip()) >= 15, f"{n['id']}: kontrola_kriteria.{q} chybí nebo je prázdná"
+
+
+def test_task_ledger_format_and_overdue():
+    """N-22 (v0.17.22): ukoly.json — povinná pole, stavy, unikátní id; overdue vrací jen otevřené po termínu."""
+    from datetime import date
+    from stockradar import agent_tasks
+    tasks = agent_tasks.load(ROOT / "ukoly.json")
+    assert tasks and len({t["id"] for t in tasks}) == len(tasks)
+    for t in tasks:
+        for k in agent_tasks.POLE:
+            assert t.get(k), f"{t.get('id')}: chybí {k}"
+        assert t["stav"] in agent_tasks.STAVY and DATUM.match(t["termin"]) and DATUM.match(t["zadano"])
+        assert t["zadano"] <= t["termin"]
+        if t["stav"] != "OTEVRENO":
+            assert t.get("poznamka"), f"{t['id']}: uzavřený úkol bez poznámky"
+    sample = [{"id": "A", "popis": "x", "termin": "2026-11-10", "stav": "OTEVRENO"},
+              {"id": "B", "popis": "y", "termin": "2026-11-10", "stav": "HOTOVO"},
+              {"id": "C", "popis": "z", "termin": "2026-11-20", "stav": "OTEVRENO"}]
+    late = agent_tasks.overdue(sample, date(2026, 11, 16))
+    assert [t["id"] for t in late] == ["A"] and late[0]["dni_po_terminu"] == 6
+    assert [t["id"] for t in agent_tasks.due_soon(sample, date(2026, 11, 16))] == ["C"]

@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-11-15 · **Verze:** v0.17.21 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-11-16 · **Verze:** v0.17.22 · **Schema DB:** v12 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -68,6 +68,7 @@
 | Deník — výpadek screeneru (v0.17.16, 2026-11-10) | HTTP 403 od screeneru Nasdaq už `rakety` nezastaví (stav BLOKOVÁNO, blokace se neobchází); 10. 11. poprvé 403 |
 | Deník — záloha snímku z Yahoo spark (N-25, v0.17.17, 2026-11-11) | při odmítnutí screeneru (403) nebo zastaralých cenách závěry z Yahoo spark pro symboly posledního snímku, uloží se jen den se shodou ≥ 95 % se závěry sledovaných firem; objem NULL → neutrální objem, skok ≥ 2,9× bez objemu vynechán. 11. 11.: 9. a 10. 11. doplněny (97/97, 97/98), 68 nových pohybů. Přepínač `diary.SPARK_FALLBACK` |
 | Deník — nácvik zálohy (N-28, v0.17.20, 2026-11-14) | `rakety --nacvik` týdně (1 dotaz spark, 20 firem, nic se neukládá), diag hlídá stáří nácviku (≤ 8 dní) a počet dní ze zálohy; 14. 11. OK 20/20 |
+| Výzkum agenta — evidence úkolů (N-22, v0.17.22, 2026-11-16) | `docs/agent_vyzkum/ukoly.json` + diag VAROVÁNÍ u úkolu po termínu; experiment do 14. 12. (≥ 80 % do termínu, žádný > 3 dny bez odložení) |
 | Energetický radar — TOP 5 (2026-11-02) | test mimo vzorek nyní t −2,12 (úspěšnost 29 %, −5,7 % proti S&P 500) → centrum CHYBA „horší než náhoda“. Není to N-18 (1 i 5 fází dávají 29 %); jde o posun testovacího okna. Přes 5 posunů okna: t −1,18 až −2,12, průměr −1,63, ve všech pod S&P 500 (−1,3 až −5,7 %). Závěr: výhodu nemá, spíš zaostává; hranici −2 překračuje jen jeden posun. Hodnocení se dnes nemění |
 | XTB | žebříček jen z nabídky XTB (ověřeno na xtb.com 2026-10-05); ledger bez podmínky XTB, u predikcí v ledgeru se XTB nezapisuje |
 

@@ -4,6 +4,25 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-16 · v0.17.22 — Evidence slíbených úkolů s termínem (N-22, experiment týdne)
+
+Důvod: N-20 bylo slíbeno „během týdne“ a odložilo se pětkrát (6 dní po termínu), aniž by na to cokoli upozornilo.
+Slíbené úkoly byly jen v textu reportů. Podle PM-Bench (COLM 2026, Z-20261116-2) zvládne i nejlepší agent odložené
+úkoly jen na 65,1 % F1.
+
+- `docs/agent_vyzkum/ukoly.json`: úkoly `{id, zadano, termin, popis, hotovo_kdyz, stav, poznamka, zdroj}`, stav
+  OTEVRENO / HOTOVO / ZRUSENO. Rutiny smí měnit jen stav a poznámku. Zavedeno se 13 úkoly z reportů, 3 z nich už
+  hotové.
+- `stockradar/agent_tasks.py`: `load`, `overdue`, `due_soon`.
+- `diag`: „Evidence úkolů (N-22)“. VAROVÁNÍ u otevřeného úkolu po termínu (s počtem dní), jinak OK s úkoly
+  splatnými do 7 dní. Nečitelný soubor = CHYBA.
+- Postup výzkumu (README): každý slib s termínem v reportu se zapíše do `ukoly.json` a report vypíše úkoly po
+  termínu. Vratné: smazat soubor a kontrolu.
+- Kritérium (7. 11.): za 4 týdny (do 14. 12.) ≥ 80 % úkolů hotových do termínu a žádný víc než 3 dny po termínu
+  bez výslovného odložení s důvodem.
+
+Test: `test_agent_research.py::test_task_ledger_format_and_overdue`.
+
 ## 2026-11-15 · v0.17.21 — Srovnání GitHub × Claude: pořadí modelu raket nezávisle na pořadí běhů (N-32)
 
 Důvod: srovnání 14. 11. ukázalo, že žebříček raket (h6m) a predikce v ledgeru nejsou nezávislé měření. GitHub běží

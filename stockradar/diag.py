@@ -141,6 +141,21 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
         "; ".join(f"{m['nazev']}: {m['duvod']}" for m in failed + other) or
         ", ".join(f"{k} {sum(1 for m in mods if m['stav'] == k)}" for k in registry.SUMMARY_KEYS if any(m["stav"] == k for m in mods)))
 
+    # 7b) slíbené úkoly s termínem (N-22, docs/agent_vyzkum/ukoly.json)
+    from stockradar import agent_tasks
+    try:
+        tasks = agent_tasks.load()
+    except (ValueError, KeyError, OSError) as e:
+        tasks = None
+        add("CHYBA", "Evidence úkolů (N-22)", f"ukoly.json nejde načíst: {e}")
+    if tasks is not None:
+        late = agent_tasks.overdue(tasks, now.date())
+        soon = agent_tasks.due_soon(tasks, now.date())
+        add("VAROVÁNÍ" if late else "OK", "Evidence úkolů (N-22)",
+            (("po termínu: " + "; ".join(f"{t['id']} {t['popis'][:60]} ({t['dni_po_terminu']} d)" for t in late)) if late
+             else f"otevřených {sum(1 for t in tasks if t.get('stav') == 'OTEVRENO')}, žádný po termínu")
+            + (("; do 7 dní: " + ", ".join(f"{t['id']} {t['termin']}" for t in soon)) if soon else ""))
+
     # 8) použití e-mailu (pro uživatele)
     summ = usage_summary(conn, days=7)
     days = ", ".join(f"{d['den']}: {d['celkem']}× ({', '.join(f'{h} {n}×' for h, n in d['servery'].items())})"

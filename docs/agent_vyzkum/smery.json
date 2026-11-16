@@ -1,5 +1,5 @@
 {
- "aktualizovano": "2026-11-15",
+ "aktualizovano": "2026-11-16",
  "pravidlo": "hlavní směr = nejvyšší priorita, průzkumný = nejméně běhů; 3 prázdné běhy po sobě → priorita / 2 a stav UTLUMENY; nové zjištění s návrhem → priorita + 0,1 (max 1)",
  "smery": [
   {
@@ -27,9 +27,9 @@
    "nazev": "LLM jako čtenář zpráv a filingů (extrakce událostí, příčin)",
    "proc_pro_nas": "příčiny raket se určují klíčovými slovy (AUTO, 59/120 bez příčiny); literatura o LLM a výnosech akcií; přímo souvisí s raketovým deníkem",
    "priorita": 1.0,
-   "behu": 15,
+   "behu": 16,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-14",
+   "posledni_beh": "2026-11-16",
    "stav": "AKTIVNI"
   },
   {
@@ -67,9 +67,9 @@
    "nazev": "Plánování a orchestrace agentů (workflow vs agent, planner/executor)",
    "proc_pro_nas": "rutiny jsou pevné scénáře; adaptivní plán by mohl šetřit čas a přesouvat úsilí tam, kde je přínos",
    "priorita": 0.7,
-   "behu": 5,
+   "behu": 6,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-11",
+   "posledni_beh": "2026-11-16",
    "stav": "AKTIVNI"
   },
   {
