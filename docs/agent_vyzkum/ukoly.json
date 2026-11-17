@@ -130,6 +130,16 @@
    "stav": "HOTOVO",
    "poznamka": "2026-11-16: pokles před ex-dnem, chyba dat vyloučena (#115)",
    "zdroj": "reporty/2026-11-13.md"
+  },
+  {
+   "id": "U-14",
+   "zadano": "2026-11-17",
+   "termin": "2026-12-04",
+   "popis": "Zavést N-34 (rozsah platnosti poučení) — při sobotním zlepšení 21. 11., nejpozději v týdnu od 30. 11.",
+   "hotovo_kdyz": "řádek N-34 v navrhy.jsonl se stavem ZAVEDENO nebo ZAMITNUTO a počet přiložení mimo rozsah po zavedení",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-17.md"
   }
  ]
 }
