@@ -217,3 +217,5 @@
 {"day": "2026-11-14", "first_at": "2026-11-14T13:17:38Z", "host": "www.sec.gov", "last_at": "2026-11-14T13:17:38Z", "purpose": "ruční ověření příčiny pohybu (deník) — seznam příloh podání", "requests": 1}
 {"day": "2026-11-17", "first_at": "2026-11-17T13:20:27Z", "host": "data.sec.gov", "last_at": "2026-11-17T13:20:38Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 49}
 {"day": "2026-11-17", "first_at": "2026-11-17T13:21:39Z", "host": "www.sec.gov", "last_at": "2026-11-17T13:22:28Z", "purpose": "raketovy denik: overeni priciny", "requests": 17}
+{"day": "2026-11-18", "first_at": "2026-11-18T13:20:17Z", "host": "data.sec.gov", "last_at": "2026-11-18T13:20:28Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 53}
+{"day": "2026-11-18", "first_at": "2026-11-18T13:20:57Z", "host": "www.sec.gov", "last_at": "2026-11-18T13:21:18Z", "purpose": "raketovy denik: overeni priciny", "requests": 10}
