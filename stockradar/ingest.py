@@ -31,9 +31,13 @@ def update_prices(
     fetch: Callable[[str, str], yahoo.Quote] = lambda s, r: yahoo.fetch_chart(s, r),
     pause: float = 0.4,
     now: datetime | None = None,
+    stale_pause: float = 5.0,
 ) -> dict:
-    """Stáhne ceny všech sledovaných symbolů, benchmarku a kurzů. Chyba jednoho symbolu nezastaví ostatní."""
+    """Stáhne ceny všech sledovaných symbolů, benchmarku a kurzů. Chyba jednoho symbolu nezastaví ostatní.
+    Odpověď z mezipaměti Yahoo (poslední cena před koncem obchodování, `yahoo.is_stale`) se po pauze stáhne ještě
+    jednou; když je i druhá stejná, uloží se a symbol se nahlásí v `zastarale` (v0.17.23)."""
     now = now or utcnow()
+    stale: dict[str, list[str]] = {"opraveno": [], "zustalo": []}
     symbols = [r["symbol"] for r in tracked_symbols(conn)] + [config.BENCHMARK_SYMBOL] + fx_symbols(conn)
     quotes: dict[str, dict] = {}
     errors: list[str] = []
@@ -44,6 +48,16 @@ def update_prices(
         except Exception as exc:  # síť / změna API — zaznamenat a pokračovat
             errors.append(f"{symbol}: {exc}")
             continue
+        if yahoo.is_stale(quote, now):
+            if stale_pause:
+                time.sleep(stale_pause)
+            try:
+                again = fetch(symbol, "5y" if have < MIN_HISTORY_BARS else "3mo")
+            except Exception:  # noqa: BLE001 — zůstane první odpověď
+                again = quote
+            if again.price_time and (quote.price_time is None or again.price_time > quote.price_time):
+                quote = again
+            stale["zustalo" if yahoo.is_stale(quote, now) else "opraveno"].append(symbol)
         yahoo.store_bars(conn, quote, fetched_at=now)
         quotes[symbol] = {
             "currency": quote.currency, "price": quote.price,
@@ -51,4 +65,4 @@ def update_prices(
         }
         if pause:
             time.sleep(pause)
-    return {"quotes": quotes, "errors": errors, "requested": len(dict.fromkeys(symbols))}
+    return {"quotes": quotes, "errors": errors, "requested": len(dict.fromkeys(symbols)), "zastarale": stale}

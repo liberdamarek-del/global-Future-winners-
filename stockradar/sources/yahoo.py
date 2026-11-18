@@ -11,7 +11,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from stockradar.timeutil import to_iso, utcnow
@@ -30,6 +30,7 @@ class Quote:
     price: float | None
     price_time: datetime | None
     bars: list[tuple[str, float, float | None]]  # (YYYY-MM-DD, close, volume)
+    session_end: datetime | None = None          # konec dnešního obchodování (meta.currentTradingPeriod.regular.end)
 
 
 def _bar_day(ts: int, tz, offset: int) -> str:
@@ -69,6 +70,7 @@ def parse_chart(symbol: str, payload: dict) -> Quote:
         volume = volumes[i] if i < len(volumes) else None
         bars[day] = (day, float(close), float(volume) if volume is not None else None)
     price_time = meta.get("regularMarketTime")
+    end = ((meta.get("currentTradingPeriod") or {}).get("regular") or {}).get("end")
     return Quote(
         symbol=symbol,
         currency=meta.get("currency"),
@@ -77,7 +79,22 @@ def parse_chart(symbol: str, payload: dict) -> Quote:
         price=meta.get("regularMarketPrice"),
         price_time=datetime.fromtimestamp(price_time, tz=timezone.utc) if price_time else None,
         bars=[bars[d] for d in sorted(bars)],
+        session_end=datetime.fromtimestamp(end, tz=timezone.utc) if end else None,
     )
+
+
+STALE_GRACE_S = 900       # po konci obchodování počkat 15 min, než se odpověď považuje za konečnou
+STALE_MARGIN_S = 300      # poslední cena víc než 5 min před koncem téhož dne = odpověď z mezipaměti
+
+
+def is_stale(quote: Quote, now: datetime) -> bool:
+    """Odpověď z mezipaměti Yahoo: obchodování skončilo (+15 min), ale poslední cena je z doby před koncem téhož dne.
+    18. 11. 2026 ve 21:47 UTC vrátil chart u části firem dopolední svíčku (CEG 265,24 USD a objem 0,36 mil. místo
+    262,74 / 2,34 mil.). U málo obchodovaných akcií může být poslední obchod opravdu dřív — proto jen opakování dotazu."""
+    end, t = quote.session_end, quote.price_time
+    if end is None or t is None or now < end + timedelta(seconds=STALE_GRACE_S):
+        return False
+    return t.date() == end.date() and t < end - timedelta(seconds=STALE_MARGIN_S)
 
 
 def fetch_chart(symbol: str, range_: str = "2y", *, retries: int = 3, timeout: int = 20) -> Quote:

@@ -4,6 +4,26 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-18 · v0.17.23 — Ceny Yahoo: ochrana před odpovědí z mezipaměti po konci obchodování
+
+Důvod: večerní `update` 18. 11. (21:47 UTC) uložil u 40 ze 148 sledovaných symbolů dopolední svíčku místo závěru
+(CEG 265,24 USD s objemem 0,36 mil. místo 262,74 / 2,34 mil.; GEV 789,20 místo 772,22; 24 symbolů s rozdílem > 1 %).
+Chybu odhalila záloha snímku N-25, která den neuložila (shoda se závěry 34 ze 40). S chybnými cenami běh nevytvořil
+žádnou predikci; po opravě vznikla 1 (ENR, energetický model).
+
+- `sources/yahoo.py`: `Quote.session_end` (z `meta.currentTradingPeriod.regular.end`), `is_stale(quote, now)` =
+  od 15 min po konci obchodování je poslední cena víc než 5 min před koncem téhož dne.
+- `ingest.update_prices`: u takové odpovědi jeden opakovaný dotaz po 5 s, použije se novější. Výsledek
+  `zastarale = {opraveno, zustalo}`. `update` to vypíše v kroku „Ceny (Yahoo)“ a co zůstalo, dá do varování
+  (u málo obchodovaných akcií může být poslední obchod opravdu dřív, proto se nic nemaže; další běh cenu přepíše).
+- Test: `test_parse_chart_reads_session_end`, `test_is_stale_only_after_close_and_for_early_price`,
+  `test_update_prices_refetches_stale_quote`.
+- Výsledek: opakovaný `update` 18. 11. opravil všech 40 cen (při něm 3 odpovědi z mezipaměti zachyceny a staženy
+  znovu). Spark ve 22:10 UTC vracel u 20 ze 105 symbolů ještě staré ceny, záloha snímku 18. 11. proto zůstala
+  NEOVĚŘENO a doplní se z ranního deníku.
+
+---
+
 ## 2026-11-16 · v0.17.22 — Evidence slíbených úkolů s termínem (N-22, experiment týdne)
 
 Důvod: N-20 bylo slíbeno „během týdne“ a odložilo se pětkrát (6 dní po termínu), aniž by na to cokoli upozornilo.

@@ -255,10 +255,16 @@ def run_update(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path | Non
     seeded = seed_energy_universe(conn, now=now)
     steps["Firmy a řetězec"] = "DONE" + (f" (+{seeded['companies']} firem)" if seeded["companies"] else "")
 
-    prices = update_prices(conn, now=now, **({"fetch": fetch, "pause": 0} if fetch else {}))
+    prices = update_prices(conn, now=now, **({"fetch": fetch, "pause": 0, "stale_pause": 0} if fetch else {}))
     ok = prices["requested"] - len(prices["errors"])
-    steps["Ceny (Yahoo)"] = f"DONE {ok}/{prices['requested']}" if ok else "CHYBA"
+    st = prices.get("zastarale") or {}
+    note = "".join(f", z mezipaměti {lbl} {len(st[k])}" for k, lbl in (("opraveno", "opraveno"), ("zustalo", "zůstalo"))
+                   if st.get(k))
+    steps["Ceny (Yahoo)"] = (f"DONE {ok}/{prices['requested']}" + note) if ok else "CHYBA"
     warnings += [f"Ceny: {e}" for e in prices["errors"][:10]]
+    if st.get("zustalo"):
+        warnings.append("Ceny: Yahoo vrátil i napodruhé cenu z doby před koncem obchodování u "
+                        + ", ".join(st["zustalo"][:10]) + " (málo obchodované, nebo mezipaměť — zítra se přepíše)")
     from stockradar.contact import email
     steps["SEC EDGAR"] = ("TÝDNĚ (v sobotním objevování; každé použití e-mailu se eviduje)" if email()
                           else "VYPNUTO (e-mail není nastaven)")

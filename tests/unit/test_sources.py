@@ -1,7 +1,7 @@
 """Nové zdroje v0.4.0: evidence e-mailu, SEC EDGAR, ClinicalTrials.gov, point-in-time fundamenty (bez sítě)."""
 
 import sqlite3
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -223,3 +223,59 @@ def test_parse_events_reads_payouts_and_splits_on_exchange_day():
     assert ev["splity"][0]["pomer"] == 0.1 and ev["splity"][0]["den"] == "2026-10-26"
     with pytest.raises(ValueError):
         yahoo.parse_events({"chart": {"result": []}})
+
+
+# ------------------------------------------------------------------ v0.17.23: odpověď Yahoo z mezipaměti po zavření
+def _quote(symbol, close, price_time, end):
+    from stockradar.sources.yahoo import Quote
+    return Quote(symbol=symbol, currency="USD", exchange="NYSE", name=symbol, price=close, price_time=price_time,
+                 bars=[("2026-11-17", 268.07, 2997100.0), ("2026-11-18", close, 361922.0)], session_end=end)
+
+
+def test_parse_chart_reads_session_end():
+    from stockradar.sources.yahoo import parse_chart
+    payload = {"chart": {"result": [{"meta": {"currency": "USD", "regularMarketTime": 1795035600,
+                                              "currentTradingPeriod": {"regular": {"start": 1795012200, "end": 1795035600}},
+                                              "exchangeTimezoneName": "America/New_York"},
+                                     "timestamp": [1795012200], "indicators": {"quote": [{"close": [262.74], "volume": [2338224]}]}}]}}
+    q = parse_chart("CEG", payload)
+    assert q.session_end == datetime(2026, 11, 18, 21, 0, tzinfo=timezone.utc)
+    assert q.bars == [("2026-11-18", 262.74, 2338224.0)]
+
+
+def test_is_stale_only_after_close_and_for_early_price():
+    from stockradar.sources.yahoo import is_stale
+    end = datetime(2026, 11, 18, 21, 0, tzinfo=timezone.utc)
+    early = datetime(2026, 11, 18, 15, 40, tzinfo=timezone.utc)
+    after = datetime(2026, 11, 18, 21, 47, tzinfo=timezone.utc)
+    assert is_stale(_quote("CEG", 265.24, early, end), after)                       # dopolední svíčka po zavření
+    assert not is_stale(_quote("CEG", 262.74, end, end), after)                     # konečná cena
+    assert not is_stale(_quote("CEG", 265.24, early, end), datetime(2026, 11, 18, 21, 5, tzinfo=timezone.utc))  # do 15 min
+    assert not is_stale(_quote("CEG", 265.24, early, None), after)                  # bez údaje o konci obchodování
+    yesterday = datetime(2026, 11, 17, 21, 0, tzinfo=timezone.utc)
+    assert not is_stale(_quote("CEG", 262.74, yesterday, end), after)               # dnes se neobchodovalo (jiný den)
+
+
+def test_update_prices_refetches_stale_quote(conn):
+    from stockradar.companies import add_company, add_listing
+    from stockradar.ingest import update_prices
+    cid = add_company(conn, "Constellation", country="US", sector="Utilities", now=datetime(2026, 10, 2, tzinfo=timezone.utc))
+    add_listing(conn, cid, "CEG", "NASDAQ", currency="USD", is_primary=True, now=datetime(2026, 10, 2, tzinfo=timezone.utc))
+    conn.execute("UPDATE listings SET yahoo_symbol = 'CEG'")
+    end = datetime(2026, 11, 18, 21, 0, tzinfo=timezone.utc)
+    early = datetime(2026, 11, 18, 15, 40, tzinfo=timezone.utc)
+    calls = {"CEG": 0, "SPY": 0}
+
+    def fetch(symbol, range_):
+        calls[symbol] = calls.get(symbol, 0) + 1
+        if symbol == "CEG" and calls["CEG"] == 1:
+            return _quote("CEG", 265.24, early, end)
+        if symbol == "SPY":
+            return _quote("SPY", 600.0, early, end)                                   # i napodruhé z mezipaměti
+        return _quote(symbol, 262.74, end, end)
+
+    res = update_prices(conn, fetch=fetch, pause=0, stale_pause=0, now=datetime(2026, 11, 18, 21, 47, tzinfo=timezone.utc))
+    assert res["zastarale"] == {"opraveno": ["CEG"], "zustalo": ["SPY"]}
+    assert calls == {"CEG": 2, "SPY": 2}
+    close = conn.execute("SELECT close FROM price_bars WHERE symbol = 'CEG' AND date = '2026-11-18'").fetchone()[0]
+    assert close == 262.74
