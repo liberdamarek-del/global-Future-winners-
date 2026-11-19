@@ -140,6 +140,16 @@
    "stav": "OTEVRENO",
    "poznamka": null,
    "zdroj": "reporty/2026-11-17.md"
+  },
+  {
+   "id": "U-15",
+   "zadano": "2026-11-19",
+   "termin": "2026-12-14",
+   "popis": "Při vyhodnocení N-5 (U-4) spočítat i přecenění P(růst) u karet vybraných × nevybraných do žebříčku (N-36) na kartách od 19. 11.",
+   "hotovo_kdyz": "řádek N-36 v navrhy.jsonl s čísly vybrané × nevybrané po 14. 12.",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-19.md"
   }
  ]
 }
