@@ -222,3 +222,6 @@
 {"day": "2026-11-19", "first_at": "2026-11-19T13:22:41Z", "host": "data.sec.gov", "last_at": "2026-11-19T13:22:49Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 35}
 {"day": "2026-11-19", "first_at": "2026-11-19T13:23:51Z", "host": "www.sec.gov", "last_at": "2026-11-19T13:25:12Z", "purpose": "raketovy denik: overeni priciny", "requests": 11}
 {"day": "2026-11-19", "first_at": "2026-11-19T13:24:45Z", "host": "data.sec.gov", "last_at": "2026-11-19T13:24:46Z", "purpose": "raketovy denik: overeni priciny", "requests": 2}
+{"day": "2026-11-20", "first_at": "2026-11-20T13:19:48Z", "host": "data.sec.gov", "last_at": "2026-11-20T13:19:57Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 39}
+{"day": "2026-11-20", "first_at": "2026-11-20T13:20:30Z", "host": "data.sec.gov", "last_at": "2026-11-20T13:20:30Z", "purpose": "raketovy denik: overeni priciny", "requests": 1}
+{"day": "2026-11-20", "first_at": "2026-11-20T13:21:03Z", "host": "www.sec.gov", "last_at": "2026-11-20T13:21:28Z", "purpose": "raketovy denik: overeni priciny", "requests": 10}
