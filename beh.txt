@@ -1,0 +1,56 @@
+Databáze vytvořena a obnovena ze /home/runner/work/global-Future-winners-/global-Future-winners-/state: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db
+UPDATE 2026-11-19  (běh #71)
+  Firmy a řetězec        DONE
+  Ceny (Yahoo)           DONE 148/148, z mezipaměti zůstalo 9
+  SEC EDGAR              TÝDNĚ (v sobotním objevování; každé použití e-mailu se eviduje)
+  Vyhodnocení predikcí   DONE (0 nových)
+  Učení modelu           DONE (verze 36, NOVÁ)
+  Skóre                  DONE (46 firem)
+  Nové predikce          DONE (0 nových)
+  Snapshot               DONE (týdenní)
+  Export stavu           DONE
+  Data pro web           DONE
+Model: Nová data změnila váhy: Pohyb 20 dní +0.06 → +0.19; Odstup nad průměrem 50 dní -0.12 → -0.02; Malá firma (odhad z obratu) -0.06 → -0.02
+  ! Ceny: Yahoo vrátil i napodruhé cenu z doby před koncem obchodování u TSEM.TA, AUD=X, CAD=X, DKK=X, EUR=X, GBP=X, ILS=X, JPY=X, KRW=X (málo obchodované, nebo mezipaměť — zítra se přepíše)
+Data pro web: /home/runner/work/global-Future-winners-/global-Future-winners-/data/web
+  Vyhodnocení výzkumu    0 nových
+  Snímek Nasdaq          OK 2026-11-19
+Centrum: 1096 firem (příležitost 292, riziko 18, rozpor 5), záznam OK #305, web 135 kB
+E-mail dnes: nepoužit
+  Komodity: staženo 27, chyb 0
+  Týdenní řady: 262 týdnů, 126 oborů, 3937 akcií, 27 komodit
+  Týdenní řady a citlivosti: přepočítány a uloženy (otisk d80bf4394ae1724f)
+  Šoky komodit: 253 (týden × komodita), vazeb 4179
+  UCENI: šoků 107, empirické vazby 1130: za 13 týdnů -0.0028 (t -0.26)
+  VALIDACE: šoků 52, empirické vazby 758: za 13 týdnů -0.008 (t -0.53)
+  TEST: šoků 52, empirické vazby 936: za 13 týdnů 0.01 (t 0.76)
+Kauzální radar (běh #53): karet 17, příležitostí 2, nových predikcí 0, vyhodnoceno 0; GDACS 5 výstrah; test řetězců za 13 týdnů 0.0094 (t 0.54); web 75 kB
+Centrum: 1096 firem (příležitost 292, riziko 18, rozpor 5), záznam OK #306, web 135 kB
+E-mail dnes: nepoužit
+  Snímek: screener ukazuje závěr z 2026-11-19, ne z 2026-11-20 — ukládá se pod 2026-11-19
+Snímek trhu: {'stav': 'UŽ JE', 'den': '2026-11-19'}
+  Raketový deník: 32 raket, 314 propadů, nových epizod 6
+Řad 5947, přeskočeno kvůli splitu / chybě dat 93, starých 0; raket 32, propadů 314, nových epizod 6
+  #1047 ↓ OMH    Ohmyhome Limited Class A Ordinary Sh 10d -68 % · AUTO: krypto / treasury strategie
+  #1048 ↓ VNET   VNET Group Inc. American Depositary  5d -29 % 10d -31 % 21d -47 % · AUTO: výsledky / výhled
+  #1049 ↓ AGMB   AgomAb Therapeutics NV American Depo 21d -38 % · AUTO: aktivista / nový velký akcionář
+  #1050 ↓ MBOT   Microbot Medical Inc. Common Stock   5d -28 % 10d -33 % · AUTO: výsledky / výhled
+  #1051 ↓ TONX   TON Strategy Company Common Stock    5d -30 % · AUTO: výsledky / výhled
+  #1052 ↓ INSG   Inseego Corp. Common Stock           5d -24 % · AUTO: převzetí / fúze
+Podání u SEC: {'cekalo': 6, 'dotazu': 6, 'zapsano': 6, 'bez_cik': 0, 'chyb': 0, 'zbyva': 0}
+Výplaty a splity (N-23): {'stav': 'OK', 'kontrolovano': 5, 'chyba_dat': 0, 'chyb': 0} · pozastaveno (formulář 25 / 8-K 3.01): 13
+Co následovalo (5 / 20 / 60 dní): {'cekalo': 870, 'zapsano': 1, 'bez_ceny': 10}
+Přehled trhu a sektorů: {'stav': 'UŽ JE', 'den': '2026-11-19'}
+  Historie pohybů: 11249 raket, 13793 propadů
+Historická studie: 25042 pohybů ['2021-12-15', '2026-11-13']; raket 11249, propadů 13793
+  rakety · všechny (11249): 5d: -2.3 % proti trhu, dál 43 %, 20d: -7.0 % proti trhu, dál 40 %, 60d: -15.3 % proti trhu, dál 37 %
+  rakety · s emisí akcií (1153): 5d: -4.9 % proti trhu, dál 38 %, 20d: -14.3 % proti trhu, dál 32 %, 60d: -29.1 % proti trhu, dál 27 %
+  rakety · s výsledky (10-Q/10-K) (3214): 5d: -1.5 % proti trhu, dál 45 %, 20d: -3.6 % proti trhu, dál 45 %, 60d: -8.9 % proti trhu, dál 43 %
+  rakety · malé (pod 300 mil. USD) (4688): 5d: -5.1 % proti trhu, dál 38 %, 20d: -15.4 % proti trhu, dál 29 %, 60d: -30.8 % proti trhu, dál 23 %
+  propady · všechny (13793): 5d: -1.4 % proti trhu, dál 52 %, 20d: -4.9 % proti trhu, dál 57 %, 60d: -12.3 % proti trhu, dál 60 %
+  propady · s emisí akcií (2070): 5d: -4.6 % proti trhu, dál 62 %, 20d: -13.0 % proti trhu, dál 68 %, 60d: -28.1 % proti trhu, dál 72 %
+  propady · s výsledky (10-Q/10-K) (3793): 5d: -0.5 % proti trhu, dál 49 %, 20d: -2.3 % proti trhu, dál 53 %, 60d: -6.8 % proti trhu, dál 53 %
+  propady · malé (pod 300 mil. USD) (6505): 5d: -3.7 % proti trhu, dál 60 %, 20d: -12.1 % proti trhu, dál 67 %, 60d: -26.6 % proti trhu, dál 73 %
+Web stav_pohyby.json: 126 kB
+Centrum: 1101 firem (příležitost 292, riziko 18, rozpor 5), záznam OK #307, web 135 kB
+E-mail dnes: 6× — data.sec.gov 6×
