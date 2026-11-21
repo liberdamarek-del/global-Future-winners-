@@ -19,6 +19,12 @@ DOC_LIMIT = 170 * 1024
 # Rozhodnutí uživatele 2026-10-11: každá sekce webu ukazuje nejvýš 10 firem (dřív TOP 20). Modely, ledger, centrum a
 # vyhodnocení dál pracují s TOP 20 — zkracuje se jen to, co se zobrazuje (měření zůstává srovnatelné).
 WEB_TOP = 10
+# v0.17.25: predikce přibývají ~15 týdně (rakety, smart money, energie) a jeden dokument by limit 170 kB překročil
+# 28. 11. Nejnovější zůstávají v `stav/predikce`, starší se rozloží do archivních částí `stav/predikce_a1`, `_a2` …
+# (seznam v poli `archiv`); stránka je spojí. Měření, ledger ani pořadí se nemění.
+PRED_MAIN_BUDGET = 110 * 1024
+PRED_CHUNK_BUDGET = 150 * 1024
+ARCHIVE_PREFIX = "predikce_a"
 
 FREE_SOURCES = [
     {"nazev": "Yahoo Finance chart API", "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY",
@@ -181,7 +187,7 @@ def build_docs(conn: sqlite3.Connection, *, run_id: int, steps: dict, warnings: 
     preds = []
     for p in conn.execute(
             "SELECT p.*, l.yahoo_symbol, c.name, c.industry FROM predictions p JOIN listings l ON l.id = p.listing_id"
-            " JOIN companies c ON c.id = p.company_id WHERE p.mode = 'LIVE' ORDER BY p.made_at DESC LIMIT 300"):
+            " JOIN companies c ON c.id = p.company_id WHERE p.mode = 'LIVE' ORDER BY p.made_at DESC, p.id DESC"):
         outs = {o["horizon_days"]: o for o in conn.execute(
             "SELECT * FROM prediction_outcomes WHERE prediction_id = ?", (p["id"],))}
         smart = p["strategy"] == "SMART_MONEY"
@@ -695,6 +701,35 @@ def write_prehled_doc(res: dict, web_dir: Path) -> int:
     return len(text.encode())
 
 
+def split_predictions(predikce: dict, *, main_budget: int = PRED_MAIN_BUDGET,
+                      chunk_budget: int = PRED_CHUNK_BUDGET) -> dict[str, dict]:
+    """Rozdělí dokument predikcí (nejnovější první) na hlavní `predikce` a archivní části `predikce_a1` … tak, aby
+    každá část zůstala pod svým rozpočtem. Hlavní dokument nese souhrny a seznam částí v poli `archiv`."""
+    preds = predikce.get("predikce") or []
+    head = {k: v for k, v in predikce.items() if k != "predikce"}
+    size = lambda x: len(json.dumps(x, ensure_ascii=False, separators=(",", ":")).encode()) + 1
+    fixed = _size({**head, "predikce": [], "archiv": [f"{ARCHIVE_PREFIX}{i}" for i in range(1, 100)]})
+    main, i, used = [], 0, fixed
+    while i < len(preds) and used + size(preds[i]) <= main_budget:
+        used += size(preds[i])
+        main.append(preds[i])
+        i += 1
+    chunks: list[list[dict]] = []
+    stamp = {"aktualizovano": predikce.get("aktualizovano")}
+    while i < len(preds):
+        part, used = [], _size({**stamp, "cast": 99, "predikce": []})
+        while i < len(preds) and (not part or used + size(preds[i]) <= chunk_budget):
+            used += size(preds[i])
+            part.append(preds[i])
+            i += 1
+        chunks.append(part)
+    names = [f"{ARCHIVE_PREFIX}{n}" for n in range(1, len(chunks) + 1)]
+    out = {"predikce": {**head, "predikce": main, "archiv": names}}
+    for n, (name, part) in enumerate(zip(names, chunks), start=1):
+        out[name] = {**stamp, "cast": n, "predikce": part}
+    return out
+
+
 def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[str, int]:
     web_dir.mkdir(parents=True, exist_ok=True)
     sizes = {}
@@ -720,6 +755,10 @@ def write_site_data(conn: sqlite3.Connection, web_dir: Path, **kwargs) -> dict[s
     moves_doc = build_pohyby_doc(conn)
     if moves_doc is not None:
         docs["pohyby"] = moves_doc
+    docs.update(split_predictions(docs["predikce"]))
+    for old in web_dir.glob(f"stav_{ARCHIVE_PREFIX}*.json"):           # části navíc z dřívějška (stránka je nenačte)
+        if old.stem[len("stav_"):] not in docs:
+            old.unlink()
     for name, doc in docs.items():
         text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
         if len(text.encode()) > DOC_LIMIT:

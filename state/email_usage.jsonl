@@ -225,3 +225,22 @@
 {"day": "2026-11-20", "first_at": "2026-11-20T13:19:48Z", "host": "data.sec.gov", "last_at": "2026-11-20T13:19:57Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 39}
 {"day": "2026-11-20", "first_at": "2026-11-20T13:20:30Z", "host": "data.sec.gov", "last_at": "2026-11-20T13:20:30Z", "purpose": "raketovy denik: overeni priciny", "requests": 1}
 {"day": "2026-11-20", "first_at": "2026-11-20T13:21:03Z", "host": "www.sec.gov", "last_at": "2026-11-20T13:21:28Z", "purpose": "raketovy denik: overeni priciny", "requests": 10}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:30Z", "host": "www.sec.gov", "last_at": "2026-11-21T09:54:30Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:30Z", "host": "data.sec.gov", "last_at": "2026-11-21T09:54:34Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:34Z", "host": "data.sec.gov", "last_at": "2026-11-21T09:54:35Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:35Z", "host": "data.sec.gov", "last_at": "2026-11-21T09:54:36Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:36Z", "host": "data.sec.gov", "last_at": "2026-11-21T09:54:37Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:37Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:05:19Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 2}
+{"day": "2026-11-21", "first_at": "2026-11-21T09:54:44Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:05:20Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:05:12Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:05:19Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:06:43Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:06:45Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 11}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:06:53Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:06:53Z", "purpose": "ověření kandidáta rakety SABR (týdenní běh)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:06:53Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:06:53Z", "purpose": "ověření kandidáta rakety CCCC (týdenní běh)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:06:54Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:06:54Z", "purpose": "ověření kandidáta rakety WHWK (týdenní běh)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:03Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety SABR (seznam příloh 8-K)", "requests": 2}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:03Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:03Z", "purpose": "ověření kandidáta rakety CCCC (seznam příloh 8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:04Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety CCCC (příloha 8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:04Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety WHWK (seznam příloh 8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:04Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety WHWK (příloha 8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:04Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety SABR (příloha 8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:07:33Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:33Z", "purpose": "ověření kandidáta rakety SABR (příloha 8-K, výsledky 3Q)", "requests": 1}

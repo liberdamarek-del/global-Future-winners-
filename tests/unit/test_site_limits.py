@@ -36,3 +36,20 @@ def test_prehled_trimming_keeps_firms_shown_on_web():
     doc = site.build_prehled_doc(res, limit=8000)
     assert "KMX" in doc["firmy"] and doc.get("zkraceno") and len(doc["firmy"]) < 61
     assert len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode()) <= 8000 * 0.8
+
+
+def test_predictions_split_into_archive_parts_under_budget():
+    """v0.17.25: nejnovější predikce v `predikce`, starší v `predikce_a1` …; každá část pod rozpočtem, nic se neztratí
+    a pořadí (nejnovější první) zůstane."""
+    preds = [{"id": 500 - i, "typ": "raketa", "duvod": "x" * 900, "vysledky": {}} for i in range(400)]
+    doc = {"aktualizovano": "2026-11-21T10:00:00Z", "predikce": preds, "presnost": [], "presnost_rakety": {"bezi": 3}}
+    out = site.split_predictions(doc, main_budget=60 * 1024, chunk_budget=100 * 1024)
+    main = out["predikce"]
+    assert main["presnost_rakety"] == {"bezi": 3} and main["archiv"] == [n for n in out if n != "predikce"]
+    assert len(main["archiv"]) >= 2 and all(n.startswith(site.ARCHIVE_PREFIX) for n in main["archiv"])
+    size = lambda d: len(json.dumps(d, ensure_ascii=False, separators=(",", ":")).encode())
+    assert size(main) <= 60 * 1024 and all(size(out[n]) <= 100 * 1024 for n in main["archiv"])
+    joined = main["predikce"] + [p for n in main["archiv"] for p in out[n]["predikce"]]
+    assert [p["id"] for p in joined] == [p["id"] for p in preds]
+    small = site.split_predictions({"aktualizovano": "x", "predikce": preds[:3]})
+    assert list(small) == ["predikce"] and small["predikce"]["archiv"] == [] and len(small["predikce"]["predikce"]) == 3

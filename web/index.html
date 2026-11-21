@@ -376,6 +376,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
   const RANK = {raketa: "jen šance na raketu", asymetrie: "raketa minus propad", pomer: "poměr raketa / propad", vydrzi: "raketa, která vydrží", vydrzi_asym: "vydrží minus propad"};
 
   let A = null, P = null, R = null, D = null, S = null, G = null, filt = "", PROVOZ = null;
+  const PA = {};   // archivní části predikcí stav/predikce_a1 … (v0.17.25), seznam v P.archiv
   // Každá sekce ukazuje nejvýš 10 firem (rozhodnutí uživatele 2026-10-11); delší záznamy (výsledky, celý řetězec) jdou rozbalit.
   const TOP = 10, MORE = {}, MORE_RENDER = {};
   const cut = (list, key) => (MORE[key] ? list : list.slice(0, TOP));
@@ -403,7 +404,14 @@ details.fold[open] > summary { margin-bottom: 10px; }
   }
 
   // ---------------------------------------------------------------- rakety
-  function rocketPreds() { return ((P && P.predikce) || []).filter((p) => p.typ === "raketa"); }
+  function allPreds() {
+    const seen = new Set(), out = [];
+    const add = (list) => (list || []).forEach((p) => { if (!seen.has(p.id)) { seen.add(p.id); out.push(p); } });
+    add(P && P.predikce);
+    ((P && P.archiv) || []).forEach((n) => add(PA[n] && PA[n].predikce));
+    return out;
+  }
+  function rocketPreds() { return allPreds().filter((p) => p.typ === "raketa"); }
 
   function renderRockets() {
     const rk = D && D.rakety_6m;
@@ -778,7 +786,7 @@ details.fold[open] > summary { margin-bottom: 10px; }
     $("accuracy").innerHTML = stat("Rakety rozhodnuté", `${fmt(rk.zasahu, 0)} z ${fmt(rk.rozhodnuto, 0)}`, `${fmt(rk.bezi, 0)} ještě běží · čekali jsme ${rk.ocekavano === null || rk.ocekavano === undefined ? "–" : pct(rk.ocekavano)}`) +
       acc.map((a) => stat(`Energie po ${a.dni} dnech`, a.vyhodnoceno ? `${fmt(a.uspesnych, 0)} z ${fmt(a.vyhodnoceno, 0)}` : "–", a.vyhodnoceno ? `porazilo S&P · průměr ${sgn(a.prumer_nad_spy)}` : "zatím nevyhodnoceno")).join("");
     document.querySelectorAll("[data-f]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.f === filt)));
-    const all = (P.predikce || []).filter((p) => !filt || p.typ === filt), list = cut(all, "pred");
+    const all = allPreds().filter((p) => !filt || p.typ === filt), list = cut(all, "pred");
     $("pred-more").innerHTML = moreBtn("pred", all.length);
     $("pred-rows").innerHTML = list.length ? list.map((p) => {
       const v = p.vysledky || {}, a = p.aktualne || {};
@@ -1009,6 +1017,9 @@ details.fold[open] > summary { margin-bottom: 10px; }
     const docs = await Promise.all(Object.keys(SETTERS).map((n) => get("stav_" + n).then((d) => [n, d])));
     if (!docs.find(([n, d]) => n === "aktualni" && d)) { $("status").innerHTML = "<span>Data se nepodařilo načíst. Obnov stránku.</span>"; return; }
     for (const [n, d] of docs) if (d) SETTERS[n](d);
+    const parts = await Promise.all(((P && P.archiv) || []).map((n) => get("stav_" + n).then((d) => [n, d])));
+    for (const [n, d] of parts) if (d) PA[n] = d;
+    if (parts.length) { renderPreds(); renderDiscovery(); }
     loadedAt = Date.now();
   }
   async function bootWeb() {
@@ -1028,7 +1039,15 @@ details.fold[open] > summary { margin-bottom: 10px; }
     }
     const fail = () => { $("status").innerHTML = "<span>Data se nepodařilo načíst. Obnov stránku.</span>"; };
     db.doc("stav/aktualni").onSnapshot((s) => { if (s.exists) { A = s.data(); renderAll(); } else { $("status").innerHTML = "<span>Model zatím nezapsal žádná data.</span>"; } }, fail);
-    db.doc("stav/predikce").onSnapshot((s) => { if (s.exists) { P = s.data(); renderPreds(); } }, fail);
+    const watched = new Set();
+    db.doc("stav/predikce").onSnapshot((s) => {
+      if (!s.exists) return;
+      P = s.data(); renderPreds();
+      (P.archiv || []).filter((n) => /^predikce_a\d+$/.test(n) && !watched.has(n)).forEach((n) => {
+        watched.add(n);
+        db.doc("stav/" + n).onSnapshot((x) => { if (x.exists) { PA[n] = x.data(); renderPreds(); renderDiscovery(); } }, fail);
+      });
+    }, fail);
     db.doc("stav/retezec").onSnapshot((s) => { if (s.exists) { R = s.data(); renderChain(); } }, fail);
     db.doc("stav/objevy").onSnapshot((s) => { if (s.exists) { D = s.data(); renderDiscovery(); } }, fail);
     db.doc("stav/smartmoney").onSnapshot((s) => { if (s.exists) { S = s.data(); renderSmart(); } }, fail);

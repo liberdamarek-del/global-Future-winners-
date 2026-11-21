@@ -137,8 +137,8 @@
    "termin": "2026-12-04",
    "popis": "Zavést N-34 (rozsah platnosti poučení) — při sobotním zlepšení 21. 11., nejpozději v týdnu od 30. 11.",
    "hotovo_kdyz": "řádek N-34 v navrhy.jsonl se stavem ZAVEDENO nebo ZAMITNUTO a počet přiložení mimo rozsah po zavedení",
-   "stav": "OTEVRENO",
-   "poznamka": null,
+   "stav": "HOTOVO",
+   "poznamka": "2026-11-21: N-34 ZAVEDENO (v0.17.24); přiložení mimo rozsah 83 → 0",
    "zdroj": "reporty/2026-11-17.md"
   },
   {

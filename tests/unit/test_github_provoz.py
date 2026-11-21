@@ -67,6 +67,15 @@ def test_build_site(tmp_path):
     assert json.loads((out / "provoz.json").read_text())["dalsi_aktualizace_do"] == "2026-10-24T17:41+00:00"
 
 
+def test_build_site_copies_listed_prediction_archive(tmp_path):
+    web = _web(tmp_path, {"predikce": {"predikce": [{"id": 2}], "archiv": ["predikce_a1"]},
+                          "predikce_a1": {"predikce": [{"id": 1}]}, "predikce_a9": {"predikce": [{"id": 0}]}})
+    out = tmp_path / "site"
+    pv = G.build_site(out, web, U(2026, 10, 23, 21, 0), None, None, "stin")
+    assert "predikce_a1" in pv["dokumenty"] and (out / "stav_predikce_a1.json").exists()
+    assert not (out / "stav_predikce_a9.json").exists()          # neuvedená (stará) část se nezveřejní
+
+
 def test_build_site_refuses_email(tmp_path):
     web = _web(tmp_path, {"prehled": {"kontakt": "nekdo@example.com"}})
     with pytest.raises(SystemExit, match="e-mailová adresa"):

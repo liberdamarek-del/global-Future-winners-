@@ -123,6 +123,10 @@ def build_site(ven: Path, web_data: Path, now: datetime, beh_url: str | None, be
     """Složí stránku. Chybějící dokument se vynechá (stránka ho nevykreslí); e-mailová adresa v datech = chyba
     (stránka i repozitář jsou veřejné, uživatel chce e-mail jen u SEC)."""
     found = {n: web_data / f"stav_{n}.json" for n in DOCS if (web_data / f"stav_{n}.json").exists()}
+    if "predikce" in found:                       # archivní části predikcí (v0.17.25), jen ty, které dokument uvádí
+        for n in json.loads(found["predikce"].read_text(encoding="utf-8")).get("archiv") or []:
+            if re.fullmatch(r"predikce_a\d+", n) and (web_data / f"stav_{n}.json").exists():
+                found[n] = web_data / f"stav_{n}.json"
     if "aktualni" not in found:
         raise SystemExit(f"CHYBA: {web_data}/stav_aktualni.json chybí - stránka by byla prázdná")
     leaks = {n: emails_in(p) for n, p in found.items() if emails_in(p)}

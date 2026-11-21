@@ -4,6 +4,57 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-21 · v0.17.25 — Web: archivní části predikcí (dokument by 28. 11. překročil limit)
+
+Důvod: `diag` 21. 11. VAROVÁNÍ „Web stav_predikce.json 153 kB z limitu 170 kB“. Predikcí je 132 a přibývá jich
+~15 týdně (9 raket, 3 smart money, energie), tj. ~15 kB. Sobotní běh 28. 11. by limit překročil a `update` by
+zápis dat pro web odmítl. Dotaz navíc bral jen 300 nejnovějších predikcí (od ~února by starší z webu tiše zmizely).
+
+- `site.split_predictions`: nejnovější predikce zůstávají v `stav/predikce` (rozpočet 110 kB), starší jdou do
+  archivních částí `stav/predikce_a1`, `_a2` … (rozpočet 150 kB). Seznam částí je v poli `archiv` hlavního
+  dokumentu. Nadbytečné staré soubory částí se smažou. Dotaz už nemá `LIMIT 300`.
+- `web/index.html`: `allPreds()` spojí hlavní dokument a části (bez duplicit podle id). V aplikaci se části
+  odebírají podle `archiv`, na GitHub Pages se stáhnou jako `stav_predikce_aN.json`.
+- `tools/github_beh.py`: na Pages se kopírují jen části uvedené v `archiv`.
+- CLAUDE.md: zápis do artifactu zahrnuje i části `predikce_aN`.
+- Měření, ledger ani pořadí se nemění. Mění se jen rozdělení dat pro web.
+- Test: `test_predictions_split_into_archive_parts_under_budget`, `test_build_site_copies_listed_prediction_archive`.
+- Výsledek 21. 11.: `stav_predikce` 108 kB + `stav_predikce_a1` 46 kB. Stránka (Pages, Chromium) ukazuje
+  „Zobrazit všech 132“ bez chyb skriptu.
+
+---
+
+## 2026-11-21 · v0.17.24 — Rozsah platnosti poučení (N-34, sobotní zlepšení)
+
+Důvod: centrum přikládalo k firmám poučení podle role, i když jejich číselné tvrzení platilo pro jiné řazení modelu.
+Poučení #13 („horní 1 % má propadů ještě víc a záporný medián“) a #19 („propady 54–60 % v horních kandidátech“)
+popisují čisté skóre raket. Kandidáti se ale řadí pravidlem `vydrzi_asym`, jehož horní 1 % má v testu běhu #12
+(2025-07-01..2026-05-22) propady −33 % jen 6,1 % (všechny akcie 16,1 %). Na webu tak stálo varování, které čísla
+karty vyvracela (B2Gold: „propad −33 % 4 % (běžně 17 %)“). Poučení nejdou měnit (trigger), proto nová tabulka.
+
+- `migrations/0013_lesson_scope.sql` (schéma v13): `lesson_scope` (lesson_id, stav PLATI / MIMO_ROZSAH / NAHRAZENO,
+  plati_pro_json {model, razeni}, nahrazeno_id, duvod povinný, zdroj, čas). Jen přidávání (triggery bez UPDATE
+  a DELETE), platí poslední záznam.
+- `lessons.set_lesson_scope`, `lessons.lesson_scopes`; `state_io.TABLES` + `lesson_scope`.
+- `hub/integrate`: `current_models` (řazení raket z posledního `discovery_runs`), `in_scope(poučení, role, modely)`.
+  Poučení se přiloží jen, když je PLATI a model i řazení odpovídají roli. Poučení bez rozsahu se chová jako dřív.
+- `diag` „Rozsah poučení (N-34)“: VAROVÁNÍ u poučení s pravidlem přiložení bez rozsahu a u poučení PLATI, jehož
+  řazení se od zápisu změnilo (= znovu ověřit a zapsat nové).
+- Audit podle pravidla předem daného 17. 11.: #13 a #19 MIMO_ROZSAH (platí pro `razeni: raketa`). Dalších 8 poučení
+  s pravidlem přiložení je PLATI (obecná nebo s nezměněnou konfigurací). Nové poučení #37 POUCENI-RAKETY-VYDRZI
+  s čísly z testu běhu #12 pro `vydrzi_asym`: méně propadů (6,1 % × 16,1 %), ale i méně raket (11,5 % × 16,5 %),
+  směrová výhoda dál neprokázaná.
+- Test: `test_lesson_scope_is_append_only_and_latest_wins`, `test_lessons_attach_only_within_scope`,
+  `test_current_models_reads_rocket_ordering`, `test_diag_warns_on_lessons_without_scope_or_changed_ordering`.
+- Výsledek (celé centrum, 1 098 firem, 21. 11.):
+  - bez rozsahu 362 přiložení, z toho 83 mimo rozsah (#13 u 60 firem, #19 u 23 firem);
+  - po zavedení 279 přiložení, mimo rozsah 0, nové #37 u 23 kandidátů raket;
+  - ztracená platná varování podle pravidla 0. U 37 firem jen s rolí SIGNAL_6M:vyber zmizelo #13, protože popisuje
+    model raket; karta 6 měsíců u nich ukazuje vlastní P(−25 %).
+- Vratné: smazat záznamy rozsahu ve stavu (`state/lesson_scope.jsonl`) → chování jako v0.17.23.
+
+---
+
 ## 2026-11-18 · v0.17.23 — Ceny Yahoo: ochrana před odpovědí z mezipaměti po konci obchodování
 
 Důvod: večerní `update` 18. 11. (21:47 UTC) uložil u 40 ze 148 sledovaných symbolů dopolední svíčku místo závěru

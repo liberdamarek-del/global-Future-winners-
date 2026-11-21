@@ -77,7 +77,7 @@ Popis: `docs/GITHUB_PROVOZ.md`.
    Když jsi něco zapsal, spusť `python -m stockradar update` znovu.
 3. Web: `ArtifactData` `list` kolekce `stav` (kvůli `version`), pak `batch` se `set` pro každý soubor
    `data/web/stav_*.json` (aktualni, predikce, retezec, objevy, smartmoney, signaly, zebricek, zebricek6m, kauzalni, prehled,
-   pohyby) s `if_version` (URL v `web/dashboard.json`).
+   pohyby a archivní části predikcí `predikce_a1`, `predikce_a2` … — od v0.17.25) s `if_version` (URL v `web/dashboard.json`).
 4. `git add state/ && git commit && git push -u origin ccr-07430f55-or3jhd`.
 5. Uživateli česky 2–4 věty: nové predikce, nově vyhodnocené (HIT/MISS; u raket zda přišlo +50 %), změna vah modelu,
    důležitá novinka a **kolikrát a kde byl dnes použit e-mail** (`python -m stockradar email --days 1`).
