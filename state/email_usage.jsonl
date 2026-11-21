@@ -244,3 +244,24 @@
 {"day": "2026-11-21", "first_at": "2026-11-21T10:07:04Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety WHWK (příloha 8-K)", "requests": 1}
 {"day": "2026-11-21", "first_at": "2026-11-21T10:07:04Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:04Z", "purpose": "ověření kandidáta rakety SABR (příloha 8-K)", "requests": 1}
 {"day": "2026-11-21", "first_at": "2026-11-21T10:07:33Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:07:33Z", "purpose": "ověření kandidáta rakety SABR (příloha 8-K, výsledky 3Q)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:15Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:15Z", "purpose": "ověření TOP 5 žebříčku 6 m: INHD (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:15Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:15Z", "purpose": "ověření TOP 5 žebříčku 6 m: FCUV (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:16Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:16Z", "purpose": "ověření TOP 5 žebříčku 6 m: WTI (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:16Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:16Z", "purpose": "ověření TOP 5 žebříčku 6 m: SNDK (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:16Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:16Z", "purpose": "ověření TOP 5 žebříčku 6 m: HPE (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:16Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:16Z", "purpose": "ověření TOP 5 žebříčku 6 m: NRG (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:16Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:29:16Z", "purpose": "ověření TOP 5 žebříčku 6 m: QXO (podání)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:27Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:27Z", "purpose": "ověření TOP 5 žebříčku 6 m: INHD (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:27Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:27Z", "purpose": "ověření TOP 5 žebříčku 6 m: FCUV (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:28Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:28Z", "purpose": "ověření TOP 5 žebříčku 6 m: WTI (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:28Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:28Z", "purpose": "ověření TOP 5 žebříčku 6 m: HPE (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:28Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:28Z", "purpose": "ověření TOP 5 žebříčku 6 m: NRG (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:28Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:28Z", "purpose": "ověření TOP 5 žebříčku 6 m: QXO (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:29Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:29Z", "purpose": "ověření TOP 5 žebříčku 6 m: SNDK (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:29:53Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:29:53Z", "purpose": "ověření TOP 5 žebříčku 6 m: QXO (8-K 5.02)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:31:36Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:31:36Z", "purpose": "ověření signálu smart money PAM (podání, Form 4)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:31:36Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:31:36Z", "purpose": "ověření signálu smart money SKYH (podání, Form 4)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:31:48Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:31:49Z", "purpose": "ověření signálu smart money PAM (Form 4, surové XML)", "requests": 3}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:31:49Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:31:49Z", "purpose": "ověření signálu smart money SKYH (Form 4, surové XML)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:32:09Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:32:09Z", "purpose": "ověření signálu smart money INR (podání, Form 4)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T10:32:09Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:32:09Z", "purpose": "ověření signálu smart money INR (Form 4, surové XML)", "requests": 2}

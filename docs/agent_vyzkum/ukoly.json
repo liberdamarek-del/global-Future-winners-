@@ -150,6 +150,26 @@
    "stav": "OTEVRENO",
    "poznamka": null,
    "zdroj": "reporty/2026-11-19.md"
+  },
+  {
+   "id": "U-16",
+   "zadano": "2026-11-21",
+   "termin": "2026-12-05",
+   "popis": "N-38: na validaci porovnat pořadí uvnitř shody kalibrace (surový rozdíl × abeceda) a podle předem daného pravidla zavést nebo na webu napsat, že pořadí uvnitř shody nic neznamená",
+   "hotovo_kdyz": "řádek N-38 v navrhy.jsonl se stavem ZAVEDENO nebo ZAMITNUTO a čísly z validace",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "týdenní běh 2026-11-21"
+  },
+  {
+   "id": "U-17",
+   "zadano": "2026-11-21",
+   "termin": "2026-12-12",
+   "popis": "N-39: přehrát kontrolu „skok a návrat“ na cache objevování a ručně zkontrolovat vzorek 10 zachycených úseků",
+   "hotovo_kdyz": "řádek N-39 v navrhy.jsonl s počtem zachycených úseků a výsledkem ruční kontroly",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "týdenní běh 2026-11-21"
   }
  ]
 }

@@ -21,6 +21,11 @@ zápis dat pro web odmítl. Dotaz navíc bral jen 300 nejnovějších predikcí 
 - Test: `test_predictions_split_into_archive_parts_under_budget`, `test_build_site_copies_listed_prediction_archive`.
 - Výsledek 21. 11.: `stav_predikce` 108 kB + `stav_predikce_a1` 46 kB. Stránka (Pages, Chromium) ukazuje
   „Zobrazit všech 132“ bez chyb skriptu.
+- Kauzální radar (týdenní ověření): výrobní země zlata a stříbra OVĚŘENO z USGS Mineral Commodity Summaries 2026
+  (`causal/commodities.VERIFIED_PRODUCERS`, 2025 odhad). Zlato, svět 3 300 t: Čína 11,5 %, Rusko 9,4 %,
+  Austrálie 8,5 %. Stříbro, svět 26 000 t: Mexiko 24,2 %, Peru 13,8 %, Čína 13,1 %. Seznamy výrobců jsou doplněné
+  o země s podílem ≥ 3 % (zlato: Mexiko, Uzbekistán, Kazachstán; stříbro: Polsko, Rusko, USA), přibyl alias
+  „Polsko“ → poland.
 
 ---
 
