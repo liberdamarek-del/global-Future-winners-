@@ -17,9 +17,9 @@
    "nazev": "Sebehodnocení a kalibrace: proper scoring, konformní predikce, abstence",
    "proc_pro_nas": "karty mají pravděpodobnosti a NEVÍM; chybí intervaly s garantovaným pokrytím a průběžné měření kalibrace na živých výsledcích",
    "priorita": 1.0,
-   "behu": 10,
+   "behu": 11,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-19",
+   "posledni_beh": "2026-11-21",
    "stav": "AKTIVNI"
   },
   {
@@ -67,9 +67,9 @@
    "nazev": "Plánování a orchestrace agentů (workflow vs agent, planner/executor)",
    "proc_pro_nas": "rutiny jsou pevné scénáře; adaptivní plán by mohl šetřit čas a přesouvat úsilí tam, kde je přínos",
    "priorita": 0.7,
-   "behu": 6,
+   "behu": 7,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-16",
+   "posledni_beh": "2026-11-21",
    "stav": "AKTIVNI"
   },
   {

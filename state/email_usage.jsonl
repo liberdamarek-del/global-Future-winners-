@@ -265,3 +265,23 @@
 {"day": "2026-11-21", "first_at": "2026-11-21T10:31:49Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:31:49Z", "purpose": "ověření signálu smart money SKYH (Form 4, surové XML)", "requests": 1}
 {"day": "2026-11-21", "first_at": "2026-11-21T10:32:09Z", "host": "data.sec.gov", "last_at": "2026-11-21T10:32:09Z", "purpose": "ověření signálu smart money INR (podání, Form 4)", "requests": 1}
 {"day": "2026-11-21", "first_at": "2026-11-21T10:32:09Z", "host": "www.sec.gov", "last_at": "2026-11-21T10:32:09Z", "purpose": "ověření signálu smart money INR (Form 4, surové XML)", "requests": 2}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:15:46Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:15:59Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 60}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:49Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:16:49Z", "purpose": "podání k velkému pohybu NVDA (raketový deník, ruční ověření)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:50Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:16:50Z", "purpose": "podání k velkému pohybu JDZG (raketový deník, ruční ověření)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:50Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:16:50Z", "purpose": "podání k velkému pohybu OMH (raketový deník, ruční ověření)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:50Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:16:50Z", "purpose": "podání k velkému pohybu CHRS (raketový deník, ruční ověření)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:50Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:16:50Z", "purpose": "podání k velkému pohybu AVBP (raketový deník, ruční ověření)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:50Z", "host": "data.sec.gov", "last_at": "2026-11-21T13:16:50Z", "purpose": "podání k velkému pohybu GLND (raketový deník, ruční ověření)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:16:58Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:16:58Z", "purpose": "ověření pohybu NVDA (8-K 5.02)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:17:08Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:17:08Z", "purpose": "ověření pohybu NVDA (seznam příloh 8-K 2.02)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:17:08Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:17:08Z", "purpose": "ověření pohybu NVDA (příloha 99.1 výsledky)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:17:39Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:17:39Z", "purpose": "ověření pohybu NVDA (seznam příloh 8-K 5.02)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:17:39Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:17:39Z", "purpose": "ověření pohybu NVDA (příloha 99.1 k 8-K 5.02)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:17Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:17Z", "purpose": "ověření pohybu JDZG (6-K 9. 11.)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:18Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:18Z", "purpose": "ověření pohybu JDZG (424B5 10. 11.)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:18Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:18Z", "purpose": "ověření pohybu OMH (6-K 9. 11.)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:28Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:28Z", "purpose": "ověření pohybu CHRS (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:28Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:28Z", "purpose": "ověření pohybu AVBP (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:29Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:29Z", "purpose": "ověření pohybu GLND (8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:45Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:45Z", "purpose": "ověření pohybu AVBP (seznam příloh 8-K)", "requests": 1}
+{"day": "2026-11-21", "first_at": "2026-11-21T13:18:46Z", "host": "www.sec.gov", "last_at": "2026-11-21T13:18:46Z", "purpose": "ověření pohybu AVBP (příloha 99.1)", "requests": 1}
