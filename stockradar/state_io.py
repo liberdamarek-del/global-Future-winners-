@@ -45,6 +45,7 @@ TABLES = (
     "prediction_outcomes",
     "status_changes",
     "lessons",
+    "lesson_scope",
     "snapshots",
     "email_usage",
 )

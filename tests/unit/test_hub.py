@@ -240,3 +240,64 @@ def test_research_is_scored_against_sp500_after_its_horizon(conn):
     assert "vyhodnoceno proti S&P 500 1" in F.reliability(conn)["VYZKUM"]["metrika"]
     with pytest.raises(sqlite3.DatabaseError):
         conn.execute("UPDATE research_outcomes SET result = 'MISS'")
+
+
+# ------------------------------------------------------------------ N-34: rozsah platnosti poučení (v0.17.24)
+def _lesson(conn, key):
+    cur = conn.execute("INSERT INTO lessons (case_key, title, outcome_type, summary, lessons_json, source, recorded_at)"
+                       " VALUES (?, 't', 'REFERENCE', 's', '[\"bod\"]', 'test', '2026-10-03T00:00:00Z')", (key,))
+    return cur.lastrowid
+
+
+def test_lesson_scope_is_append_only_and_latest_wins(conn):
+    from stockradar.lessons import lesson_scopes, set_lesson_scope
+    lid = _lesson(conn, "POUCENI-RAKETY-VOLATILITA")
+    set_lesson_scope(conn, lid, "PLATI", duvod="zápis", plati_pro={"model": "RAKETY_6M"}, now=NOW)
+    sid = set_lesson_scope(conn, lid, "MIMO_ROZSAH", duvod="jiné řazení", plati_pro={"model": "RAKETY_6M", "razeni": "raketa"},
+                           now=NOW)
+    assert lesson_scopes(conn)[lid]["stav"] == "MIMO_ROZSAH"
+    with pytest.raises(sqlite3.DatabaseError):
+        conn.execute("UPDATE lesson_scope SET stav = 'PLATI' WHERE id = ?", (sid,))
+    with pytest.raises(ValueError):
+        set_lesson_scope(conn, lid, "NEVIM", duvod="x")
+
+
+def test_lessons_attach_only_within_scope(conn):
+    from stockradar.lessons import set_lesson_scope
+    raw = _lesson(conn, "POUCENI-RAKETY-VOLATILITA")
+    _lesson(conn, "CHYBA-DAT-REVERSE-SPLIT")                                            # bez rozsahu = jako dřív
+    set_lesson_scope(conn, raw, "PLATI", duvod="čisté skóre", plati_pro={"model": "RAKETY_6M", "razeni": "raketa"}, now=NOW)
+    lessons = I.load_lessons(conn)
+    rocket = [{"role": "RAKETY_6M:vyber", "druh": "signal"}]
+    signal6 = [{"role": "SIGNAL_6M:vyber", "druh": "signal"}]
+    keys = lambda items, models: [l["klic"] for l in I._lessons_for("BTO.TO", "B2Gold", items, lessons, models)]
+    assert keys(rocket, {"RAKETY_6M": {"razeni": "raketa"}}) == ["POUCENI-RAKETY-VOLATILITA", "CHYBA-DAT-REVERSE-SPLIT"]
+    assert keys(rocket, {"RAKETY_6M": {"razeni": "vydrzi_asym"}}) == ["CHYBA-DAT-REVERSE-SPLIT"]   # jiné řazení → ne
+    assert keys(signal6, {"RAKETY_6M": {"razeni": "raketa"}}) == []                   # jiný model role → ne
+    set_lesson_scope(conn, raw, "MIMO_ROZSAH", duvod="test", now=NOW)
+    lessons = I.load_lessons(conn)                                                      # platí poslední záznam rozsahu
+    assert [l["klic"] for l in I._lessons_for("BTO.TO", "B2Gold", rocket, lessons, {"RAKETY_6M": {"razeni": "raketa"}})] \
+        == ["CHYBA-DAT-REVERSE-SPLIT"]
+
+
+def test_current_models_reads_rocket_ordering(conn):
+    conn.execute("INSERT INTO discovery_runs (run_at, data_through, stats_json, result_json, models_json, app_version)"
+                 " VALUES ('2026-11-21T10:00:00Z', '2026-11-20', '{}', ?, '{}', 'test')",
+                 (json.dumps({"rakety_6m": {"razeni": "vydrzi_asym"}}),))
+    assert I.current_models(conn) == {"RAKETY_6M": {"razeni": "vydrzi_asym"}}
+
+
+def test_diag_warns_on_lessons_without_scope_or_changed_ordering(conn, tmp_path):
+    from stockradar import diag
+    from stockradar.lessons import set_lesson_scope
+    a = _lesson(conn, "POUCENI-RAKETY-REZIM")
+    b = _lesson(conn, "POUCENI-FONDY-13F")
+    set_lesson_scope(conn, b, "PLATI", duvod="obecné", plati_pro={"model": "FONDY_13F"}, now=NOW)
+    pick = lambda: next(c for c in diag.run_checks(conn, state_dir=tmp_path, web_dir=tmp_path) if c["kontrola"] == "Rozsah poučení (N-34)")
+    c = pick()
+    assert c["uroven"] == "VAROVÁNÍ" and f"#{a}" in c["detail"] and "bez rozsahu" in c["detail"]
+    set_lesson_scope(conn, a, "PLATI", duvod="řazení", plati_pro={"model": "RAKETY_6M", "razeni": "raketa"}, now=NOW)
+    c = pick()                                                                          # bez objevování: řazení neznámé
+    assert c["uroven"] == "VAROVÁNÍ" and "změnil řazení" in c["detail"]
+    set_lesson_scope(conn, a, "MIMO_ROZSAH", duvod="staré řazení", plati_pro={"model": "RAKETY_6M", "razeni": "raketa"}, now=NOW)
+    assert pick()["uroven"] == "OK"

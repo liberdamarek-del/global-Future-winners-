@@ -41,6 +41,37 @@ def add_lesson(
     return cur.lastrowid
 
 
+
+# ------------------------------------------------------------------ N-34: rozsah platnosti poučení (v0.17.24)
+SCOPE_STATES = ("PLATI", "MIMO_ROZSAH", "NAHRAZENO")
+
+
+def set_lesson_scope(conn: sqlite3.Connection, lesson_id: int, stav: str, *, duvod: str, plati_pro: dict | None = None,
+                     nahrazeno_id: int | None = None, source: str | None = None, now: datetime | None = None) -> int:
+    """Nový záznam rozsahu poučení (poučení samo se nemění, §30). `plati_pro` = {"model": "RAKETY_6M", "razeni": "raketa"}:
+    poučení se přikládá jen k roli toho modelu a jen při tomto řazení. Platí poslední záznam."""
+    if stav not in SCOPE_STATES:
+        raise ValueError(f"neznámý stav rozsahu: {stav}")
+    if not duvod.strip():
+        raise ValueError("rozsah poučení potřebuje důvod")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO lesson_scope (lesson_id, stav, plati_pro_json, nahrazeno_id, duvod, source, recorded_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (lesson_id, stav, json.dumps(plati_pro, ensure_ascii=False, sort_keys=True) if plati_pro else None,
+             nahrazeno_id, duvod, source, to_iso(now or utcnow())))
+    return cur.lastrowid
+
+
+def lesson_scopes(conn: sqlite3.Connection) -> dict[int, dict]:
+    """Poslední záznam rozsahu ke každému poučení."""
+    out: dict[int, dict] = {}
+    for r in conn.execute("SELECT * FROM lesson_scope ORDER BY id"):
+        out[r["lesson_id"]] = {"stav": r["stav"], "plati_pro": json.loads(r["plati_pro_json"]) if r["plati_pro_json"] else {},
+                               "nahrazeno_id": r["nahrazeno_id"], "duvod": r["duvod"], "zapsano": r["recorded_at"]}
+    return out
+
+
 # Identita firem je odvozena z tickerů uvedených v §31. Tržní data (cena, market cap, XTB) NEJSOU načtena.
 NOTE_UNVERIFIED = "Identita odvozena z tickeru v §31. Cena, market cap, katalyzátory a XTB zatím neověřeny."
 MASTER_PROMPT_CASES = [

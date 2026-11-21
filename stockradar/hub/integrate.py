@@ -29,6 +29,7 @@ CATALYST_SOON_DAYS = 7
 LESSON_RULES = {
     "POUCENI-RAKETY-VOLATILITA": {"role": {"RAKETY_6M:vyber", "SIGNAL_6M:vyber"}},
     "POUCENI-RAKETY-REZIM": {"role": {"RAKETY_6M:vyber"}},
+    "POUCENI-RAKETY-VYDRZI": {"role": {"RAKETY_6M:vyber"}},       # N-34: poučení k aktuálnímu řazení kandidátů
     "OVERENI-RAKETY-2026-10-03": {"role": {"RAKETY_6M:vyber"}},
     "CHYBA-DAT-REVERSE-SPLIT": {"role": {"RAKETY_6M:vyber"}},
     "SM-ESPP-FLIP-WIX": {"role": {"SMART_MONEY:nakup"}},
@@ -58,16 +59,53 @@ def is_stale(e: dict, today: date) -> bool:
 
 
 def load_lessons(conn) -> list[dict]:
+    from stockradar.lessons import lesson_scopes
     sym = E._symbol_of(conn)
+    try:
+        scopes = lesson_scopes(conn)
+    except Exception:  # noqa: BLE001 — databáze bez migrace 0013
+        scopes = {}
     out = []
     for r in conn.execute("SELECT * FROM lessons ORDER BY id"):
         points = json.loads(r["lessons_json"])
-        out.append({"klic": r["case_key"], "nazev": r["title"], "typ": r["outcome_type"], "bod": points[0] if points else "",
-                    "oprava": r["model_correction"], "firma": sym.get(r["company_id"]) if r["company_id"] else None})
+        out.append({"id": r["id"], "klic": r["case_key"], "nazev": r["title"], "typ": r["outcome_type"],
+                    "bod": points[0] if points else "", "oprava": r["model_correction"],
+                    "firma": sym.get(r["company_id"]) if r["company_id"] else None, "rozsah": scopes.get(r["id"])})
     return out
 
 
-def _lessons_for(tic: str, name: str, items: list[dict], lessons: list[dict]) -> list[dict]:
+def current_models(conn) -> dict:
+    """Aktuální konfigurace modelů, ke kterým se váže rozsah poučení (N-34): řazení modelu raket z posledního objevování."""
+    models: dict[str, dict] = {}
+    try:
+        r = conn.execute("SELECT result_json FROM discovery_runs ORDER BY id DESC LIMIT 1").fetchone()
+        rk = (json.loads(r[0]) or {}).get("rakety_6m") or {} if r else {}
+        if rk.get("razeni"):
+            models["RAKETY_6M"] = {"razeni": rk["razeni"]}
+    except Exception:  # noqa: BLE001 — bez objevování platí rozsah jen podle stavu
+        pass
+    return models
+
+
+def in_scope(lesson: dict, role: str | None, models: dict) -> bool:
+    """Poučení mimo svůj rozsah se nepřikládá: stav MIMO_ROZSAH / NAHRAZENO, jiný model role, nebo jiné řazení modelu,
+    než pro které poučení platí (N-34, 17. 11. 2026: #13 a #19 o čistém skóre raket u kandidátů řazení vydrzi_asym)."""
+    sc = lesson.get("rozsah")
+    if not sc:
+        return True
+    if sc["stav"] != "PLATI":
+        return False
+    pp = sc.get("plati_pro") or {}
+    model = pp.get("model")
+    if model and role and role.split(":")[0] != model:
+        return False
+    if model and "razeni" in pp and (models.get(model) or {}).get("razeni") != pp["razeni"]:
+        return False
+    return True
+
+
+def _lessons_for(tic: str, name: str, items: list[dict], lessons: list[dict], models: dict | None = None) -> list[dict]:
+    models = models or {}
     roles = {e.get("role") for e in items}
     cats = {e.get("typ_katalyzatoru") for e in items if e["druh"] == "katalyzator"}
     soon = [e["dni_do"] for e in items if e["druh"] == "katalyzator" and e.get("dni_do") is not None]
@@ -76,17 +114,20 @@ def _lessons_for(tic: str, name: str, items: list[dict], lessons: list[dict]) ->
     out = []
     for l in lessons:
         rule = LESSON_RULES.get(l["klic"])
-        hit = l["firma"] == tic
+        hit = l["firma"] == tic and in_scope(l, None, models)
         if rule and not hit:
-            hit = bool(rule.get("role", set()) & roles) or bool(rule.get("katalyzator", set()) & cats) or \
-                (rule.get("studie") and trials) or any(w in low for w in rule.get("slova", ())) or \
-                ("katalyzator_do" in rule and any(0 <= d <= rule["katalyzator_do"] for d in soon))
+            by_role = [r for r in rule.get("role", set()) & roles if in_scope(l, r, models)]
+            hit = bool(by_role) or ((bool(rule.get("katalyzator", set()) & cats) or (rule.get("studie") and trials)
+                                     or any(w in low for w in rule.get("slova", ()))
+                                     or ("katalyzator_do" in rule and any(0 <= d <= rule["katalyzator_do"] for d in soon)))
+                                    and in_scope(l, None, models))
         if hit:
             out.append({"klic": l["klic"], "nazev": l["nazev"], "bod": l["bod"], "oprava": l["oprava"]})
     return out
 
 
-def dossier(tic: str, items: list[dict], rel: dict, ranks: dict, sec: dict, lessons: list[dict], today: date) -> dict:
+def dossier(tic: str, items: list[dict], rel: dict, ranks: dict, sec: dict, lessons: list[dict], today: date,
+            models: dict | None = None) -> dict:
     info = sec.get(tic) or {}
     name = next((e["nazev"] for e in items if e.get("nazev")), None) or info.get("nazev")
     industry = info.get("obor") or next((e["obor"] for e in items if e.get("obor")), None)
@@ -147,7 +188,7 @@ def dossier(tic: str, items: list[dict], rel: dict, ranks: dict, sec: dict, less
     return {"ticker": tic, "nazev": name, "obor": industry, "zeme": info.get("zeme"), "postoj": stance, "souhrn": summary,
             "pro": wp, "proti": wc, "overeno_pro": bool(ver_pro), "overeno_proti": bool(ver_con),
             "moduly": sorted({x["modul"] for x in rows}), "dukazy": order, "rozpory": conflicts,
-            "pouceni": _lessons_for(tic, name, items, lessons), "poradi": pos, "kontrola": list(dict.fromkeys(checks)),
+            "pouceni": _lessons_for(tic, name, items, lessons, models), "poradi": pos, "kontrola": list(dict.fromkeys(checks)),
             "retez": chain}
 
 
@@ -177,6 +218,7 @@ def build(conn, cache_conn, today: date, *, prev: dict | None = None) -> dict:
     ev = E.collect(conn, cache_conn, today)
     rel = F.reliability(conn)
     lessons = load_lessons(conn)
+    models = current_models(conn)
     by_firm: dict[str, list[dict]] = {}
     by_industry: dict[str, list[dict]] = {}
     for e in ev["dukazy"]:
@@ -193,7 +235,7 @@ def build(conn, cache_conn, today: date, *, prev: dict | None = None) -> dict:
         extra = [e for e in by_industry.get((ind or "").lower(), []) if applies(e, tic)]
         if not items and not extra:
             continue
-        dossiers.append(dossier(tic, items + extra, rel, ev["poradi"], sec, lessons, today))
+        dossiers.append(dossier(tic, items + extra, rel, ev["poradi"], sec, lessons, today, models))
     dossiers.sort(key=lambda d: (-max(d["pro"], d["proti"]), -(d["overeno_pro"] or d["overeno_proti"]), -len(d["moduly"]), d["ticker"]))
     stances = {d["ticker"]: SHORT[d["postoj"]] for d in dossiers}
     changes = []

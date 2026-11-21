@@ -156,6 +156,32 @@ def run_checks(conn: sqlite3.Connection, *, state_dir: Path, web_dir: Path, cach
              else f"otevřených {sum(1 for t in tasks if t.get('stav') == 'OTEVRENO')}, žádný po termínu")
             + (("; do 7 dní: " + ", ".join(f"{t['id']} {t['termin']}" for t in soon)) if soon else ""))
 
+    # N-34: rozsah poučení navázaných na role modelů (v0.17.24)
+    try:
+        from stockradar.hub.integrate import LESSON_RULES, current_models, load_lessons
+        rule_lessons = [l for l in load_lessons(conn) if l["klic"] in LESSON_RULES]
+        models = current_models(conn)
+    except Exception as e:  # noqa: BLE001
+        rule_lessons = None
+        add("CHYBA", "Rozsah poučení (N-34)", f"poučení nejde načíst: {type(e).__name__}: {str(e)[:80]}")
+    if rule_lessons is not None:
+        missing = [l["id"] for l in rule_lessons if not l.get("rozsah")]
+        stale = []
+        for l in rule_lessons:
+            sc = l.get("rozsah") or {}
+            pp = sc.get("plati_pro") or {}
+            if sc.get("stav") == "PLATI" and pp.get("razeni") and (models.get(pp.get("model")) or {}).get("razeni") != pp["razeni"]:
+                stale.append(l["id"])
+        active = [l["id"] for l in rule_lessons if l.get("rozsah") and l["rozsah"]["stav"] == "PLATI" and l["id"] not in stale]
+        if missing or stale:
+            add("VAROVÁNÍ", "Rozsah poučení (N-34)",
+                (f"bez rozsahu: {', '.join(f'#{i}' for i in missing)}; " if missing else "")
+                + (f"model změnil řazení, poučení se nepřikládají — ověřit a zapsat nové: {', '.join(f'#{i}' for i in stale)}"
+                   if stale else "").rstrip("; "))
+        else:
+            add("OK", "Rozsah poučení (N-34)", f"poučení k rolím v rozsahu {len(active)}, mimo rozsah "
+                f"{len(rule_lessons) - len(active)} (řazení raket: {(models.get('RAKETY_6M') or {}).get('razeni') or '–'})")
+
     # 8) použití e-mailu (pro uživatele)
     summ = usage_summary(conn, days=7)
     days = ", ".join(f"{d['den']}: {d['celkem']}× ({', '.join(f'{h} {n}×' for h, n in d['servery'].items())})"
