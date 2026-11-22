@@ -355,6 +355,7 @@ def build_smart_money_doc(conn: sqlite3.Connection) -> dict | None:
         "skore": (full.get("skore") or {}).get("test_kvintily"),
         "top": top, "kandidatu": (full.get("aktualni") or {}).get("kandidatu"),
         "nakupu": (full.get("aktualni") or {}).get("pocet_nakupu"),
+        "zdroj_stav": (full.get("aktualni") or {}).get("zdroj_stav"),
     }
 
 

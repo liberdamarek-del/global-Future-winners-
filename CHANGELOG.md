@@ -4,6 +4,25 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-22 · v0.17.26 — Smart money přežije výpadek openinsider; otisk GitHubu i při CHYBĚ v diag
+
+Důvod: týdenní běh GitHubu 21. 11. (běh 44920065332) skončil v kroku smart money chybou `TimeoutError: timed out`.
+Přehled čerstvých nákupů z openinsider.com (`current.fetch_recent_purchases`) se ptal jen jednou s limitem 60 s a výjimka
+shodila celý běh, i už spočítané studie a skóre. Kvůli tomu `diag` hlásil CHYBU. V krocích workflow běží bash
+s `pipefail`, takže `diag | tee` krok ukončil dřív, než se zapsal `otisk.json`, a srovnání N-32 za týden nešlo udělat.
+
+- `smartmoney/current.py`: `_get_text` zkusí dotaz 2× (pauza 15 s). Když neodpoví první stránka, vyhodí
+  `SourceUnavailable`. Selže-li pozdější stránka, vrátí se, co se stáhlo, a `status["neuplne"]` řekne, od které stránky.
+- `smartmoney/report.current_signals`: při `SourceUnavailable` se studie a skóre dopočítají a aktuální signály
+  v běhu nejsou (`top` prázdné). Do výsledku jde `zdroj_stav` (OK / NEÚPLNÉ / BLOKOVÁNO) a je vidět i na webu
+  (`stav/smartmoney`).
+- `.github/workflows/radar-tyden.yml`, `radar-denni.yml`: `diag … | tee zprava/diag.txt || true`. CHYBA v diag se dál
+  hlásí ve zprávě, ale nezastaví `email` a `otisk`.
+- Test: `test_openinsider_timeout_is_retried_then_reported_not_fatal`, `test_current_signals_survive_source_outage`.
+- Blokace se neobchází: při trvalém výpadku se jen poctivě hlásí BLOKOVÁNO.
+
+---
+
 ## 2026-11-21 · v0.17.25 — Web: archivní části predikcí (dokument by 28. 11. překročil limit)
 
 Důvod: `diag` 21. 11. VAROVÁNÍ „Web stav_predikce.json 153 kB z limitu 170 kB“. Predikcí je 132 a přibývá jich

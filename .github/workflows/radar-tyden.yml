@@ -221,7 +221,7 @@ jobs:
       - name: Diagnostika a e-mail (jen hlásí)
         continue-on-error: true
         run: |
-          python -m stockradar diag 2>&1 | tee zprava/diag.txt
+          python -m stockradar diag 2>&1 | tee zprava/diag.txt || true   # CHYBA v diag nesmí zastavit otisk (21. 11.)
           python -m stockradar email --days 1 2>&1 | tee zprava/email.txt
           python -m stockradar otisk --ven zprava/otisk.json 2>&1 | tee -a zprava/diag.txt
       - name: Testy

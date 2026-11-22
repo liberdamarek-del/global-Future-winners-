@@ -7,6 +7,7 @@
 
 import html
 import re
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -25,14 +26,45 @@ def _num(s: str) -> float | None:
         return None
 
 
-def fetch_recent_purchases(days: int = 60, min_value_k: int = 25, pages: int = 5, template: str = SCREENER) -> list[dict]:
+class SourceUnavailable(RuntimeError):
+    """Přehled openinsider.com neodpověděl ani na opakovaný dotaz (v0.17.26: GitHub 21. 11. — TimeoutError shodil
+    celý běh smart money i se studiemi)."""
+
+
+RETRIES = 2
+RETRY_PAUSE_S = 15.0
+
+
+def _get_text(url: str, *, timeout: int = 60, retries: int = RETRIES, pause: float = RETRY_PAUSE_S,
+              opener=urllib.request.urlopen, sleep=time.sleep) -> str:
+    last = None
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            return opener(req, timeout=timeout).read().decode("utf-8", "replace")
+        except OSError as e:                  # URLError, HTTPError, TimeoutError, ConnectionError jsou OSError
+            last = e
+            if attempt + 1 < retries:
+                sleep(pause)
+    raise SourceUnavailable(f"openinsider.com: {type(last).__name__}: {last}")
+
+
+def fetch_recent_purchases(days: int = 60, min_value_k: int = 25, pages: int = 5, template: str = SCREENER,
+                           *, get=_get_text, status: dict | None = None) -> list[dict]:
     """Pozor: openinsider po ~10. stránce vrací pořád stejnou stránku → duplicity se vyřazují a při stránce
-    bez nových řádků se končí (pro delší období použij fetch_purchases_between po oknech)."""
+    bez nových řádků se končí (pro delší období použij fetch_purchases_between po oknech).
+    Neodpoví-li první stránka ani napodruhé → SourceUnavailable; selže-li pozdější stránka, vrátí se, co se
+    stáhlo, a `status["neuplne"]` řekne od které stránky."""
     out, seen = [], set()
     for page in range(1, pages + 1):
-        req = urllib.request.Request(template.format(days=days, min_k=min_value_k, cnt=500, page=page),
-                                     headers={"User-Agent": "Mozilla/5.0"})
-        text = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
+        try:
+            text = get(template.format(days=days, min_k=min_value_k, cnt=500, page=page))
+        except SourceUnavailable as e:
+            if page == 1:
+                raise
+            if status is not None:
+                status["neuplne"] = f"stránka {page}: {e}"
+            break
         t = text[text.find('class="tinytable"'):]
         rows = re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S)[1:]
         if not rows:

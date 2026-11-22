@@ -155,8 +155,14 @@ def tier(f: dict, cluster: int, ev: dict) -> int:
 
 
 def current_signals(market, fund, bb, sc, cache_conn, *, today: int, ev: dict, log=print, verify=True, top=10) -> dict:
-    recent = current.fetch_recent_purchases(days=RECENT_DAYS, min_value_k=25, pages=6)
-    log(f"Aktuální nákupy (openinsider, {RECENT_DAYS} dní): {len(recent)}")
+    status: dict = {}
+    try:
+        recent = current.fetch_recent_purchases(days=RECENT_DAYS, min_value_k=25, pages=6, status=status)
+    except current.SourceUnavailable as e:      # studie a skóre se dopočítají, jen aktuální signály dnes nejsou
+        log(f"Aktuální nákupy: zdroj nedostupný ({e}) → aktuální signály se v tomto běhu nepočítají")
+        return {"pocet_nakupu": 0, "kandidatu": 0, "top": [], "zdroj_stav": f"BLOKOVÁNO — {e}"}
+    log(f"Aktuální nákupy (openinsider, {RECENT_DAYS} dní): {len(recent)}"
+        + (f" (NEÚPLNÉ: {status['neuplne']})" if status.get("neuplne") else ""))
     name_cik = {}
     for r in cache_conn.execute("SELECT DISTINCT owner, owner_cik FROM insider_tx WHERE code = 'P'"):
         name_cik[(r["owner"] or "").lower()] = r["owner_cik"]
@@ -233,7 +239,8 @@ def current_signals(market, fund, bb, sc, cache_conn, *, today: int, ev: dict, l
         picked.append(c)
     for c in picked:
         enrich(c, market, fund, bb, sc, cache_conn, today)
-    return {"pocet_nakupu": len(recent), "kandidatu": len(cand), "top": picked}
+    return {"pocet_nakupu": len(recent), "kandidatu": len(cand), "top": picked,
+            "zdroj_stav": f"NEÚPLNÉ — {status['neuplne']}" if status.get("neuplne") else "OK"}
 
 
 def enrich(c, market, fund, bb, sc, cache_conn, today):

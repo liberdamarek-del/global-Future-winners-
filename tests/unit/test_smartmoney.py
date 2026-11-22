@@ -239,3 +239,50 @@ def test_same_day_same_price_as_documented_offering_is_not_open_market_buy():
     assert plak["typ"].startswith(current.OFFERING_TYPE) and other["typ"] == "AKTIVNÍ NÁKUP"
     lone = v([("P", "2026-09-15", 3000.0, 28.27)])
     assert current.propagate_offering([lone])[0]["typ"] == "AKTIVNÍ NÁKUP"       # bez doložené emise beze změny
+
+
+def test_openinsider_timeout_is_retried_then_reported_not_fatal():
+    """v0.17.26: GitHub 21. 11. — TimeoutError z openinsider shodil celý běh smart money (i studie a otisk)."""
+    from stockradar.smartmoney import current
+    calls, waits = [], []
+
+    def flaky(req, timeout):
+        calls.append(req.full_url)
+        if len(calls) == 1:
+            raise TimeoutError("timed out")
+        class R:
+            def read(self):
+                return b'<table class="tinytable"><tr><th>x</th></tr></table>'
+        return R()
+
+    assert current._get_text("http://x/1", opener=flaky, sleep=waits.append) .startswith("<table")
+    assert len(calls) == 2 and waits == [current.RETRY_PAUSE_S]
+
+    def dead(url):
+        raise current.SourceUnavailable("openinsider.com: TimeoutError: timed out")
+    with pytest.raises(current.SourceUnavailable):
+        current.fetch_recent_purchases(pages=3, get=dead)
+
+    row = ('<tr><td>X</td><td>2026-11-20 16:00</td><td>2026-11-19</td><td>ABC</td><td>Abc Corp</td><td>Doe John</td>'
+           '<td>CEO</td><td>P - Purchase</td><td>$10.00</td><td>+1,000</td><td>5,000</td><td>+25%</td><td>+$10,000</td></tr>')
+    pages = {1: '<table class="tinytable"><tr><th>h</th></tr>' + row * 1 + "</table>"}
+    st = {}
+
+    def partial(url):
+        n = int(url.rsplit("page=", 1)[1])
+        if n in pages:
+            return pages[n].replace("</table>", row.replace("Doe John", "Roe Jane") * 499 + "</table>")
+        raise current.SourceUnavailable("openinsider.com: TimeoutError: timed out")
+    out = current.fetch_recent_purchases(pages=3, template=current.SCREENER, get=partial, status=st)
+    assert len(out) == 2 and st["neuplne"].startswith("stránka 2")
+
+
+def test_current_signals_survive_source_outage(monkeypatch):
+    from stockradar.smartmoney import current, report
+
+    def dead(**kw):
+        raise current.SourceUnavailable("openinsider.com: TimeoutError: timed out")
+    monkeypatch.setattr(current, "fetch_recent_purchases", dead)
+    logs = []
+    res = report.current_signals(None, None, None, None, None, today=0, ev={}, log=logs.append)
+    assert res["top"] == [] and res["zdroj_stav"].startswith("BLOKOVÁNO") and "nedostupný" in logs[0]
