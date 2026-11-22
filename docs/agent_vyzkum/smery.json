@@ -27,9 +27,9 @@
    "nazev": "LLM jako čtenář zpráv a filingů (extrakce událostí, příčin)",
    "proc_pro_nas": "příčiny raket se určují klíčovými slovy (AUTO, 59/120 bez příčiny); literatura o LLM a výnosech akcií; přímo souvisí s raketovým deníkem",
    "priorita": 1.0,
-   "behu": 18,
+   "behu": 19,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-20",
+   "posledni_beh": "2026-11-22",
    "stav": "AKTIVNI"
   },
   {
@@ -47,9 +47,9 @@
    "nazev": "Dlouhodobá paměť agenta (reflexe, epizodická paměť, vyhledání poučení)",
    "proc_pro_nas": "lessons se párují pravidly (LESSON_RULES); paměť mezi sessions je jen v souborech a DB",
    "priorita": 0.9,
-   "behu": 6,
+   "behu": 7,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-17",
+   "posledni_beh": "2026-11-22",
    "stav": "AKTIVNI"
   },
   {
