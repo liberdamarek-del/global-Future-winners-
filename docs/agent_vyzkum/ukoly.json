@@ -17,8 +17,8 @@
    "termin": "2026-11-24",
    "popis": "Ověřit rozhodnutí FDA o deramiocelu (CAPR, PDUFA 22. 11.)",
    "hotovo_kdyz": "katalyzátor #13 má stav OCCURRED / DELAYED / CANCELLED se zdrojem a pohyb CAPR má příčinu",
-   "stav": "OTEVRENO",
-   "poznamka": null,
+   "stav": "HOTOVO",
+   "poznamka": "2026-11-23: ověřeno z 8-K 7.01 + Ex. 99.1 (20. 11.): FDA vydala Complete Response Letter (2. zamítnutí); katalyzátor #13 OCCURRED",
    "zdroj": "reporty/2026-11-05.md"
   },
   {
