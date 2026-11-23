@@ -67,8 +67,8 @@
    "termin": "2026-11-27",
    "popis": "Zavést N-29 (skupina NT v historické studii, H-R2) jako experiment týdne od 23. 11.",
    "hotovo_kdyz": "N-29 se stavem EXPERIMENT nebo ODLOZENO s důvodem",
-   "stav": "OTEVRENO",
-   "poznamka": null,
+   "stav": "HOTOVO",
+   "poznamka": "2026-11-23: N-29 ZAVEDENO (v0.17.27); H-R2 nepotvrzena těsně (20 dní: rozdíl −12,5 p. b., t −1,98, n 51)",
    "zdroj": "reporty/2026-11-14.md"
   },
   {

@@ -41,6 +41,7 @@ FORMS = {
     "424B1": "OFFER", "424B3": "OFFER", "424B4": "OFFER", "424B5": "OFFER",
     "SC 13D": "13D", "SCHEDULE 13D": "13D", "SC 13D/A": "13DA", "SCHEDULE 13D/A": "13DA",
     "SC 13G": "13G", "SCHEDULE 13G": "13G",
+    "NT 10-Q": "NT", "NT 10-K": "NT", "NT 20-F": "NT",          # opožděný výkaz (N-29, v0.17.27)
 }
 # Roční ukazatele (celý fiskální rok z 10-K; čtvrtletní hodnoty jsou v 10-Q kumulativní, proto roční)
 ANNUAL_FRAMES = [
@@ -148,14 +149,25 @@ def parse_master(text: str) -> list[tuple[str, int, str, str]]:
     return out
 
 
+# Verze sady ukládaných formulářů: když přibude formulář (N-29: NT), čtvrtletí stažená se starší sadou se stáhnou
+# znovu jednou (INSERT OR IGNORE jen doplní chybějící řádky). Čtvrtletí s verzí ≥ FORMS_VERSION se nestahují.
+FORMS_VERSION = 2
+
+
 def fetch_index(cache_conn, *, start: date, end: date, refresh_recent: int = 1, log=print) -> dict:
     qs = quarters(start, end)
-    recent = set(qs[-refresh_recent:])
+    recent = set(qs[-refresh_recent:]) if refresh_recent > 0 else set()     # qs[-0:] by vrátilo všechna čtvrtletí
+    cols = {r[1] for r in cache_conn.execute("PRAGMA table_info(sec_index_done)")}
+    if "forms_version" not in cols:
+        with cache_conn:
+            cache_conn.execute("ALTER TABLE sec_index_done ADD COLUMN forms_version INTEGER NOT NULL DEFAULT 1")
+    stale = {r[0] for r in cache_conn.execute("SELECT quarter FROM sec_index_done WHERE forms_version < ?",
+                                                   (FORMS_VERSION,))}
     done = {r[0] for r in cache_conn.execute("SELECT quarter FROM sec_index_done")}
     fetched = rows_total = 0
     for y, q in qs:
         key = f"{y}Q{q}"
-        if key in done and (y, q) not in recent:
+        if key in done and (y, q) not in recent and key not in stale:
             continue
         try:
             raw = contact.http_get(INDEX_URL.format(year=y, q=q), "seznam filingů s datem podání (full-index)")
@@ -165,8 +177,8 @@ def fetch_index(cache_conn, *, start: date, end: date, refresh_recent: int = 1, 
         rows = parse_master(raw.decode("latin-1"))
         with cache_conn:
             cache_conn.executemany("INSERT OR IGNORE INTO sec_filings (path, cik, form, filed) VALUES (?, ?, ?, ?)", rows)
-            cache_conn.execute("INSERT OR REPLACE INTO sec_index_done (quarter, n, fetched_at) VALUES (?, ?, ?)",
-                               (key, len(rows), to_iso(utcnow())))
+            cache_conn.execute("INSERT OR REPLACE INTO sec_index_done (quarter, n, fetched_at, forms_version)"
+                               " VALUES (?, ?, ?, ?)", (key, len(rows), to_iso(utcnow()), FORMS_VERSION))
         fetched += 1
         rows_total += len(rows)
     return {"dotazu": fetched, "filingu": rows_total}

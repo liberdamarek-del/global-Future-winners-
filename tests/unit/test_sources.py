@@ -279,3 +279,24 @@ def test_update_prices_refetches_stale_quote(conn):
     assert calls == {"CEG": 2, "SPY": 2}
     close = conn.execute("SELECT close FROM price_bars WHERE symbol = 'CEG' AND date = '2026-11-18'").fetchone()[0]
     assert close == 262.74
+
+
+def test_index_keeps_late_filing_notices_and_refetches_old_quarters_once(monkeypatch):
+    """N-29 (v0.17.27): NT 10-Q / NT 10-K se ukládají; čtvrtletí stažená se starší sadou formulářů se stáhnou znovu
+    jednou, pak už ne."""
+    from stockradar.discovery import cache as dcache
+    text = ("CIK|Company Name|Form Type|Date Filed|Filename\n"
+            "123|ACME|NT 10-Q|2026-05-15|edgar/data/123/n.txt\n123|ACME|8-K|2026-05-16|edgar/data/123/k.txt\n")
+    assert [r[2] for r in sec.parse_master(text)] == ["NT 10-Q", "8-K"]
+    cc = dcache.connect(":memory:")
+    for q in ("2026Q1", "2026Q2"):
+        cc.execute("INSERT INTO sec_index_done (quarter, n, fetched_at) VALUES (?, 1, '2026-07-01T00:00:00Z')", (q,))
+    calls = []
+    monkeypatch.setattr(sec.contact, "http_get", lambda url, purpose, **kw: calls.append(url) or text.encode())
+    quiet = lambda *a: None                                                                    # noqa: E731
+    r1 = sec.fetch_index(cc, start=date(2026, 1, 1), end=date(2026, 6, 30), refresh_recent=1, log=quiet)
+    assert r1["dotazu"] == 2 and cc.execute("SELECT COUNT(*) FROM sec_filings WHERE form = 'NT 10-Q'").fetchone()[0] == 1
+    r2 = sec.fetch_index(cc, start=date(2026, 1, 1), end=date(2026, 6, 30), refresh_recent=1, log=quiet)
+    assert r2["dotazu"] == 1 and "QTR2" in calls[-1]                     # už jen poslední (běžící) čtvrtletí
+    r3 = sec.fetch_index(cc, start=date(2026, 1, 1), end=date(2026, 6, 30), refresh_recent=0, log=quiet)
+    assert r3["dotazu"] == 0

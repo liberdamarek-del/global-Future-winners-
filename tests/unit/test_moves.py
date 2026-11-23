@@ -179,6 +179,18 @@ def test_history_study_uses_the_same_rules(conn):
     assert groups["s výsledky (10-Q/10-K)"]["20d"]["pokracovalo"] == 1.0
 
 
+def test_history_groups_drops_with_late_filing_notice(conn):
+    """N-29: propad s NT 10-Q v okně patří do skupiny „s opožděným výkazem (NT)“, ne mezi výsledky."""
+    cconn = dcache.connect(":memory:")
+    days = bdays(date(2024, 1, 1), 300)
+    store(cconn, "LATE", days, [10.0] * 150 + [7.0] + [7.0] * 149)                      # −30 % za den
+    cconn.execute("INSERT INTO sec_tickers VALUES ('LATE', 8, 'Late', 'x')")
+    cconn.execute("INSERT INTO sec_filings VALUES ('edgar/data/8/n.txt', 8, 'NT 10-Q', ?)", (date.fromordinal(days[150]).isoformat(),))
+    events = M.scan_history(cconn, Series(days, [100.0] * 300), log=QUIET)
+    assert [e["smer"] for e in events] == [-1] and events[0]["druhy"] == {"s opožděným výkazem (NT)"}
+    assert M.describe({"form": "NT 10-K"}) == "oznámení o opožděné zprávě (NT 10-K)" and M.filing_causes({"form": "NT 10-Q"}) == []
+
+
 def test_history_study_is_weekly(conn, monkeypatch):
     cconn = dcache.connect(":memory:")
     days = bdays(date(2024, 1, 1), 100)

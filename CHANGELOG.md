@@ -4,6 +4,29 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-23 · v0.17.27 — Opožděné výkazy (NT 10-Q / NT 10-K) v deníku a historické studii (N-29, experiment týdne)
+
+Důvod: dva z 6 největších propadů 10.–11. 11. měly v okně NT 10-Q (MNTK, GPRO). Index podání SEC formuláře NT
+neukládal, takže historická studie nemohla změřit, zda propady s opožděným výkazem pokračují. Podle Bartova
+a Konchitchkiho (2017) oznámení o opoždění signalizuje slabý výkon, který ceny při oznámení plně nezohlední.
+
+- `sources/sec.FORMS`: přidány „NT 10-Q“, „NT 10-K“, „NT 20-F“ (druh NT).
+- `sources/sec.fetch_index`: `FORMS_VERSION`. Čtvrtletí stažená se starší sadou formulářů se stáhnou znovu jednou,
+  nový sloupec `sec_index_done.forms_version` přidá kód sám. Opravena chyba: `refresh_recent=0` dřív vybralo všechna
+  čtvrtletí (`qs[-0:]`).
+- `discovery/moves.FORMS`: NT 10-Q / 10-K / 20-F jako druh NT (dřív mezi výsledky). `HIST_KINDS`: skupina „s opožděným
+  výkazem (NT)“.
+- Data: 24 čtvrtletních indexů staženo znovu (www.sec.gov, e-mail evidován), 15 091 podání NT za 2021–2026.
+- Test: `test_index_keeps_late_filing_notices_and_refetches_old_quarters_once`,
+  `test_history_groups_drops_with_late_filing_notice`.
+- Výsledek hypotézy H-R2 (kritérium z 12. 11., v `docs/testy_hypotez.jsonl`): **nepotvrzena**, těsně.
+  - Za 20 dní: rozdíl mediánů −12,5 p. b., t −1,98 (kritérium t ≤ −2), 51 propadů s NT.
+  - Za 60 dní (jen popisně): −22,9 p. b., t −5,6.
+  - Skupina zůstává ve studii jako popis, role v centru se nezavádí.
+- Modely se nemění: fundamenty a model raket berou formuláře podle vlastních seznamů, NT mezi nimi není.
+
+---
+
 ## 2026-11-22 · v0.17.26 — Smart money přežije výpadek openinsider; otisk GitHubu i při CHYBĚ v diag
 
 Důvod: týdenní běh GitHubu 21. 11. (běh 44920065332) skončil v kroku smart money chybou `TimeoutError: timed out`.

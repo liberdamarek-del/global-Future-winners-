@@ -49,8 +49,9 @@ FORMS = {
     "8-K": ("8K", None, "oznámení 8-K"), "8-K/A": ("8K", None, "oprava 8-K"), "6-K": ("8K", None, "oznámení zahraniční firmy 6-K"),
     "10-Q": ("REPORT", "EARNINGS", "čtvrtletní zpráva 10-Q"), "10-K": ("REPORT", "EARNINGS", "výroční zpráva 10-K"),
     "20-F": ("REPORT", "EARNINGS", "výroční zpráva 20-F"), "40-F": ("REPORT", "EARNINGS", "výroční zpráva 40-F"),
-    "NT 10-Q": ("REPORT", None, "oznámení o opožděné zprávě (NT 10-Q)"),
-    "NT 10-K": ("REPORT", None, "oznámení o opožděné zprávě (NT 10-K)"),
+    "NT 10-Q": ("NT", None, "oznámení o opožděné zprávě (NT 10-Q)"),
+    "NT 10-K": ("NT", None, "oznámení o opožděné zprávě (NT 10-K)"),
+    "NT 20-F": ("NT", None, "oznámení o opožděné zprávě (NT 20-F)"),
     "S-1": ("OFFER", "FINANCING", "registrace emise S-1"), "S-3": ("OFFER", "FINANCING", "registrace emise S-3"),
     "F-1": ("OFFER", "FINANCING", "registrace emise F-1"), "F-3": ("OFFER", "FINANCING", "registrace emise F-3"),
     "424B1": ("OFFER", "FINANCING", "prospekt emise"), "424B3": ("OFFER", "FINANCING", "prospekt emise"),
@@ -72,7 +73,8 @@ PRIORITY = {1: ("ACQUISITION", "EARNINGS", "CONTRACT", "ACTIVIST", "LEGAL", "DEL
 LABEL = {c[0]: c[1] for c in news.CAUSES} | {"JINE": "jiná příčina", "CHYBA_DAT": "chyba dat (split)"}
 # Historie: druhy z kvartálního indexu SEC (sources/sec.py FORMS) — body 8-K v indexu nejsou
 HIST_KINDS = {"REPORT": "s výsledky (10-Q/10-K)", "OFFER": "s emisí akcií", "8K": "s oznámením 8-K",
-              "13D": "s velkým akcionářem (13D/13G)", "13DA": "s velkým akcionářem (13D/13G)", "13G": "s velkým akcionářem (13D/13G)"}
+              "13D": "s velkým akcionářem (13D/13G)", "13DA": "s velkým akcionářem (13D/13G)", "13G": "s velkým akcionářem (13D/13G)",
+              "NT": "s opožděným výkazem (NT)"}           # N-29 (v0.17.27), hypotéza H-R2
 
 
 # ------------------------------------------------------------------ 1. podání u SEC
