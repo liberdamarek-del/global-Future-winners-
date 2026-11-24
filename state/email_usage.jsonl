@@ -292,3 +292,14 @@
 {"day": "2026-11-23", "first_at": "2026-11-23T21:56:31Z", "host": "data.sec.gov", "last_at": "2026-11-23T21:56:31Z", "purpose": "ověření katalyzátoru CAPR (rozhodnutí FDA, úkol U-2)", "requests": 1}
 {"day": "2026-11-23", "first_at": "2026-11-23T21:56:32Z", "host": "www.sec.gov", "last_at": "2026-11-23T21:56:32Z", "purpose": "ověření katalyzátoru CAPR (seznam příloh 8-K)", "requests": 1}
 {"day": "2026-11-23", "first_at": "2026-11-23T21:56:32Z", "host": "www.sec.gov", "last_at": "2026-11-23T21:56:32Z", "purpose": "ověření katalyzátoru CAPR (příloha 8-K)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T05:09:47Z", "host": "data.sec.gov", "last_at": "2026-11-24T05:09:47Z", "purpose": "ověření pohybu NVDA 23. 11. (podání)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T05:09:59Z", "host": "www.sec.gov", "last_at": "2026-11-24T05:09:59Z", "purpose": "ověření pohybu NVDA 23. 11. (8-K 5.02)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:20:41Z", "host": "data.sec.gov", "last_at": "2026-11-24T13:20:44Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 15}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:33Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:33Z", "purpose": "podání k velkému pohybu TTEC (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:33Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:33Z", "purpose": "podání k velkému pohybu TTEC (příloha 8-K, ruční ověření)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:33Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:50Z", "purpose": "podání k velkému pohybu ABR (seznam příloh, ruční ověření)", "requests": 3}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:34Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:34Z", "purpose": "podání k velkému pohybu AIRJ (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:34Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:34Z", "purpose": "podání k velkému pohybu AIRJ (příloha 8-K, ruční ověření)", "requests": 1}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:34Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:35Z", "purpose": "podání k velkému pohybu KYMR (seznam příloh, ruční ověření)", "requests": 2}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:34Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:35Z", "purpose": "podání k velkému pohybu KYMR (příloha 8-K, ruční ověření)", "requests": 2}
+{"day": "2026-11-24", "first_at": "2026-11-24T13:21:51Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:51Z", "purpose": "podání k velkému pohybu ABR (příloha 8-K, ruční ověření)", "requests": 1}

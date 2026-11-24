@@ -7,9 +7,9 @@
    "nazev": "Experimentování a statistika: mnohonásobné testování a přeučení na historii",
    "proc_pro_nas": "děláme mnoho experimentů a variant modelů (E1–E4, pokusy na zamčených testech) → riziko falešných objevů; hledat korekce typu deflated Sharpe, PBO, reality check, Benjamini–Hochberg",
    "priorita": 0.6,
-   "behu": 18,
+   "behu": 19,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-10-31",
+   "posledni_beh": "2026-11-24",
    "stav": "AKTIVNI"
   },
   {
@@ -27,9 +27,9 @@
    "nazev": "LLM jako čtenář zpráv a filingů (extrakce událostí, příčin)",
    "proc_pro_nas": "příčiny raket se určují klíčovými slovy (AUTO, 59/120 bez příčiny); literatura o LLM a výnosech akcií; přímo souvisí s raketovým deníkem",
    "priorita": 1.0,
-   "behu": 19,
-   "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-22",
+   "behu": 20,
+   "prazdnych_behu_po_sobe": 1,
+   "posledni_beh": "2026-11-24",
    "stav": "AKTIVNI"
   },
   {
@@ -37,9 +37,9 @@
    "nazev": "Učení ze zpětné vazby a alokace pozornosti (bandity, online učení)",
    "proc_pro_nas": "váhy rolí jsou pevné pravidlo (t/4); který modul / kandidáta ručně zkoumat se rozhoduje ad hoc",
    "priorita": 0.9,
-   "behu": 7,
-   "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-19",
+   "behu": 8,
+   "prazdnych_behu_po_sobe": 1,
+   "posledni_beh": "2026-11-24",
    "stav": "AKTIVNI"
   },
   {

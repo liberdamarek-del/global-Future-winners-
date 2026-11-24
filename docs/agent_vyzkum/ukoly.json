@@ -170,6 +170,16 @@
    "stav": "OTEVRENO",
    "poznamka": null,
    "zdroj": "týdenní běh 2026-11-21"
+  },
+  {
+   "id": "U-18",
+   "zadano": "2026-11-24",
+   "termin": "2027-01-15",
+   "popis": "N-43 (H-R3): průběžně sečíst živé propady velkých firem při výprodeji trhu od 24. 11.; vyhodnotit až při ≥ 30 případech z ≥ 4 týdnů, jinak jen zapsat počet",
+   "hotovo_kdyz": "řádek N-43 v navrhy.jsonl s počtem případů a týdnů (a výsledkem, pokud je vzorek splněn)",
+   "stav": "OTEVRENO",
+   "poznamka": null,
+   "zdroj": "reporty/2026-11-24.md"
   }
  ]
 }
