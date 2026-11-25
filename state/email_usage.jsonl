@@ -303,3 +303,11 @@
 {"day": "2026-11-24", "first_at": "2026-11-24T13:21:34Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:35Z", "purpose": "podání k velkému pohybu KYMR (seznam příloh, ruční ověření)", "requests": 2}
 {"day": "2026-11-24", "first_at": "2026-11-24T13:21:34Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:35Z", "purpose": "podání k velkému pohybu KYMR (příloha 8-K, ruční ověření)", "requests": 2}
 {"day": "2026-11-24", "first_at": "2026-11-24T13:21:51Z", "host": "www.sec.gov", "last_at": "2026-11-24T13:21:51Z", "purpose": "podání k velkému pohybu ABR (příloha 8-K, ruční ověření)", "requests": 1}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:18:53Z", "host": "data.sec.gov", "last_at": "2026-11-25T13:18:58Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 25}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:19:50Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:19:50Z", "purpose": "podání k velkému pohybu ALXO (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:19:51Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:19:51Z", "purpose": "podání k velkému pohybu ALXO (ruční ověření)", "requests": 1}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:19:51Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:19:51Z", "purpose": "podání k velkému pohybu CD (ruční ověření)", "requests": 2}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:19:51Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:19:51Z", "purpose": "podání k velkému pohybu CD (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:19:52Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:19:52Z", "purpose": "podání k velkému pohybu ASST (ruční ověření)", "requests": 1}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:21:10Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:21:10Z", "purpose": "podání k velkému pohybu AMPG (formulář 25-NSE, kontrola N-23)", "requests": 1}
+{"day": "2026-11-25", "first_at": "2026-11-25T13:21:17Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:21:17Z", "purpose": "podání k velkému pohybu AMPG (formulář 25-NSE, surové XML, kontrola N-23)", "requests": 1}
