@@ -27,9 +27,9 @@
    "nazev": "LLM jako čtenář zpráv a filingů (extrakce událostí, příčin)",
    "proc_pro_nas": "příčiny raket se určují klíčovými slovy (AUTO, 59/120 bez příčiny); literatura o LLM a výnosech akcií; přímo souvisí s raketovým deníkem",
    "priorita": 1.0,
-   "behu": 20,
-   "prazdnych_behu_po_sobe": 1,
-   "posledni_beh": "2026-11-24",
+   "behu": 21,
+   "prazdnych_behu_po_sobe": 0,
+   "posledni_beh": "2026-11-26",
    "stav": "AKTIVNI"
   },
   {
@@ -67,9 +67,9 @@
    "nazev": "Plánování a orchestrace agentů (workflow vs agent, planner/executor)",
    "proc_pro_nas": "rutiny jsou pevné scénáře; adaptivní plán by mohl šetřit čas a přesouvat úsilí tam, kde je přínos",
    "priorita": 0.7,
-   "behu": 7,
+   "behu": 8,
    "prazdnych_behu_po_sobe": 0,
-   "posledni_beh": "2026-11-21",
+   "posledni_beh": "2026-11-26",
    "stav": "AKTIVNI"
   },
   {

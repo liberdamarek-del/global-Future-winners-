@@ -311,3 +311,13 @@
 {"day": "2026-11-25", "first_at": "2026-11-25T13:19:52Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:19:52Z", "purpose": "podání k velkému pohybu ASST (ruční ověření)", "requests": 1}
 {"day": "2026-11-25", "first_at": "2026-11-25T13:21:10Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:21:10Z", "purpose": "podání k velkému pohybu AMPG (formulář 25-NSE, kontrola N-23)", "requests": 1}
 {"day": "2026-11-25", "first_at": "2026-11-25T13:21:17Z", "host": "www.sec.gov", "last_at": "2026-11-25T13:21:17Z", "purpose": "podání k velkému pohybu AMPG (formulář 25-NSE, surové XML, kontrola N-23)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:15:55Z", "host": "data.sec.gov", "last_at": "2026-11-26T13:16:01Z", "purpose": "podání firmy k velkému pohybu akcie (submissions)", "requests": 22}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:16:37Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:16:37Z", "purpose": "podání k velkému pohybu AREC (kontrola N-23)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:16:38Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:16:38Z", "purpose": "podání k velkému pohybu GDRX (kontrola N-23)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:09Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:09Z", "purpose": "podání k velkému pohybu XRX (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:09Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:09Z", "purpose": "podání k velkému pohybu XRX (ruční ověření)", "requests": 2}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:10Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:10Z", "purpose": "podání k velkému pohybu CCOI (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:10Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:10Z", "purpose": "podání k velkému pohybu CCOI (ruční ověření)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:10Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:10Z", "purpose": "podání k velkému pohybu TGLS (seznam příloh, ruční ověření)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:10Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:10Z", "purpose": "podání k velkému pohybu TGLS (ruční ověření)", "requests": 1}
+{"day": "2026-11-26", "first_at": "2026-11-26T13:17:11Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:11Z", "purpose": "podání k velkému pohybu SUPX (ruční ověření)", "requests": 1}
