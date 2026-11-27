@@ -51,3 +51,5 @@
 {"company_id": 54, "node_code": "STORAGE", "role": null}
 {"company_id": 55, "node_code": "STORAGE", "role": null}
 {"company_id": 56, "node_code": "ADV_NUCLEAR", "role": null}
+{"company_id": 162, "node_code": "FUEL_CYCLE", "role": null}
+{"company_id": 163, "node_code": "ADV_NUCLEAR", "role": null}

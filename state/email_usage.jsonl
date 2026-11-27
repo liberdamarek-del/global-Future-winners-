@@ -321,3 +321,7 @@
 {"day": "2026-11-26", "first_at": "2026-11-26T13:17:10Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:10Z", "purpose": "podání k velkému pohybu TGLS (seznam příloh, ruční ověření)", "requests": 1}
 {"day": "2026-11-26", "first_at": "2026-11-26T13:17:10Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:10Z", "purpose": "podání k velkému pohybu TGLS (ruční ověření)", "requests": 1}
 {"day": "2026-11-26", "first_at": "2026-11-26T13:17:11Z", "host": "www.sec.gov", "last_at": "2026-11-26T13:17:11Z", "purpose": "podání k velkému pohybu SUPX (ruční ověření)", "requests": 1}
+{"day": "2026-11-27", "first_at": "2026-11-27T21:57:57Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:57:57Z", "purpose": "Standard Nuclear 424B4 (seznam souborů, nová firma v řetězci)", "requests": 1}
+{"day": "2026-11-27", "first_at": "2026-11-27T21:58:03Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:58:03Z", "purpose": "Standard Nuclear 424B4 (prospekt IPO, nová firma v řetězci)", "requests": 1}
+{"day": "2026-11-27", "first_at": "2026-11-27T21:58:11Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:58:11Z", "purpose": "Deep Fission 10-K 2026 (seznam souborů, nová firma v řetězci)", "requests": 1}
+{"day": "2026-11-27", "first_at": "2026-11-27T21:58:23Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:58:23Z", "purpose": "Deep Fission 10-K 2026 (popis firmy, nová firma v řetězci)", "requests": 1}
