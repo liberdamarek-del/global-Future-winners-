@@ -325,3 +325,10 @@
 {"day": "2026-11-27", "first_at": "2026-11-27T21:58:03Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:58:03Z", "purpose": "Standard Nuclear 424B4 (prospekt IPO, nová firma v řetězci)", "requests": 1}
 {"day": "2026-11-27", "first_at": "2026-11-27T21:58:11Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:58:11Z", "purpose": "Deep Fission 10-K 2026 (seznam souborů, nová firma v řetězci)", "requests": 1}
 {"day": "2026-11-27", "first_at": "2026-11-27T21:58:23Z", "host": "www.sec.gov", "last_at": "2026-11-27T21:58:23Z", "purpose": "Deep Fission 10-K 2026 (popis firmy, nová firma v řetězci)", "requests": 1}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:00Z", "host": "www.sec.gov", "last_at": "2026-11-28T09:55:00Z", "purpose": "seznam tickerů a CIK (company_tickers.json)", "requests": 1}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:01Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:05Z", "purpose": "fundamenty: revenue (XBRL frames)", "requests": 9}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:05Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:06Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:06Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:06Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:07Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:08Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:08Z", "host": "www.sec.gov", "last_at": "2026-11-28T09:55:08Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 1}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:16Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:16Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 1}
