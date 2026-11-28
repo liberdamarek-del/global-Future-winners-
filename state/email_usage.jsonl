@@ -330,5 +330,12 @@
 {"day": "2026-11-28", "first_at": "2026-11-28T09:55:05Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:06Z", "purpose": "fundamenty: net_income (XBRL frames)", "requests": 3}
 {"day": "2026-11-28", "first_at": "2026-11-28T09:55:06Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:06Z", "purpose": "fundamenty: shares (XBRL frames)", "requests": 3}
 {"day": "2026-11-28", "first_at": "2026-11-28T09:55:07Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:08Z", "purpose": "fundamenty: cash (XBRL frames)", "requests": 3}
-{"day": "2026-11-28", "first_at": "2026-11-28T09:55:08Z", "host": "www.sec.gov", "last_at": "2026-11-28T09:55:08Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 1}
-{"day": "2026-11-28", "first_at": "2026-11-28T09:55:16Z", "host": "data.sec.gov", "last_at": "2026-11-28T09:55:16Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 1}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:08Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:05:11Z", "purpose": "seznam filingů s datem podání (full-index)", "requests": 2}
+{"day": "2026-11-28", "first_at": "2026-11-28T09:55:16Z", "host": "data.sec.gov", "last_at": "2026-11-28T10:05:12Z", "purpose": "fundamenty: buyback (XBRL frames, roční)", "requests": 2}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:05:04Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:05:11Z", "purpose": "insider transakce Form 4 (strukturovaná data SEC)", "requests": 3}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:06:29Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:06:31Z", "purpose": "ověření nákupu insidera (Form 4 XML)", "requests": 9}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:21:55Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:21:56Z", "purpose": "Form 4 PAM (ruční kontrola signálu smart money STŘEDNÍ)", "requests": 2}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:21:56Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:21:56Z", "purpose": "Form 4 BULL (ruční kontrola signálu smart money STŘEDNÍ)", "requests": 2}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:21:56Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:21:57Z", "purpose": "Form 4 SKYH (ruční kontrola signálu smart money STŘEDNÍ)", "requests": 2}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:22:39Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:22:39Z", "purpose": "OPKO 8-K 4. 11. 2026 (seznam souborů, ověření predikce rakety OPK)", "requests": 1}
+{"day": "2026-11-28", "first_at": "2026-11-28T10:22:44Z", "host": "www.sec.gov", "last_at": "2026-11-28T10:22:44Z", "purpose": "OPKO Ex. 99.1 4. 11. 2026 (výsledky 3Q, ověření predikce rakety OPK)", "requests": 1}
