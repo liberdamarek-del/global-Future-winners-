@@ -1,0 +1,6 @@
+E-mail: nastaven (data/kontakt.txt nebo STOCKRADAR_CONTACT_EMAIL)
+Posílá se jen na: www.sec.gov, data.sec.gov
+Celkem od začátku: 2545 dotazů
+Den        | Server       | Účel                                              | Dotazů | Od (UTC) | Do (UTC)
+-----------+--------------+---------------------------------------------------+--------+----------+---------
+2026-11-28 | data.sec.gov | podání firmy k velkému pohybu akcie (submissions) | 1      | 03:02    | 03:02   

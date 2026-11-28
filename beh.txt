@@ -1,0 +1,42 @@
+Databáze vytvořena a obnovena ze /home/runner/work/global-Future-winners-/global-Future-winners-/state: /home/runner/work/global-Future-winners-/global-Future-winners-/data/stockradar.db
+UPDATE 2026-11-27  (běh #80)
+  Firmy a řetězec        DONE
+  Ceny (Yahoo)           DONE 162/162, z mezipaměti zůstalo 6
+  SEC EDGAR              TÝDNĚ (v sobotním objevování; každé použití e-mailu se eviduje)
+  Vyhodnocení predikcí   DONE (0 nových)
+  Učení modelu           DONE (verze 39)
+  Skóre                  DONE (48 firem)
+  Nové predikce          DONE (0 nových)
+  Snapshot               PŘESKOČENO (poslední do 7 dní)
+  Export stavu           DONE
+  Data pro web           DONE
+Model: Váhy se změnily méně než o 0,02 — verze modelu zůstává.
+  ! Ceny: Yahoo vrátil i napodruhé cenu z doby před koncem obchodování u TSEM.TA, EUR=X, GBP=X, ILS=X, JPY=X, KRW=X (málo obchodované, nebo mezipaměť — zítra se přepíše)
+Data pro web: /home/runner/work/global-Future-winners-/global-Future-winners-/data/web
+  Vyhodnocení výzkumu    0 nových
+  Snímek Nasdaq          UŽ JE 2026-11-25
+Centrum: 1076 firem (příležitost 288, riziko 17, rozpor 7), záznam OK #368, web 135 kB
+E-mail dnes: nepoužit
+  Komodity: staženo 27, chyb 0
+  Týdenní řady: 263 týdnů, 126 oborů, 3935 akcií, 27 komodit
+  Týdenní řady a citlivosti: přepočítány a uloženy (otisk 410ffdb9c93e043a)
+  Šoky komodit: 261 (týden × komodita), vazeb 4305
+  UCENI: šoků 108, empirické vazby 1122: za 13 týdnů -0.0036 (t -0.35)
+  VALIDACE: šoků 52, empirické vazby 756: za 13 týdnů -0.0078 (t -0.51)
+  TEST: šoků 52, empirické vazby 934: za 13 týdnů 0.0103 (t 0.78)
+Kauzální radar (běh #60): karet 16, příležitostí 1, nových predikcí 0, vyhodnoceno 0; GDACS 4 výstrah; test řetězců za 13 týdnů 0.0094 (t 0.54); web 73 kB
+Centrum: 1076 firem (příležitost 288, riziko 17, rozpor 7), záznam OK #369, web 135 kB
+E-mail dnes: nepoužit
+  Snímek: screener ukazuje závěr z 2026-11-25, ne z 2026-11-27 — ukládá se pod 2026-11-25
+Snímek trhu: {'stav': 'UŽ JE', 'den': '2026-11-25'}
+  Raketový deník: 35 raket, 311 propadů, nových epizod 1
+Řad 5968, přeskočeno kvůli splitu / chybě dat 116, starých 0; raket 35, propadů 311, nových epizod 1
+  #1234 ↓ OCC    Optical Cable Corporation Common Sto 10d -30 % 21d -38 % · AUTO: výsledky / výhled
+Podání u SEC: {'cekalo': 1, 'dotazu': 1, 'zapsano': 1, 'bez_cik': 0, 'chyb': 0, 'zbyva': 0}
+Výplaty a splity (N-23): {'stav': 'OK', 'kontrolovano': 1, 'chyba_dat': 0, 'chyb': 0} · pozastaveno (formulář 25 / 8-K 3.01): 17
+Co následovalo (5 / 20 / 60 dní): {'cekalo': 1171, 'zapsano': 0, 'bez_ceny': 16}
+Přehled trhu a sektorů: {'stav': 'UŽ JE', 'den': '2026-11-25'}
+Historická studie: beze změny (přepočet jednou týdně, --historie-znovu vynutí)
+Web stav_pohyby.json: 133 kB
+Centrum: 1076 firem (příležitost 288, riziko 17, rozpor 7), záznam OK #370, web 135 kB
+E-mail dnes: 1× — data.sec.gov 1×

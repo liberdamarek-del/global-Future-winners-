@@ -1,0 +1,13 @@
+### Radar: denní běh
+
+- Nové predikce: DONE (0 nových)
+- Vyhodnocení predikcí: DONE (0 nových)
+- Učení modelu: DONE (verze 39)
+- Žebříček 14 dní: APH, AROC, BKR
+- Žebříček 1 měsíc: FTI, HAL, INVX
+- Žebříček 6 měsíců: CCCC, SABR, OSUR
+- Trh USA 2026-11-25: -0.1 %; nejvíc Electronic Components -4.5 %
+- Největší raketa: TGLS +51 % (výsledky / výhled)
+- Největší propad: XRX -72 % (výsledky / výhled)
+- E-mail dnes: 0×
+
