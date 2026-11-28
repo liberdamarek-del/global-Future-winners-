@@ -22,6 +22,13 @@ from stockradar.causal.exposure import T_MIN, Exposure, daily_shock, firm_beta, 
 Z_EVENT = 1.5
 T_STRONG = 3.0      # čistě datová vazba bez ekonomické logiky: přísnější práh (3 250 dvojic → ~160 náhodných při |t| ≥ 2)
 HORIZON_BY_ORDER = {1: 30, 2: 90, 3: 90}
+# Scénář „narušení nabídky“ jen ze zpráv (bez cenového šoku), od v0.17.28; pravidla dána předem logikou, ne výsledky:
+# - aspoň dva nezávislé příběhy z hlavních výrobních zemí (jeden titulek bývá náhoda; 2026-11-27 spustil „zlato ↑“
+#   1 příběh z 11, ostatní o zaplaveném nelegálním dolu v Indonésii, která mezi hlavními výrobci není),
+# - cena se týž týden nesmí pohnout proti scénáři o ≥ 2 σ (σ z předchozích 52 týdnů): karta tvrdí „cena se zatím
+#   nepohnula“, ale zlato ten týden kleslo o 9,5 %.
+MIN_PRODUCER_STORIES = 2
+Z_AGAINST = 2.0
 
 
 def _quant(v: list[float], q: float) -> float | None:
@@ -82,6 +89,16 @@ def firms(securities: list[dict], industry: str, *, n: int = 3, check=None, sens
     return out
 
 
+def price_against(series, w: int, *, sign: int = 1, z: float = Z_AGAINST, window: int = 52) -> bool:
+    """Pohnula se cena v týdnu w proti scénáři (znak `sign`) aspoň o z σ? σ jen z předchozích týdnů (bez týdne w)."""
+    move = series[w]
+    past = [v for v in series[max(0, w - window):w] if v == v]
+    if move != move or len(past) < 10:
+        return False
+    sd = statistics.pstdev(past)
+    return sd > 0 and move * sign <= -z * sd
+
+
 def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pulses: dict, securities: list[dict],
           study: dict | None = None, xtb_check=None, pulse_history: dict | None = None, as_of: date | None = None) -> dict:
     """pulse_history: komodita → počty nových příběhů za 7 dní z předchozích běhů radaru (základ pro „víc zpráv
@@ -112,7 +129,9 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         recent = pulse.get("pribehu_7d") or 0
         news_attention = base is not None and recent >= 5 and recent >= 2 * max(base, 1)
         # zprávy potvrzují scénář „narušení nabídky“ jen u hlavních výrobců (u starších dat bez počtu jako dřív)
-        news_spike = news_attention and (pulse.get("u_vyrobcu_7d") is None or pulse["u_vyrobcu_7d"] >= 1)
+        at_producers = news_attention and (pulse.get("u_vyrobcu_7d") is None or pulse["u_vyrobcu_7d"] >= MIN_PRODUCER_STORIES)
+        against = news_attention and not price_shock and price_against(wk.comm[cid], w)
+        news_spike = at_producers and not against
         if pulse:
             pulse = {**pulse, "zaklad_z_historie": base, "pozornost": round(recent / max(base, 1), 2) if base is not None else None}
         gd_hit = any(e["uroven"] == "Red" for e in gd) or (c["skupina"] == "zemědělství" and any(e["typ"] == "DR" for e in gd))
@@ -121,7 +140,9 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
         r4 = sh[0] if sh else None
         # směr: když se cena už pohnula, podle pohybu; jinak scénář „nabídka se zúží → cena roste“
         sign = int(math.copysign(1, r4)) if price_shock else 1
-        basis = "pohyb ceny za 4 týdny" if price_shock else "SCÉNÁŘ: narušení nabídky → cena roste (zatím se nepohnula)"
+        basis = ("pohyb ceny za 4 týdny" if price_shock else
+                 "SCÉNÁŘ: narušení nabídky → cena roste; cena ale tento týden klesla o ≥ 2 σ (scénář nepotvrzen)" if against else
+                 "SCÉNÁŘ: narušení nabídky → cena roste (zatím se nepohnula)")
         chain = []
         for g in wk.ind:
             beta, t = ex.beta[(g, cid)][w]
@@ -179,8 +200,10 @@ def build(ex: Exposure, commodities: dict, today: date, *, gdacs_links: dict, pu
             "sok_k_datu": date.fromordinal(sh_day).isoformat(),
             "obory_k_datu": date.fromordinal(wk.weeks[w]).isoformat(),
             "spoustec": [x for x, on in (("cenový šok", price_shock), ("zprávy", news_spike),
-                                         ("zprávy mimo hlavní výrobce", news_attention and not news_spike), ("GDACS", gd_hit)) if on],
+                                         ("zprávy mimo hlavní výrobce", news_attention and not at_producers),
+                                         ("cena proti scénáři", against), ("GDACS", gd_hit)) if on],
             "stav": "PŘÍLEŽITOST" if (price_shock or news_spike) else
+                    "SLEDOVAT (cena se tento týden pohnula proti scénáři narušení nabídky)" if against else
                     "SLEDOVAT (zprávy netýkají hlavních výrobců)" if news_attention else
                     "SLEDOVAT (výstraha bez potvrzení cenou nebo zprávami)",
             "zaklad_smeru": basis, "vyrobci": c["vyrobci"], "vyrobci_stav": CM.producers_status(cid)["stav"],

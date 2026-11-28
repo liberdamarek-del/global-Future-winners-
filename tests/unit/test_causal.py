@@ -144,6 +144,29 @@ def test_news_confirm_supply_scenario_only_at_major_producers():
     assert loud["karty"][0]["stav"] == "PŘÍLEŽITOST" and "zprávy" in loud["karty"][0]["spoustec"]
 
 
+def test_supply_scenario_needs_two_producer_stories_and_no_price_move_against():
+    """2026-11-27: 1 příběh z 11 u výrobce a zlato −9,5 % za týden spustily „zlato ↑ (cena se zatím nepohnula)“."""
+    wk = _weekly(n=200)
+    ex = build_exposure(wk)
+    secs = [{"symbol": "FCX", "name": "Freeport", "industry": "metal mining", "market_cap_usd": 6e10}]
+    run = lambda n_prod, ex=ex: radar.build(ex, {}, date(2026, 10, 2), gdacs_links={}, securities=secs,
+                                            pulse_history={"COPPER": [1, 1, 1]},
+                                            pulses={"COPPER": {"pribehu_7d": 11, "u_vyrobcu_7d": n_prod, "titulky": []}})
+    one = run(1)["karty"][0]
+    assert one["stav"].startswith("SLEDOVAT") and "zprávy mimo hlavní výrobce" in one["spoustec"]
+    assert run(2)["karty"][0]["stav"] == "PŘÍLEŽITOST"
+    # stejné zprávy, ale cena týž týden spadla o ~5 σ proti scénáři → jen sledovat, žádná příležitost ani predikce
+    comm = list(wk.comm["COPPER"])
+    comm[-4:] = [0.03, 0.03, 0.03, -0.10]                    # za 4 týdny skoro nic (bez cenového šoku), poslední týden −10 %
+    wk2 = Weekly(wk.weeks, wk.ind, {"COPPER": comm}, wk.n_stocks)
+    res = run(5, ex=build_exposure(wk2))
+    card = res["karty"][0]
+    assert card["stav"].startswith("SLEDOVAT (cena") and "cena proti scénáři" in card["spoustec"]
+    assert res["prilezitosti"] == [] and "nepotvrzen" in card["zaklad_smeru"]
+    assert radar.price_against(comm, len(comm) - 1) and not radar.price_against(wk.comm["COPPER"], 199)
+    assert not radar.price_against([0.01] * 5 + [-0.5], 5)                           # málo historie → nerozhoduje
+
+
 def test_causal_records_are_append_only_and_evaluated(tmp_path):
     conn = open_db(tmp_path / "t.db")
     wk = _weekly(n=200)

@@ -1,6 +1,6 @@
 # PROJECT_STATE — zdroj pravdy projektu (§48)
 
-**Aktualizováno:** 2026-11-23 · **Verze:** v0.17.27 · **Schema DB:** v13 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
+**Aktualizováno:** 2026-11-28 · **Verze:** v0.17.28 · **Schema DB:** v13 · **Audit:** [docs/AUDIT_2026-10-03.md](docs/AUDIT_2026-10-03.md) · **Smart money:** [docs/SMART_MONEY_2026-10-05.md](docs/SMART_MONEY_2026-10-05.md) · **Signály 14 dní / 1 měsíc + žebříček:** [docs/SIGNALS_2026-10-05.md](docs/SIGNALS_2026-10-05.md) · **Kauzální radar + 6 měsíců:** [docs/CAUSAL_2026-10-06.md](docs/CAUSAL_2026-10-06.md) · **Architektura a propojení:** [docs/ARCHITEKTURA_2026-10-07.md](docs/ARCHITEKTURA_2026-10-07.md) · **Výzkumný deník:** [docs/VYZKUM.md](docs/VYZKUM.md)
 **Specifikace:** [docs/MASTER_PROMPT.md](docs/MASTER_PROMPT.md) + [docs/MASTER_PROMPT_GROWTH_ENGINE.md](docs/MASTER_PROMPT_GROWTH_ENGINE.md) · **Web:** viz [web/dashboard.json](web/dashboard.json)
 
 > Nikdy nepředpokládej, že modul funguje jen proto, že ho někdo napsal. Stav HOTOVO = existuje test, který prošel.
@@ -75,6 +75,7 @@
 | Web — archivní části predikcí (v0.17.25, 2026-11-21) | `site.split_predictions`: nejnovější predikce v `stav/predikce` (≤ 110 kB), starší v `stav/predikce_a1` … (≤ 150 kB, seznam v `archiv`), stránka je spojí; bez limitu 300 predikcí. 21. 11.: 108 kB + 46 kB (dřív 153 kB z 170 kB, limit by padl 28. 11.) |
 | Smart money — výpadek openinsider (v0.17.26, 2026-11-22) | dotaz na přehled nákupů 2× s pauzou 15 s; trvalý výpadek = aktuální signály v běhu nejsou, `zdroj_stav` BLOKOVÁNO, studie se dopočítají (GitHub 21. 11.: TimeoutError shodil celý běh). Workflow: `diag … \|\| true`, aby CHYBA nezastavila `otisk.json` (srovnání N-32 za 21. 11. proto chybí) |
 | Deník — opožděné výkazy NT (N-29, v0.17.27, 2026-11-23) | index SEC ukládá NT 10-Q / 10-K / 20-F (15 091 podání 2021–2026), skupina „s opožděným výkazem (NT)“ v historické studii. H-R2 nepotvrzena těsně: propady za posledních 12 měsíců, 20 dní, rozdíl −12,5 p. b., t −1,98 (kritérium t ≤ −2); 60 dní popisně −22,9 p. b. (t −5,6). Bez role v centru |
+| Kauzální radar — přísnější scénář ze zpráv (v0.17.28, 2026-11-28) | scénář „narušení nabídky“ bez cenového šoku jen s ≥ 2 příběhy z hlavních výrobců a bez týdenního pohybu ceny proti scénáři ≥ 2 σ (podnět: „zlato ↑“ 27. 11. z 1 příběhu z 11 a zlato −9,5 % za týden); ověření výrobci mědi z USGS MCS 2026; zamčený test řetězců beze změny |
 | Energetický radar — TOP 5 (2026-11-02) | test mimo vzorek nyní t −2,12 (úspěšnost 29 %, −5,7 % proti S&P 500) → centrum CHYBA „horší než náhoda“. Není to N-18 (1 i 5 fází dávají 29 %); jde o posun testovacího okna. Přes 5 posunů okna: t −1,18 až −2,12, průměr −1,63, ve všech pod S&P 500 (−1,3 až −5,7 %). Závěr: výhodu nemá, spíš zaostává; hranici −2 překračuje jen jeden posun. Hodnocení se dnes nemění |
 | XTB | žebříček jen z nabídky XTB (ověřeno na xtb.com 2026-10-05); ledger bez podmínky XTB, u predikcí v ledgeru se XTB nezapisuje |
 
@@ -183,7 +184,7 @@
 | `discovery/rocket.py`, `discovery/store.record_rockets` | Model raket na 6 měsíců, test mimo vzorek, ledger, automatické katalyzátory ze studií | `test_rocket.py`, `test_discovery_pipeline.py` |
 | `update.evaluate_predictions` | Vyhodnocení raket podle cíle (HIT/MISS/zatím nerozhodnuto) i mimo energetický vesmír | `test_rocket.py` |
 | `sources/xtb.py` | Nabídka XTB: symbol na domácí burze, pak jméno firmy (CRH → CRH.UK, Lasertec → 6K8.DE); akcie / CFD / NE; cache `xtb_offer` 30 dní; po 5 chybách sítě stop | `tests/unit/test_xtb.py` (6) |
-| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (11) |
+| `causal/*`, `migrations/0007` | Kauzální radar: komodity, graf řetězců, citlivost bez pohledu do budoucnosti, test řetězců se zamčeným testem, GDACS + zprávy, karty, predikce a vyhodnocení | `tests/unit/test_causal.py` (15) |
 | `diag.py` | Diagnostika (čerstvost, zpožděná vyhodnocení, web, e-mail) | `test_cli.py` |
 | `signals/*`, `migrations/0006` | Signály na 14 dní a 1 měsíc + žebříček TOP 20: režim, panel, protokol se zamčeným testem, modely podle režimu, kalibrace, důvěra a NEVÍM, analogie, zprávy, mechanismy | `tests/unit/test_signals.py` (14) |
 | `hub/*`, `migrations/0008` | Centrum důkazů, spolehlivost rolí, pohled na firmu s rozpory a poučeními, registr modulů a zdrojů, deník běhů, ruční výzkum | `tests/unit/test_hub.py` (10) |

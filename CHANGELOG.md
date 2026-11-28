@@ -4,6 +4,29 @@ Formát: Datum · Verze · Soubor/modul · Změna · Důvod · Test · Výsledek
 
 ---
 
+## 2026-11-28 · v0.17.28 — Kauzální radar: scénář „narušení nabídky“ jen se dvěma příběhy u výrobců a bez opačného pohybu ceny; ověření výrobci mědi (USGS)
+
+Důvod: 27. 11. karta „zlato ↑“ (stav PŘÍLEŽITOST, zlato → těžaři NEM, AEM, B; v centru AEM RIZIKO → PŘÍLEŽITOST)
+vznikla jen ze zpráv: 11 nových příběhů, z toho 1 z hlavní výrobní země; ostatní o zaplaveném nelegálním dolu
+v Indonésii, která mezi hlavními výrobci zlata podle USGS není. Karta psala „cena se zatím nepohnula“, ale zlato ten
+týden kleslo o 9,5 %. Pravidla jsou dána předem logikou, nikoli výsledky predikcí:
+
+- `causal/radar.py`: `MIN_PRODUCER_STORIES = 2`. Scénář ze zpráv potřebuje aspoň dva nezávislé příběhy z hlavních
+  výrobců (dřív stačil jeden).
+- `causal/radar.price_against`: když se cena týž týden pohnula proti scénáři aspoň o 2 σ (σ z předchozích 52 týdnů,
+  bez aktuálního týdne), karta je „SLEDOVAT (cena se tento týden pohnula proti scénáři narušení nabídky)“. Spouštěč je
+  pak „cena proti scénáři“. Nevznikne příležitost ani kauzální predikce.
+- Historie běhů (popisně): pravidlo dvou příběhů by vypnulo 6 karet scénáře z 1 příběhu u výrobce (GOLD 27. 11.,
+  PLATINUM 20. 10., CATTLE 30. 10.–3. 11.).
+- Zamčený test řetězců se nemění: `causal/store.config_hash` pravidla karet nezahrnuje, nový pokus nevzniká.
+- `causal/commodities.VERIFIED_PRODUCERS["COPPER"]`: USGS Mineral Commodity Summaries 2026 — Copper (těžba 2025e,
+  svět 23 000 tis. t): Chile 23,0 %, DR Kongo 13,9 %, Peru 11,7 %, Čína 7,8 %, Rusko 5,7 %, USA 4,3 %, Zambie 4,1 %,
+  Austrálie 3,2 %, Indonésie a Kazachstán po 3,1 %, Mexiko 3,0 %. Seznam výrobců mědi doplněn o Rusko, Austrálii
+  a Kazachstán.
+- Test: `test_supply_scenario_needs_two_producer_stories_and_no_price_move_against`.
+
+---
+
 ## 2026-11-23 · v0.17.27 — Opožděné výkazy (NT 10-Q / NT 10-K) v deníku a historické studii (N-29, experiment týdne)
 
 Důvod: dva z 6 největších propadů 10.–11. 11. měly v okně NT 10-Q (MNTK, GPRO). Index podání SEC formuláře NT
